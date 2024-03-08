@@ -1,0 +1,15 @@
+- name: Minecraft
+  description: 生活サーバーからModサーバーまで様々なものを不定期で運営しています
+  thumbnailUrl: https://s3.akarinext.org/misskey/*/553c0866-fa3a-4c2b-a382-fb08a3faf70f.png
+- name: Misskey
+  description: 分散型SNSの一つであるMisskeyを運営しています。現在は招待限定です。
+  thumbnailUrl: "https://s3.akarinext.org/misskey/*/5a486f95-e0eb-4f83-9714-5a0953f132a1.png"
+- name: "OneDev"
+  description: "開発者専用にGit ServerとしてOneDevが用意されています。"
+  thumbnailUrl: "https://s3.akarinext.org/misskey/*/8002f825-375e-4998-a28f-cefb02149354.png"
+- name: "Mattermost"
+  description: "何らかの理由でDiscordが使用できない際の手段としてメンバー向けに公開されています。"
+  thumbnailUrl: "https://s3.akarinext.org/misskey/*/d6b3ded3-e936-4fc4-bb0c-d99e361bce10.png"
+- name: "Matrix"
+  description: "Mattermostと比べE2E暗号化されたセキュアなチャットを行いたいメンバー向けに公開しています。"
+  thumbnailUrl: "https://s3.akarinext.org/misskey/*/e4f2c509-e98a-42b3-bb2e-ead107f3906e.png"
