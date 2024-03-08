@@ -1,9 +1,9 @@
 import { json, type MetaFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import { IconBrandDiscord, IconBrandGithub, IconBrandSteam, IconWorld } from "@tabler/icons-react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
+import { getSocialIcon } from "~/lib/utils";
 import { MEMBERS } from "~/lib/member.server";
 
 export const meta: MetaFunction = () => {
@@ -17,18 +17,7 @@ export function loader() {
   return json({ members: MEMBERS });
 }
 
-function getMemberSocialIcon(type: string) {
-  switch (type) {
-    case "discord":
-      return <IconBrandDiscord />;
-    case "github":
-      return <IconBrandGithub />;
-    case "steam":
-      return <IconBrandSteam />;
-    default:
-      return <IconWorld />;
-  }
-}
+
 
 export default function Index() {
   const { members } = useLoaderData<typeof loader>();
@@ -71,13 +60,13 @@ export default function Index() {
                     {social.alt ? <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          {getMemberSocialIcon(social.type)}
+                          {getSocialIcon(social.type)}
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>{social.alt}</p>
                         </TooltipContent>
                       </Tooltip>
-                    </TooltipProvider> : getMemberSocialIcon(social.type)}
+                    </TooltipProvider> : getSocialIcon(social.type)}
                   </a>
                 ))}
               </div>
