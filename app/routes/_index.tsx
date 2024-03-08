@@ -67,7 +67,7 @@ export default function Index() {
               <div className="mt-2 text-slate-700 text-lg font-bold">{member.name}</div>
               <div className="flex flex-row gap-2">
                 {member.socials.map((social, index) => (
-                  <a href={social.url} key={index}>
+                  <a href={social.url} key={index} target="_blank" rel="noreferrer noopener">
                     {social.alt ? <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
