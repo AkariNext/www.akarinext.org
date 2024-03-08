@@ -4,12 +4,14 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "@remix-run/react";
 import { Navbar } from "./components/navbar";
 
 import "~/tailwind.css";
-import { LinksFunction } from "@remix-run/node";
+import { LinksFunction, json } from "@remix-run/node";
 import { Footer } from "./components/footer";
+import { CONFIG } from "./lib/config.server";
 
 export const links: LinksFunction = () => {
   return [
@@ -17,7 +19,12 @@ export const links: LinksFunction = () => {
   ]
 }
 
+export function loader() {
+  return json({ config: CONFIG })
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
+  const {config} = useLoaderData<typeof loader>()
   return (
     <html lang="en">
       <head>
@@ -29,12 +36,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body className="bg-slate-100">
         <div className="container">
           <div className="mt-4">
-          <Navbar />
+            <Navbar />
           </div>
           <main className="mt-8">
             {children}
           </main>
-          <Footer />
+          <Footer links={config.footer.links} />
           <ScrollRestoration />
           <Scripts />
         </div>
