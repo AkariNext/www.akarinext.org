@@ -53,7 +53,7 @@ export function Footer({ links }: Props) {
                 </NavigationMenu>
             </div>
             <div className="mt-4">
-                &copy; 2024 AkariNext Allrights reserved.
+                &copy; 2024 AkariNext
             </div>
         </footer>
     )
