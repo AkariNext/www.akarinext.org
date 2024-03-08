@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: akarinext-web
-        image: ghcr.io/akarinext/www.akarinext.org:sha-b2ae06e
+        image: ghcr.io/akarinext/www.akarinext.org:latest
         ports:
         - containerPort: 3000
 ---
