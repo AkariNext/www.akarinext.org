@@ -1,0 +1,35 @@
+.mdx-center {
+    @apply flex;
+}
+
+.mdx {
+    @apply max-w-screen-sm m-auto leading-[1.7];
+}
+
+.mdx > h1 {
+    @apply text-4xl mb-4;
+}
+
+.mdx > h2 {
+    @apply text-3xl mt-8 mb-4;
+}
+
+.mdx > h3 {
+    @apply text-2xl mt-7 mb-4;
+}
+
+.mdx > a {
+    @apply text-blue-500 hover:underline;
+}
+
+.mdx > p {
+    @apply text-base my-4 text-zinc-800
+}
+
+.mdx > ol {
+    @apply list-decimal pl-4;
+}
+
+.mdx > ul {
+    @apply list-disc pl-4 mb-4;
+}
