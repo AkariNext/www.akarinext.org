@@ -10,8 +10,9 @@ type Props = {
 }
 
 export function Footer({ links }: Props) {
+
     return (
-        <footer className="mb-4">
+        <footer className="mt-8">
             <div className="flex h-16 items-center rounded-xl p-4 bg-white sticky top-0 mb-4">
                 <NavigationMenu>
                     <NavigationMenuList>
@@ -51,7 +52,9 @@ export function Footer({ links }: Props) {
                     </NavigationMenuList>
                 </NavigationMenu>
             </div>
-            © 2024 AkariNext Allrights reserved.
+            <div className="mt-4">
+                &copy; 2024 AkariNext Allrights reserved.
+            </div>
         </footer>
     )
 }
