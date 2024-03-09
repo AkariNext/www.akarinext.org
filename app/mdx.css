@@ -6,38 +6,42 @@
     @apply max-w-screen-sm m-auto leading-[1.7];
 }
 
-.mdx > h1 {
+.mdx h1 {
     @apply text-4xl mb-4;
 }
 
-.mdx > h2 {
+.mdx h2 {
     @apply text-3xl mt-8 mb-4;
 }
 
-.mdx > h3 {
+.mdx h3 {
     @apply text-2xl mt-7 mb-4;
 }
 
-.mdx > h4 {
+.mdx h4 {
     @apply text-xl mt-7 mb-4;
 }
 
-.mdx > * > img {
+.mdx ol, ul {
+    @apply pl-4;
+}
+
+.mdx ul > li {
+    @apply list-disc mt-2;
+}
+
+.mdx > img {
     @apply mt-7 mb-4
 }
 
-.mdx > * > a {
+.mdx a {
     @apply text-blue-500 hover:underline;
 }
 
-.mdx > * > p {
-    @apply text-base my-4 text-zinc-800
+.mdx p {
+    @apply text-base mt-4 text-zinc-800
 }
 
-.mdx > * > ol {
-    @apply list-decimal pl-4;
-}
-
-.mdx > * > ul {
-    @apply list-disc pl-4 mb-4;
+.mdx ol > li {
+    @apply list-decimal;
 }
