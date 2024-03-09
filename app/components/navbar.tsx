@@ -18,7 +18,7 @@ export function Navbar() {
             <NavigationMenu className="hidden sm:block">
                 <NavigationMenuList>
                     <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                        <Link to="/">
+                        <Link to="/blog">
                             ブログ
                         </Link>
                     </NavigationMenuLink>
