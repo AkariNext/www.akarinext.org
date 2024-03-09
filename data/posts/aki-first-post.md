@@ -12,5 +12,4 @@ authors:
 
 ## 普段何してるの？
 
-普段は[Orange Kr](https://kr.akirin.xyz)というMisskey<small style="font-size: 8px">厳密にはそのフォークの[Ayuskey](https://go.akirin.xyz/ayuskey)</small>のインスタンスや、[RIkka Tube (仮)
-](https://pt.rikkalab.net)というPeerTubeインスタンスなどを管理しています。
+普段は[Orange Kr](https://kr.akirin.xyz)というMisskey<small style="font-size: 8px">厳密にはそのフォークの[Ayuskey](https://go.akirin.xyz/ayuskey)</small>のインスタンスや、[RIkka Tube (仮)](https://pt.rikkalab.net)というPeerTubeインスタンスなどを管理しています。
