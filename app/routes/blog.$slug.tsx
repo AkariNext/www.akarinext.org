@@ -3,6 +3,8 @@ import invariant from "tiny-invariant";
 import { getBlogPost } from "../lib/blog.server";
 import { useLoaderData } from "@remix-run/react";
 
+import "../mdx.css";
+
 export async function loader({ params, request }: LoaderFunctionArgs) {
     let { slug } = params;
     invariant(!!slug, "Expected slug to be defined");
