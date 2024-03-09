@@ -1,9 +1,9 @@
-import { json } from "@remix-run/node";
+import { LoaderFunctionArgs, json } from "@remix-run/node";
 import { ServiceCard } from "../components/ServiceCard";
-import { useLoaderData } from "@remix-run/react";
 import { SERVICES } from "~/lib/services.server";
+import { useLoaderData } from "@remix-run/react";
 
-export function loader() {
+export async function loader(_: LoaderFunctionArgs) {
     return json({ services: SERVICES });
 }
 
