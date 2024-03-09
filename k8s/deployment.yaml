@@ -25,6 +25,7 @@ spec:
       containers:
       - name: akarinext-web
         image: ghcr.io/akarinext/www.akarinext.org:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 3000
 ---
