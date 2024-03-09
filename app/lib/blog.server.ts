@@ -29,16 +29,12 @@ interface MarkdownPost {
     date: Date;
     dateDisplay: string;
     draft?: boolean;
-    image: string;
-    imageAlt: string;
+    image?: string;
+    imageAlt?: string;
     authors: string[];
     html: string;
 }
 
-interface BlogAuthor {
-    name: string;
-    avatar: string;
-}
 
 export interface BlogPost extends Omit<MarkdownPost, "authors"> {
     authors: TMember[];
@@ -62,8 +58,8 @@ function isValidMarkdownPostFrontmatter(obj: any): obj is MarkdownPost {
         obj.summary &&
         obj.date instanceof Date &&
         (typeof obj.dfraft === "undefined" || typeof obj.draft === "boolean") &&
-        obj.image &&
-        obj.imageAlt &&
+        (typeof obj.image === "undefined" || typeof obj.image === "string") &&
+        (typeof obj.imageAlt === "undefined" || typeof obj.imageAlt === "string") &&
         Array.isArray(obj.authors)
     );
 }
@@ -86,6 +82,8 @@ export async function getBlogPost(slug: string): Promise<BlogPost> {
 
     let post: BlogPost = {
         ...attributes,
+        image: attributes.image || "https://picsum.photos/200/300",
+        imageAlt: attributes.imageAlt || "",
         authors: validatedAuthors.map(getAuthor).filter((a): a is TMember => !!a),
         dateDisplay: DateTime.fromJSDate(attributes.date)
             .plus(new Date().getTimezoneOffset()) // タイムゾーンを考慮する
