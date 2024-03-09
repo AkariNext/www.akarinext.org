@@ -10,8 +10,8 @@ import { ServiceCard } from "~/components/ServiceCard";
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
+    { title: "AkariNext" },
+    { name: "description", content: "開発からゲームまでもっと楽しいネットライフをAkariNextで！" },
   ];
 };
 
