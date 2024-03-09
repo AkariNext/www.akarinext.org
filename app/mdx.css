@@ -18,18 +18,26 @@
     @apply text-2xl mt-7 mb-4;
 }
 
-.mdx > a {
+.mdx > h4 {
+    @apply text-xl mt-7 mb-4;
+}
+
+.mdx > * > img {
+    @apply mt-7 mb-4
+}
+
+.mdx > * > a {
     @apply text-blue-500 hover:underline;
 }
 
-.mdx > p {
+.mdx > * > p {
     @apply text-base my-4 text-zinc-800
 }
 
-.mdx > ol {
+.mdx > * > ol {
     @apply list-decimal pl-4;
 }
 
-.mdx > ul {
+.mdx > * > ul {
     @apply list-disc pl-4 mb-4;
 }
