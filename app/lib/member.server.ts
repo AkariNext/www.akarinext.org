@@ -1,7 +1,7 @@
 import membersYamlFile from '../../data/members.yaml?raw'
 import yaml from "yaml"
 
-interface TMember {
+export interface TMember {
     name: string;
     avatar: string;
     socials: {
