@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: akarinext-web-image-updater
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+    argocd-image-updater.argoproj.io/image-list: akarinext-web-image-updater=ghcr.io/akarinext/www.akarinext.org
+    argocd-image-updater.argoproj.io/app.update-strategy: latest
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/AkariNext/www.akarinext.org
+    targetRevision: master
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: akarinext-web
