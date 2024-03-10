@@ -38,3 +38,13 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      - name: Set short git commit SHA
+        id: vars
+        run: |
+          calculatedSha=$(git rev-parse --short ${{ github.sha }})
+          echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
+      - uses: Charlyzzz/update-k8s-image@v1.7.1
+        with:
+          manifest-path: k8s/deployment.yaml
+          new-image-tag: sha-{{ env.COMMIT_SHORT_SHA }}
+          name: akarinext-web
