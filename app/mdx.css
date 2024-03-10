@@ -3,7 +3,7 @@
 }
 
 .mdx {
-    @apply max-w-screen-sm m-auto leading-[1.7];
+    @apply bg-slate-50 p-8 rounded-lg max-w-screen-md m-auto leading-[1.7];
 }
 
 .mdx h1 {
