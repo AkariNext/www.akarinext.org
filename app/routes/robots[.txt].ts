@@ -2,7 +2,7 @@ export async function loader() {
     const robotText = `User-agent: *
 Allow: /
 
-Sitemap https://www.akarinext.org/sitemaps.xml
+Sitemap: https://www.akarinext.org/sitemap.xml
     `
 
     return new Response(robotText, {
