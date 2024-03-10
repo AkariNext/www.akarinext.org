@@ -51,7 +51,7 @@ export default function Index() {
           mt-8
         bg-white
           rounded-3xl
-          p-4
+          p-8
 
           before:shadow
           before:-z-10
@@ -72,8 +72,8 @@ export default function Index() {
           after:rounded-full
         '>
           <div className="text-slate-700 text-3xl font-bold z-40">AkariNextって何！？</div>
-          <div className="mt-8 px-8">
-            AkariNextはゲームやプログラミングといった開発に興味を持つ人たちが集まるコミュニティーです。
+          <div className="mt-8">
+            AkariNextはゲームやプログラミングといった開発に興味を持つ人たちが集まっているコミュニティーです。
 
             主にDiscordを使ってコミュニケーションを取りながら、ゲームをしたり、開発をしたりしています。
             <br></br>
