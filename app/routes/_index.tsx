@@ -1,5 +1,5 @@
 import { json, type MetaFunction } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
@@ -33,9 +33,9 @@ export default function Index() {
           <p className="mt-4">AkariNextで一緒に楽しくゲームや開発を行いましょう！</p>
 
           <div className="pt-8">
-            <div>
+            <Link to="/blog/">
               <Button size={"lg"} className="rounded-3xl">Read the blog</Button>
-            </div>
+            </Link>
             <div className="pt-4">
               <Button variant={"outline"} size={"lg"} className="rounded-3xl">Join us</Button>
             </div>
