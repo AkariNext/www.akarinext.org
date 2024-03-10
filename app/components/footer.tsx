@@ -18,7 +18,7 @@ export function Footer({ links }: Props) {
                     <NavigationMenuList>
                         <NavigationMenuItem className="text-2xl font-bold">
                             <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                                <Link to="/">
+                                <Link to="/" aria-label="トップページに移動する">
                                     AkariNext
                                 </Link>
                             </NavigationMenuLink>
@@ -34,7 +34,7 @@ export function Footer({ links }: Props) {
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                                                    <a href={link.link} target="_blank" rel="noreferrer noopener" >{getSocialIcon(link.type)}</a>
+                                                    <a href={link.link} target="_blank" rel="noreferrer noopener" aria-label={`${link.type} へ移動する`}>{getSocialIcon(link.type)}</a>
                                                 </NavigationMenuLink>
                                             </TooltipTrigger>
                                             <TooltipContent>
@@ -44,7 +44,7 @@ export function Footer({ links }: Props) {
                                     </TooltipProvider>
                                 ) : (<>
                                     <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                                        <a href={link.link} target="_blank" rel="noreferrer noopener" >{getSocialIcon(link.type)}</a>
+                                        <a href={link.link} target="_blank" rel="noreferrer noopener" aria-label={`${link.type} へ移動する`}>{getSocialIcon(link.type)}</a>
                                     </NavigationMenuLink>
                                 </>)
                             ))

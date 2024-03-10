@@ -16,7 +16,11 @@ export const meta: MetaFunction = () => {
 };
 
 export function loader() {
-  return json({ members: MEMBERS, services: SERVICES.slice(0, 3) });
+  return json({ members: MEMBERS, services: SERVICES.slice(0, 3) }, {
+    headers: {
+      "Cache-Control": "max-age=300"
+    }
+  });
 }
 
 
@@ -33,7 +37,7 @@ export default function Index() {
           <p className="mt-4">AkariNextで一緒に楽しくゲームや開発を行いましょう！</p>
 
           <div className="pt-8">
-            <Link to="/blog/">
+            <Link to="/blog/" aria-label="ブログを読む">
               <Button size={"lg"} className="rounded-3xl">Read the blog</Button>
             </Link>
             <div className="pt-4">
@@ -42,7 +46,7 @@ export default function Index() {
           </div>
         </div>
         <div className="order-1 sm:order-1">
-          <img src="/party.svg" />
+          <img src="/party.svg" alt=""/>
         </div>
       </div>
       <div className="relative">
@@ -93,7 +97,7 @@ export default function Index() {
               <div className="mt-2 text-slate-700 text-lg font-bold">{member.name}</div>
               <div className="flex flex-row gap-2">
                 {member.socials.map((social, index) => (
-                  <a href={social.url} key={index} target="_blank" rel="noreferrer noopener">
+                  <a href={social.url} key={index} target="_blank" rel="noreferrer noopener" aria-label={`${social.type}のリンクへ移動する`}>
                     {social.alt ? <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
