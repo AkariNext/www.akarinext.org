@@ -9,7 +9,7 @@ import {
 import { Navbar } from "./components/navbar";
 
 import "~/tailwind.css";
-import { LinksFunction, json } from "@remix-run/node";
+import { LinksFunction, MetaFunction, json } from "@remix-run/node";
 import { Footer } from "./components/footer";
 import { CONFIG } from "./lib/config.server";
 
@@ -19,8 +19,19 @@ export const links: LinksFunction = () => {
   ]
 }
 
+export const meta: MetaFunction = () => {
+  return [
+    { title: "AkariNext" },
+    { name: "description", content: "開発からゲームまでもっと楽しいネットライフをAkariNextで！" },
+  ];
+};
+
 export function loader() {
-  return json({ config: CONFIG })
+  return json({ config: CONFIG }, {
+    headers: {
+      "Cache-Control": "max-age=300"
+    }
+  })
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {

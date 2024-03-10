@@ -8,13 +8,6 @@ import { MEMBERS } from "~/lib/member.server";
 import { SERVICES } from "~/lib/services.server";
 import { ServiceCard } from "~/components/ServiceCard";
 
-export const meta: MetaFunction = () => {
-  return [
-    { title: "AkariNext" },
-    { name: "description", content: "開発からゲームまでもっと楽しいネットライフをAkariNextで！" },
-  ];
-};
-
 export function loader() {
   return json({ members: MEMBERS, services: SERVICES.slice(0, 3) }, {
     headers: {
@@ -46,7 +39,7 @@ export default function Index() {
           </div>
         </div>
         <div className="order-1 sm:order-1">
-          <img src="/party.svg" alt=""/>
+          <img src="/party.svg" alt="" />
         </div>
       </div>
       <div className="relative">
@@ -127,7 +120,7 @@ export default function Index() {
           </div>
 
           <p className="text-slate-600 text-center mt-4">
-            これらのサービスはAkariNextが運営するサービスのほんのすこしです。詳しくはREAD MOREからご覧ください！
+            これらのサービスはAkariNextが運営するサービスのほんのすこしです。詳しくは VIEW ALL からご覧ください！
           </p>
 
           <div className="flex flex-wrap justify-center  gap-x-16 mt-8">
@@ -140,7 +133,9 @@ export default function Index() {
           </div>
           <div className="flex items-center flex-col">
             <div className="mt-4">
-              <Button size={"lg"} className="rounded-3xl">READ MORE</Button>
+              <Link to="/services/" aria-label="サービスを見る">
+                <Button size={"lg"} className="rounded-3xl">VIEW ALL</Button>
+              </Link>
             </div>
           </div>
         </div>
