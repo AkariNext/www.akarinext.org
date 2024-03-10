@@ -57,4 +57,4 @@ jobs:
           git checkout -b auto-update-kustomization
           git add kustomization.yaml
           git commit -m "chore: update kustomization.yaml"
-          git push origin auto-update-kustomization
+          git push origin auto-update-kustomization -f
