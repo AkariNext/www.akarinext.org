@@ -7,10 +7,14 @@ on:
       - '*'
 permissions:
   packages: write
+  contents: write
 jobs:
   publish_image:
     runs-on: ubuntu-latest
     steps:
+      - name: setup kustomize
+        uses: syntaqx/setup-kustomize@v1
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -42,13 +46,20 @@ jobs:
         with:
           submodules: true
           fetch-depth: 10
-      - name: Set short git commit SHA
-        id: vars
+      - name: kustomize
         run: |
-          calculatedSha=$(git rev-parse --short ${{ github.sha }})
-          echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
-      - uses: Charlyzzz/update-k8s-image@v1.7.1
+          new_sha=$(git rev-parse --short HEAD)
+          cd k8s
+          kustomize edit set image ghcr.io/akarinext/www.akarinext.org=ghcr.io/akarinext/www.akarinext.org:sha-$new_sha
+
+          git config --global user.name "akarinext"
+          git config --global user.email "akarinext@mail.teamblackcrystal.com"
+
+          git add kustomization.yaml
+          git commit -m "chore: update kustomization.yaml"
+      - name: Create new branch and push
+        uses: peterjgrainger/action-create-branch@v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          manifest-path: k8s/deployment.yaml
-          new-image-tag: sha-{{ env.COMMIT_SHORT_SHA }}
-          name: akarinext-web
+          branch: "production"
