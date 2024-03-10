@@ -1,5 +1,5 @@
 - name: yupix
-  avatar: https://s3.akarinext.org/misskey/*/460e0955-2c38-4247-9dc9-43fc4798a97b.jpg
+  avatar: /img/avatars/yupix.webp
   socials:
     - type: github
       url: https://github.com/yupix
@@ -15,7 +15,7 @@
     - 🛠️ Dev
     - 🎨 Designer
 - name: aki
-  avatar: https://s3.akarinext.org/misskey/*/71e07b53-4c33-43d8-b1f5-269c873dfd94.webp
+  avatar: /img/avatars/aki.webp
   socials:
     - type: github
       url: https://github.com/sousuke0422
@@ -30,7 +30,7 @@
     - 🪄 Mod
     - 🛠️ Dev
 - name: Alumis
-  avatar: https://s3.akarinext.org/misskey/*/b8c75c72-577d-4076-a80b-931bcb26a053.png
+  avatar: /img/avatars/alumis.webp
   socials:
     - type: steam
       url: https://steamcommunity.com/id/_Alumis_
