@@ -23,7 +23,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "front-matter": "^4.0.2",
-    "isbot": "^4.1.0",
+    "isbot": "^5.0.0",
     "lru-cache": "^10.2.0",
     "lucide-react": "^0.350.0",
     "luxon": "^3.4.4",
