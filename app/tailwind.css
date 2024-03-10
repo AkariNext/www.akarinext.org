@@ -2,6 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'moralerspace-neon';
+  src: url('/fonts/moralerspace/MoralerspaceNeonNF-Regular.ttf') format('truetype');
+}
+
+.yx-social-icon {
+  @apply text-slate-700;
+}
+
+pre {
+  @apply rounded-lg mt-8 p-4 overflow-x-scroll sm:overflow-x-auto;
+}
+
+code:not(pre code) {
+  @apply bg-slate-100 rounded-md p-1;
+}
+
+pre code {
+  counter-reset: step;
+  counter-increment: step 0;
+  font-family: moralerspace-neon;
+  font-size: 0.9rem;
+}
+
+pre code .line::before {
+  content: counter(step);
+  counter-increment: step;
+  width: 1rem;
+  margin-right: 1.5rem;
+  display: inline-block;
+  text-align: right;
+  color: rgba(115,138,148,.4)
+}
+
 .ball::before {
   background:radial-gradient(#2290ff 1px, transparent 1px);
   background-size: 10px 10px;
