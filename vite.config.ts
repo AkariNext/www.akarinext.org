@@ -14,5 +14,7 @@ export default defineConfig({
       remarkFrontmatter,
       remarkMdxFrontmatter,
     ]
-  }), remix(), tsconfigPaths()],
+  }), remix(
+    { serverModuleFormat: 'esm', }
+  ), tsconfigPaths()],
 });
