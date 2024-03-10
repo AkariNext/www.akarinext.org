@@ -4,3 +4,7 @@ namespace: akarinext-web
 
 resources:
   - deployment.yaml
+
+images:
+- name: ghcr.io/akarinext/www.akarinext.org
+  newTag: latest
