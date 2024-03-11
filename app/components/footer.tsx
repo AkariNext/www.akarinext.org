@@ -1,9 +1,9 @@
 import { Link } from "@remix-run/react";
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, navigationMenuTriggerStyle } from "./ui/navigation-menu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { TConfig } from "~/lib/config.server";
 import { PickType } from "~/lib/helper.server";
 import { getSocialIcon } from "~/lib/utils";
+import EasyTooltip from "./Tooltip";
 
 type Props = {
     links: PickType<PickType<TConfig, "footer">, "links">;
@@ -30,22 +30,16 @@ export function Footer({ links }: Props) {
                         {
                             links.map((link, index) => (
                                 link.alt ? (
-                                    <TooltipProvider key={index}>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                                                    <a href={link.link} target="_blank" rel="noreferrer noopener" aria-label={`${link.type} へ移動する`}>{getSocialIcon(link.type)}</a>
-                                                </NavigationMenuLink>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>{link.alt}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
+                                    <EasyTooltip key={index} tooltip={link.alt}>
+                                        <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                                            <a href={link.link} target="_blank" rel="noreferrer noopener" aria-label={`${link.type} へ移動する`}>{getSocialIcon(link.type)}</a>
+                                        </NavigationMenuLink>
+                                    </EasyTooltip>
                                 ) : (
                                     <NavigationMenuLink key={index} className={navigationMenuTriggerStyle()} asChild>
                                         <a href={link.link} target="_blank" rel="noreferrer noopener" aria-label={`${link.type} へ移動する`}>{getSocialIcon(link.type)}</a>
-                                    </NavigationMenuLink>)
+                                    </NavigationMenuLink>
+                                )
                             ))
                         }
                     </NavigationMenuList>

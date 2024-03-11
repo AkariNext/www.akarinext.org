@@ -1,12 +1,12 @@
-import { json, type MetaFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
 import { getSocialIcon } from "~/lib/utils";
 import { MEMBERS } from "~/lib/member.server";
 import { SERVICES } from "~/lib/services.server";
 import { ServiceCard } from "~/components/ServiceCard";
+import EasyTooltip from "~/components/Tooltip";
 
 export function loader() {
   return json({ members: MEMBERS, services: SERVICES.slice(0, 3) }, {
@@ -91,16 +91,10 @@ export default function Index() {
               <div className="flex flex-row gap-2">
                 {member.socials.map((social, index) => (
                   <a href={social.url} key={index} target="_blank" rel="noreferrer noopener" aria-label={`${social.type}のリンクへ移動する`}>
-                    {social.alt ? <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          {getSocialIcon(social.type)}
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{social.alt}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider> : getSocialIcon(social.type)}
+                    {social.alt ?
+                      <EasyTooltip tooltip={social.alt}>
+                        {getSocialIcon(social.type)}
+                      </EasyTooltip> : getSocialIcon(social.type)}
                   </a>
                 ))}
               </div>
