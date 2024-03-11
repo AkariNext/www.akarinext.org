@@ -26,4 +26,5 @@ jobs:
         path: |
           playwright-report/
           screenshots/
+        compression-level: 9
         retention-days: 30
