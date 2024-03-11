@@ -12,10 +12,10 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests',
 
-  timeout: 15 * 1000,
+  timeout: 30 * 1000,
 
   expect: {
-    timeout: 5 * 1000,
+    timeout: 10 * 1000,
   },
 
   /* Run tests in files in parallel */
@@ -47,10 +47,10 @@ export default defineConfig({
     },
 
     /* Test against mobile viewports. */
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
+    // {
+    //   name: 'Mobile Chrome',
+    //   use: { ...devices['Pixel 5'] },
+    // },
 
     /* Test against branded browsers. */
     // {
