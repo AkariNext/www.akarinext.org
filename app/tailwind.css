@@ -76,23 +76,7 @@ pre code .line::before {
   }
 }
 
-@media all and (min-width: 1024px) and (max-width: 1280px) {
-  body>container {
-    @apply h-screen w-full max-w-screen-lg;
-  }
-}
 
-@media all and (min-width: 768px) and (max-width: 1024px) {
-  body>* {
-    @apply h-screen w-full max-w-screen-md;
-  }
-}
-
-@media all and (min-width: 480px) and (max-width: 768px) {
-  body>* {
-    @apply h-screen w-full max-w-screen-sm;
-  }
-}
 
 @media all and (max-width: 480px) {}
 

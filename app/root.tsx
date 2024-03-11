@@ -46,18 +46,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className="bg-slate-100">
-        <div className="container">
-          <div className="mt-4">
-            <Navbar />
+      <body className="bg-slate-100 max-w-screen-sm sm:max-w-screen-lg w-full mx-auto">
+          <div className="px-4 sm:px-8">
+            <div className="mt-4">
+              <Navbar />
+            </div>
+            <main className="mt-8">
+              {children}
+            </main>
+            <Footer links={config.footer.links} />
           </div>
-          <main className="mt-8">
-            {children}
-          </main>
-          <Footer links={config.footer.links} />
-          <ScrollRestoration />
-          <Scripts />
-        </div>
+        <ScrollRestoration />
+        <Scripts />
       </body>
     </html>
   );
