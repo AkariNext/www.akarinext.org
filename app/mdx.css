@@ -26,11 +26,11 @@
     @apply pl-4;
 }
 
-.mdx ul > li {
+.mdx ul li {
     @apply list-disc mt-2;
 }
 
-.mdx > img {
+.mdx img {
     @apply mt-7 mb-4
 }
 
