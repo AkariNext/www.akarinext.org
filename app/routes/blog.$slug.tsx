@@ -58,8 +58,8 @@ export default function BlogPost() {
                         <div className="py-2 h-full">
                             <div>{author.name}</div>
                             <div className="flex flex-wrap pt-2">
-                                {author.socials.map((social) => (
-                                    <a href={social.url} target="_blank" rel="noopener noreferrer" className="mr-4">
+                                {author.socials.map((social, index) => (
+                                    <a key={index} href={social.url} target="_blank" rel="noopener noreferrer" className="mr-4">
                                         {getSocialIcon(social.type, { size: 16 })}
                                     </a>
                                 ))}
