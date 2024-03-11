@@ -42,11 +42,10 @@ export function Footer({ links }: Props) {
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
-                                ) : (<>
-                                    <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                                ) : (
+                                    <NavigationMenuLink key={index} className={navigationMenuTriggerStyle()} asChild>
                                         <a href={link.link} target="_blank" rel="noreferrer noopener" aria-label={`${link.type} へ移動する`}>{getSocialIcon(link.type)}</a>
-                                    </NavigationMenuLink>
-                                </>)
+                                    </NavigationMenuLink>)
                             ))
                         }
                     </NavigationMenuList>
