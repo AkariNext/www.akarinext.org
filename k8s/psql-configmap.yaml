@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: akarinext-web-postgres-secret
+  namespace: akarinext-web
+  labels:
+    app: akarinext-web-postgres
+data:
+  POSTGRES_DB: akarinext-web
+  POSTGRES_USER: akarinext-web
+  POSTGRES_PASSWORD: SecurePassword
