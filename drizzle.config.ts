@@ -1,5 +1,9 @@
 import 'dotenv/config';
 import type { Config } from "drizzle-kit";
+import { initEnv } from '~/lib/env.server';
+
+
+initEnv();  // envが正しく設定されているかをチェックする
 
 export default {
     schema: "src/schema.ts",
