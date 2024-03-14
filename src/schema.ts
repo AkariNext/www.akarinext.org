@@ -1,8 +1,9 @@
 import { relations } from "drizzle-orm"
-import { integer, pgTable, serial, text, uuid } from "drizzle-orm/pg-core"
+import { pgTable, text, varchar } from "drizzle-orm/pg-core"
+import { createId } from '@paralleldrive/cuid2';
 
 export const users = pgTable("users", {
-    id: uuid("id").primaryKey(),
+    id: varchar("id").primaryKey().$defaultFn(() => createId()),
     name: text("name"),
     email: text("email"),
     avatarUrl: text("avatar_url"),
@@ -13,10 +14,10 @@ export const usersRelations = relations(users, ({ many }) => ({
 }));
 
 export const files = pgTable("file", {
-    id: uuid("id"),
+    id: varchar("id").primaryKey().$defaultFn(() => createId()),
     name: text("name"),
     url: text("url"),
-    authorId: integer("author_id"),
+    authorId: varchar("author_id"),
 });
 
 export const filesRelations = relations(files, ({ one }) => ({
