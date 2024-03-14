@@ -8,8 +8,18 @@ AkariNextの公式サイトです。
 
 ## 実行方法（開発者向け）
 
+postgresqlが必要です
+
 ```
+cp .env.example .env
+
+# .envを編集
+
 npm install
 
 npm run dev
 ```
+
+## 本番環境
+
+k8s内にあるpsql-configmap.yamlのpassword等を変更したうえで apply しておく必要があります
