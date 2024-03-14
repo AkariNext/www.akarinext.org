@@ -6,16 +6,3 @@ declare module "*.mdx" {
     export const frontmatter: any;
     export default MDXComponent;
   }
-
-  declare global {
-    namespace NodeJS {
-      interface ProcessEnv {
-        POSTGRES_USER: string;
-        POSTGRES_PASSWORD: string;
-        POSTGRES_DB: string;
-        POSTGRES_PORT: string;
-      }
-    }
-  }
-
-  export {}
