@@ -12,6 +12,7 @@ const schema = z.object({
     S3_SECRET_KEY: z.string(),
     S3_REGION: z.string().default("us-east-1"),
     S3_ENDPOINT: z.string(),
+    S3_PREFIX: z.string().default("*"),
 });
 
 declare global {
