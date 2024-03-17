@@ -13,6 +13,7 @@ authors:
 - Rikkalab
   - [RIkka Tube (仮)](https://pt.rikkalab.net)
 - Orange Service <small style="font-size: .6rem">Powerd by Rikkalab</small>
+  - [Orange Ac](https://ac.akirin.xyz)
   - [Orange Kr](https://kr.akirin.xyz)
   - [Orange Ti](https://ti.akirin.xyz)
   - [Orange Xe](https://xe.akirin.xyz)
@@ -20,7 +21,11 @@ authors:
   - mail.teamblackcrystal.com
     - AkariNextの利用規約も適応
 
-最終更新日: 2024年03月09日
+初版公開日: 2024年03月09日
+
+最終更新日: 2024年03月17日
+
+- 2024年03月17日より運用を開始した[Orange Ac](https://ac.akirin.xyz)を追加
 
 ## 施行について
 
