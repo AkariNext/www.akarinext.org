@@ -6,8 +6,8 @@ const schema = z.object({
     POSTGRES_USER: z.string(),
     POSTGRES_PASSWORD: z.string(),
     POSTGRES_DB: z.string(),
-    POSTGRES_HOST: z.optional(z.string()),
-    POSTGRES_PORT: z.optional(z.string()),
+    POSTGRES_HOST: z.optional(z.string()).default("akarinext-web-pg-rw.akarinext-web"),
+    POSTGRES_PORT: z.optional(z.string()).default("5432"),
 
     S3_BUCKET_NAME: z.string(),
     S3_ACCESS_KEY: z.string(),
