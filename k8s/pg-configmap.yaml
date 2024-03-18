@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: akarinext-web-pg-app
+  namespace: akarinext-web
+type: kubernetes.io/basic-auth
+data:
+  username: eXVwaXg= # yupix
+  password: base64 # password
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: akarinext-web-pg-superuser
+  namespace: akarinext-web
+type: kubernetes.io/basic-auth
+data:
+  username: cG9zdGdyZXM= # postgres
+  password: base64=

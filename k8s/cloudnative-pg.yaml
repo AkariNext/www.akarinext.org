@@ -1,0 +1,71 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: akarinext-web-pg
+  namespace: akarinext-web
+spec:
+  description: "database for akarinext-web"
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.1
+  instances: 3
+  startDelay: 300
+  stopDelay: 300
+  primaryUpdateStrategy: unsupervised
+
+  superuserSecret:
+    name: akarinext-web-pg-superuser
+
+  postgresql:
+    parameters:
+      timezone: 'Asia/Tokyo'
+    # pg_hba:
+    #   - host all all all md5
+
+  bootstrap:
+    initdb:
+      database: akarinext-web
+      owner: yupix
+      secret:
+        name: akarinext-web-pg-app
+
+  # postgresql:
+  #   pg_hba:
+  #     - host all all all md5
+
+  # superuserSecret:
+  #   name: db-superuser
+
+  # backup:
+    # barmanObjectStore:
+      # destinationPath: s3://bucket-name/backups
+      # endpointURL: https://s3-storage.address
+      # s3Credentials:
+        # accessKeyId:
+          # name: s3-creds
+          # key: ACCESS_KEY_ID
+        # secretAccessKey:
+          # name: s3-creds
+          # key: ACCESS_SECRET_KEY
+      # wal:
+        # compression: bzip2
+      # data:
+        # compression: bzip2
+    # retentionPolicy: "30d"
+
+  storage:
+    storageClass: nfs-client
+    size: 20Gi
+
+  resources:
+    requests:
+      memory: "800Mi"
+      cpu: "500m"
+    limits:
+      memory: "2000Mi"
+      cpu: "1000m"
+
+  monitoring:
+    enablePodMonitor: true
+
+  nodeMaintenanceWindow:
+    inProgress: false
+    reusePVC: false
