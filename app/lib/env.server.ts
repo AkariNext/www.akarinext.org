@@ -6,7 +6,7 @@ const schema = z.object({
     POSTGRES_USER: z.string(),
     POSTGRES_PASSWORD: z.string(),
     POSTGRES_DB: z.string(),
-    POSTGRES_HOST: z.string(),
+    POSTGRES_HOST: z.optional(z.string()),
     POSTGRES_PORT: z.optional(z.string()),
 
     S3_BUCKET_NAME: z.string(),

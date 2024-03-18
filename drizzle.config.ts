@@ -13,7 +13,7 @@ export default {
         user: process.env.POSTGRES_USER,
         password: process.env.POSTGRES_PASSWORD,
         database: process.env.POSTGRES_DB,
-        host: process.env.POSTGRES_HOST ? process.env.POSTGRES_HOST : "akarinext-web-postgres.akarinext-web",  // 開発環境ではホスト名を指定する
+        host: process.env.POSTGRES_HOST ? process.env.POSTGRES_HOST : "akarinext-web-pg-rw.akarinext-web",  // 開発環境ではホスト名を指定する
         port: process.env.POSTGRES_PORT ? parseInt(process.env.POSTGRES_PORT) : 5432,
 
     }
