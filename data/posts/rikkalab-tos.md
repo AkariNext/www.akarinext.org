@@ -12,7 +12,7 @@ authors:
 
 - Rikkalab
   - [RIkka Tube (仮)](https://pt.rikkalab.net)
-- Orange Service <small style="font-size: .6rem">Powerd by Rikkalab</small>
+- Orange Service <small>Powerd by Rikkalab</small>
   - [Orange Ac](https://ac.akirin.xyz)
   - [Orange Kr](https://kr.akirin.xyz)
   - [Orange Ti](https://ti.akirin.xyz)

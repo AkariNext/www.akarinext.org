@@ -22,6 +22,10 @@
     @apply text-xl mt-7 mb-4;
 }
 
+.mdx small {
+    @apply text-[0.675rem] text-zinc-600;
+}
+
 .mdx ol, ul {
     @apply pl-4;
 }
