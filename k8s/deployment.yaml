@@ -31,6 +31,13 @@ spec:
         envFrom:
         - secretRef:
             name: akarinext-web-config
+        resources:
+          requests:
+            memory: "800Mi"
+            cpu: "500m"
+          limits:
+            memory: "2000Mi"
+            cpu: "1000m"
 ---
 apiVersion: v1
 kind: Service

@@ -27,13 +27,6 @@ spec:
       secret:
         name: akarinext-web-pg-app
 
-  # postgresql:
-  #   pg_hba:
-  #     - host all all all md5
-
-  # superuserSecret:
-  #   name: db-superuser
-
   # backup:
     # barmanObjectStore:
       # destinationPath: s3://bucket-name/backups
