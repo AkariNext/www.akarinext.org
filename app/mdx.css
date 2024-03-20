@@ -6,6 +6,10 @@
     @apply bg-slate-50 p-4 sm:p-8 rounded-lg max-w-screen-sm sm:max-w-screen-md m-auto leading-[1.7];
 }
 
+.mdx h2, h3, h4 {
+    @apply border-l-4 border-sky-500 py-4 pl-4 font-bold text-slate-700;
+}
+
 .mdx h1 {
     @apply text-4xl mb-4;
 }
@@ -27,7 +31,7 @@
 }
 
 .mdx ol, ul {
-    @apply pl-4;
+    @apply pl-12;
 }
 
 .mdx ul li {
@@ -35,7 +39,7 @@
 }
 
 .mdx img {
-    @apply mt-7 mb-4
+    @apply mt-7 mb-4;
 }
 
 .mdx a {
@@ -43,9 +47,13 @@
 }
 
 .mdx p {
-    @apply text-base mt-4 text-zinc-800
+    @apply text-base mt-4 text-zinc-800;
 }
 
 .mdx ol > li {
     @apply list-decimal;
+}
+
+.mdx .friendly ol > li {
+    @apply list-decimal text-sky-500 text-2xl marker:font-bold;
 }

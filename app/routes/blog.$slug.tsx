@@ -49,7 +49,7 @@ export default function BlogPost() {
         <div className="mdx">
             <div className="text-2xl mb-8 text-center">{post.title}</div>
             <div className="text-center">{post.dateDisplay}</div>
-            <div dangerouslySetInnerHTML={{ __html: post.html }} className="mdx" />
+            <div dangerouslySetInnerHTML={{ __html: post.html }}  />
 
             <div className="border-t mt-8 block">
                 {post.authors.map((author) => (
