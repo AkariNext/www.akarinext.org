@@ -6,7 +6,9 @@
     @apply bg-slate-50 p-4 sm:p-8 rounded-lg max-w-screen-sm sm:max-w-screen-md m-auto leading-[1.7];
 }
 
-.mdx h2, h3, h4 {
+.mdx h2,
+.mdx h3,
+.mdx h4 {
     @apply border-l-4 border-sky-500 py-4 pl-4 font-bold text-slate-700;
 }
 
@@ -30,7 +32,7 @@
     @apply text-[0.675rem] text-zinc-600;
 }
 
-.mdx ol, ul {
+.mdx ol, .mdx ul {
     @apply pl-12;
 }
 
