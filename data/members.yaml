@@ -11,9 +11,9 @@
       url: https://nr.akarinext.org/@yupix
       alt: Misskey
   roles:
-    - 🪄 Mod
-    - 🛠️ Dev
-    - 🎨 Designer
+    - mod
+    - dev
+    - designer
 - name: aki
   avatar: /img/avatars/aki.webp
   socials:
@@ -27,8 +27,8 @@
       url: https://kr.akirin.xyz/@aki
       alt: Misskey
   roles:
-    - 🪄 Mod
-    - 🛠️ Dev
+    - mod
+    - dev
 - name: Alumis
   avatar: /img/avatars/alumis.webp
   socials:
@@ -37,11 +37,11 @@
     - type: web
       url: https://nr.akarinext.org/@alumis
   roles:
-    - 🪄 Mod
+    - mod
 - name: いかろす
   avatar: https://cdn.discordapp.com/avatars/344813294558642187/2c3d58e3bf268c39f9927bd6eff2b3a1.webp
   socials:
     - type: steam
       url: https://steamcommunity.com/profiles/76561198831843914
   roles:
-    - 🪄 Mod
+    - mod
