@@ -7,6 +7,7 @@ import { MEMBERS } from "~/lib/member.server";
 import { SERVICES } from "~/lib/services.server";
 import { ServiceCard } from "~/components/ServiceCard";
 import EasyTooltip from "~/components/Tooltip";
+import { MemberCard } from "~/components/MemberCard";
 
 export function loader() {
   return json({ members: MEMBERS, services: SERVICES.slice(0, 3) }, {
@@ -85,23 +86,7 @@ export default function Index() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 mt-8 gap-8">
           {displayMembers.map((member) => (
-            <div key={member.name} className="flex justify-center items-center flex-col bg-slate-200 rounded-lg p-8">
-              <img src={member.avatar} className="h-24 rounded-lg" alt="" />
-              <div className="mt-2 text-slate-700 text-lg font-bold">{member.name}</div>
-              <div className="flex flex-row gap-2">
-                {member.socials.map((social, index) => (
-                  <a href={social.url} key={index} target="_blank" rel="noreferrer noopener" aria-label={`${social.type}のリンクへ移動する`}>
-                    {social.alt ?
-                      <EasyTooltip tooltip={social.alt}>
-                        {getSocialIcon(social.type)}
-                      </EasyTooltip> : getSocialIcon(social.type)}
-                  </a>
-                ))}
-              </div>
-              <div className="flex gap-1 flex-row flex-wrap border-t pt-2 mt-2">
-                {member.roles.map((role, index) => <Badge key={index}>{role}</Badge>)}
-              </div>
-            </div>
+            <MemberCard key={member.name} member={member} />
           ))}
         </div>
       </div>
