@@ -4,58 +4,57 @@
 
 .mdx {
     @apply bg-slate-50 p-4 sm:p-8 rounded-lg max-w-screen-sm sm:max-w-screen-md m-auto leading-[1.7];
-}
 
-.mdx h2,
-.mdx h3,
-.mdx h4 {
-    @apply border-l-4 border-sky-500 py-4 pl-4 font-bold text-slate-700;
-}
 
-.mdx h1 {
-    @apply text-4xl mb-4;
-}
+    & h2, h3, h4 {
+        @apply border-l-4 border-sky-500 py-4 pl-4 font-bold text-slate-700;
+    }
 
-.mdx h2 {
-    @apply text-3xl mt-8 mb-4;
-}
+    & h1 {
+        @apply text-4xl mb-4;
+    }
 
-.mdx h3 {
-    @apply text-2xl mt-7 mb-4;
-}
+    & h2 {
+        @apply text-3xl mt-8 mb-4;
+    }
 
-.mdx h4 {
-    @apply text-xl mt-7 mb-4;
-}
+    & h3 {
+        @apply text-2xl mt-7 mb-4;
+    }
 
-.mdx small {
-    @apply text-[0.675rem] text-zinc-600;
-}
+    & h4 {
+        @apply text-xl mt-7 mb-4;
+    }
 
-.mdx ol, .mdx ul {
-    @apply pl-12;
-}
+    & small {
+        @apply text-[0.675rem] text-zinc-600;
+    }
 
-.mdx ul li {
-    @apply list-disc mt-2;
-}
+    & ol, ul {
+        @apply pl-12;
+    }
 
-.mdx img {
-    @apply mt-7 mb-4;
-}
+    & ul li {
+        @apply list-disc mt-2;
+    }
 
-.mdx a {
-    @apply text-blue-500 hover:underline;
-}
+    & img {
+        @apply mt-7 mb-4;
+    }
 
-.mdx p {
-    @apply text-base mt-4 text-zinc-800;
-}
+    & a {
+        @apply text-blue-500 hover:underline;
+    }
 
-.mdx ol > li {
-    @apply list-decimal;
-}
+    & p {
+        @apply text-base mt-4 text-zinc-800;
+    }
 
-.mdx .friendly ol > li {
-    @apply list-decimal text-sky-500 text-2xl marker:font-bold;
+    & ol > li {
+        @apply list-decimal;
+    }
+
+    & .friendly ol > li {
+        @apply list-decimal text-sky-500 text-2xl marker:font-bold;
+    }
 }
