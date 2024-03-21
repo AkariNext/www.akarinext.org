@@ -18,21 +18,21 @@ function SheetContentForMobile() {
 			<ul className="p-4">
 				<li>
 					<Button variant="outline" asChild className="w-full">
-						<Link to="/blog" aria-label="ブログページへ移動する">
+						<Link to="/blog" aria-label="ブログページへ移動する" prefetch='intent'>
 							ブログ
 						</Link>
 					</Button>
 				</li>
 				<li className="mt-4">
 					<Button variant="outline" asChild className="w-full">
-						<Link to="/services" aria-label="サービス一覧へ移動する">
+						<Link to="/services" aria-label="サービス一覧へ移動する" prefetch='intent'>
 							サービス
 						</Link>
 					</Button>
 				</li>
 				<li className="mt-4">
 					<Button asChild className="w-full">
-						<Link to="/tos" aria-label="利用規約ページへ移動する">
+						<Link to="/tos" aria-label="利用規約ページへ移動する" prefetch='intent'>
 							利用規約
 						</Link>
 					</Button>
@@ -61,7 +61,7 @@ export function Navbar() {
 							className={navigationMenuTriggerStyle()}
 							asChild
 						>
-							<Link to="/" aria-label="トップページへ移動する">
+							<Link to="/" aria-label="トップページへ移動する" prefetch='intent'>
 								AkariNext
 							</Link>
 						</NavigationMenuLink>
@@ -71,12 +71,12 @@ export function Navbar() {
 			<NavigationMenu className="hidden sm:block">
 				<NavigationMenuList>
 					<NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-						<Link to="/blog" aria-label="ブログページへ移動する">
+						<Link to="/blog" aria-label="ブログページへ移動する" prefetch='intent'>
 							ブログ
 						</Link>
 					</NavigationMenuLink>
 					<NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-						<Link to="/services" aria-label="サービス一覧へ移動する">
+						<Link to="/services" aria-label="サービス一覧へ移動する" prefetch='intent'>
 							サービス
 						</Link>
 					</NavigationMenuLink>
@@ -90,7 +90,7 @@ export function Navbar() {
 							asChild
 							aria-label="利用規約ページへ移動する"
 						>
-							<Link to="/tos">利用規約</Link>
+							<Link to="/tos" prefetch='intent'>利用規約</Link>
 						</NavigationMenuLink>
 					</NavigationMenuItem>
 					<NavigationMenuItem>

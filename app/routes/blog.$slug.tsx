@@ -57,10 +57,17 @@ export default function BlogPost() {
 			<div className="flex justify-center px-8 sm:px-0">
 				<div className="max-w-2xl w-full">
 					<div className="flex justify-center">
-						<img src={post.image} alt={post.title} className="aspect-square rounded-lg" />
+						<img
+							src={post.image}
+							alt={post.title}
+							className="aspect-square rounded-lg"
+							style={{ viewTransitionName: 'blog-image' }}
+						/>
 					</div>
-					<div className="text-4xl mt-8">{post.title}</div>
-					<div className="mt-2 mb-8">{post.dateDisplay}</div>
+					<div style={{ viewTransitionName: 'blog-title' }}>
+						<div className="text-4xl mt-8">{post.title}</div>
+						<div className="mt-2 mb-8">{post.dateDisplay}</div>
+					</div>
 				</div>
 			</div>
 			<div className="mdx">
