@@ -25,7 +25,7 @@ export default function Index() {
 		<div>
 			<div className="grid grid-cols-1  md:grid-cols-3 w-full  gap-y-4 md:gap-x-4 h-screen items-center">
 				<div className="h-96 col-span-2 rounded-lg flex flex-col p-8 order-2 sm:order-1">
-					<div className="text-4xl">Let's have fun and play funny!</div>
+					<div className="text-4xl">Let&apos;s have fun and play funny!</div>
 					<p className="mt-4">
 						AkariNextで一緒に楽しくゲームや開発を行いましょう！
 					</p>
@@ -131,7 +131,7 @@ export default function Index() {
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
 					<div className="w-full h-full bg-slate-200 rounded-lg p-8">
 						<div className="text-slate-700 text-2xl font-bold text-center">
-							PLAYING GAME'S
+							PLAYING GAME&apos;S
 						</div>
 					</div>
 					<div className="w-full h-full bg-slate-200 rounded-lg p-8">

@@ -6,7 +6,7 @@ import getWasm from 'shiki/wasm'
 let highlighter: Awaited<ReturnType<typeof getHighlighterCore>>;  // 何度も初期化しないためにキャッシュする
 let processor: Awaited<ReturnType<typeof getProcessor>>;  // 何度も初期化しないためにキャッシュする
 export async function getProcessor() {
-    let [
+    const [
         { unified },
         { default: remarkGfm },
         { default: remarkParse },
@@ -49,8 +49,8 @@ export async function getProcessor() {
 
 export async function processMarkdown(content: string) {
     processor = processor || (await getProcessor());
-    let { attributes, body } = parseFrontMatter(content);
-    let vfile = await processor.process(body);
-    let html = vfile.value.toString();
+    const { attributes, body } = parseFrontMatter(content);
+    const vfile = await processor.process(body);
+    const html = vfile.value.toString();
     return { attributes, body, html };
 }

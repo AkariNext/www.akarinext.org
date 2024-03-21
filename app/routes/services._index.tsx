@@ -1,9 +1,9 @@
-import { type LoaderFunctionArgs, type MetaFunction, json } from '@remix-run/node';
+import { type MetaFunction, json } from '@remix-run/node';
 import { ServiceCard } from '../components/ServiceCard';
 import { SERVICES } from '~/lib/services.server';
 import { useLoaderData } from '@remix-run/react';
 
-export async function loader(_: LoaderFunctionArgs) {
+export async function loader() {
 	return json({ services: SERVICES });
 }
 

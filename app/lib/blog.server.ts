@@ -65,22 +65,22 @@ function isValidMarkdownPostFrontmatter(obj: any): obj is MarkdownPost {
 }
 
 export async function getBlogPost(slug: string): Promise<BlogPost> {
-    let fondCache = postsCache.get(slug);
+    const fondCache = postsCache.get(slug);
     if (fondCache) return fondCache;
 
-    let contents = POSTS[slug];
+    const contents = POSTS[slug];
     if (!contents) throw new Response("Not Found", { status: 404 });
 
-    let { attributes, html } = await processMarkdown(contents);
+    const { attributes, html } = await processMarkdown(contents);
     invariant(isValidMarkdownPostFrontmatter(attributes), `Invalid frontmatter for ${slug}`);
-    let validatedAuthors = attributes.authors.filter((author: string) => AUTHORS.includes(author));
+    const validatedAuthors = attributes.authors.filter((author: string) => AUTHORS.includes(author));
     if (validatedAuthors.length === 0) {
         console.warn(`No valid authors found for ${slug}, falling back to the first author`);
     }
 
     attributes.authors = validatedAuthors;
 
-    let post: BlogPost = {
+    const post: BlogPost = {
         ...attributes,
         image: attributes.image || "https://picsum.photos/200/300",
         imageAlt: attributes.imageAlt || "",
@@ -97,16 +97,16 @@ export async function getBlogPost(slug: string): Promise<BlogPost> {
 }
 
 export async function getBlogPostListings() {
-    let slugs = Object.keys(POSTS);
-    let listings = []
+    const slugs = Object.keys(POSTS);
+    const listings = []
 
-    for (let slug of slugs) {
-        let { html, authors, ...listing } = await getBlogPost(slug);
+    for (const slug of slugs) {
+        const { ...listing } = await getBlogPost(slug);
         if (listing.draft === false) continue;
         listings.push({ slug, ...listing });
     }
 
     return listings
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .map(({ date, ...listing }) => listing);;
+    .map(({ ...listing }) => listing);
 }

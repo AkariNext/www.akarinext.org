@@ -1,4 +1,4 @@
-import { UploadHandler } from "@remix-run/node";
+import type { UploadHandler } from "@remix-run/node";
 import { convertToBuffer } from "./helper.server";
 import { objectStorage } from "./objectstorage";
 

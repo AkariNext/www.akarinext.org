@@ -9,7 +9,7 @@ import {
 import { Navbar } from "./components/navbar";
 
 import "~/tailwind.css";
-import { LinksFunction, MetaFunction, json } from "@remix-run/node";
+import { type LinksFunction, type MetaFunction, json } from "@remix-run/node";
 import { Footer } from "./components/footer";
 import { CONFIG } from "./lib/config.server";
 

@@ -8,7 +8,7 @@ export const connection = postgres({
     username: env.POSTGRES_USER,
     password: env.POSTGRES_PASSWORD,
     host: env.POSTGRES_HOST,
-    port: env.POSTGRES_PORT ? parseInt(env.POSTGRES_PORT) : 5432,
+    port: env.POSTGRES_PORT ? Number.parseInt(env.POSTGRES_PORT) : 5432,
 })
 
 export const db = drizzle(connection, { schema });
