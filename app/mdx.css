@@ -3,23 +3,23 @@
 }
 
 .mdx {
-    @apply bg-slate-50 p-4 sm:p-8 rounded-lg max-w-screen-sm sm:max-w-screen-md m-auto leading-[1.7];
+    @apply bg-slate-50 p-4 sm:p-8 rounded-lg max-w-screen-sm sm:max-w-screen-lg m-auto leading-[1.7];
 
 
-    & h2, h3, h4 {
+    & h1, h2, h3, h4 {
         @apply border-l-4 border-sky-500 py-4 pl-4 font-bold text-slate-700;
     }
 
     & h1 {
-        @apply text-4xl mb-4;
+        @apply text-3xl mb-4;
     }
 
     & h2 {
-        @apply text-3xl mt-8 mb-4;
+        @apply text-2xl mt-8 mb-4;
     }
 
     & h3 {
-        @apply text-2xl mt-7 mb-4;
+        @apply text-xl mt-7 mb-4;
     }
 
     & h4 {

@@ -1,6 +1,10 @@
 import invariant from 'tiny-invariant';
 import { useLoaderData } from '@remix-run/react';
-import { type LoaderFunctionArgs, type MetaFunction, json } from '@remix-run/node';
+import {
+	type LoaderFunctionArgs,
+	type MetaFunction,
+	json,
+} from '@remix-run/node';
 
 import '../mdx.css';
 import { getSocialIcon } from '~/lib/utils';
@@ -49,38 +53,47 @@ export default function BlogPost() {
 	const { post } = useLoaderData<typeof loader>();
 
 	return (
-		<div className="mdx">
-			<div className="text-2xl mb-8 text-center">{post.title}</div>
-			<div className="text-center">{post.dateDisplay}</div>
-			{/* biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation> */}
-			<div dangerouslySetInnerHTML={{ __html: post.html }} />
+		<div>
+			<div className="flex justify-center px-8 sm:px-0">
+				<div className="max-w-2xl w-full">
+					<div className="flex justify-center">
+						<img src={post.image} alt={post.title} className="aspect-square rounded-lg" />
+					</div>
+					<div className="text-4xl mt-8">{post.title}</div>
+					<div className="mt-2 mb-8">{post.dateDisplay}</div>
+				</div>
+			</div>
+			<div className="mdx">
+				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation> */}
+				<div dangerouslySetInnerHTML={{ __html: post.html }} />
 
-			<div className="border-t mt-8 block">
-				{post.authors.map((author) => (
-					<div key={author.name} className="flex items-stretch gap-4 mt-4">
-						<img
-							src={author.avatar}
-							alt={author.name}
-							className="w-16 h-16 rounded-full"
-						/>
-						<div className="py-2 h-full">
-							<div>{author.name}</div>
-							<div className="flex flex-wrap pt-2">
-								{author.socials.map((social, index) => (
-									<a
-										key={index}
-										href={social.url}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="mr-4"
-									>
-										{getSocialIcon(social.type, { size: 16 })}
-									</a>
-								))}
+				<div className="border-t mt-8 block">
+					{post.authors.map((author) => (
+						<div key={author.name} className="flex items-stretch gap-4 mt-4">
+							<img
+								src={author.avatar}
+								alt={author.name}
+								className="w-16 h-16 rounded-full"
+							/>
+							<div className="py-2 h-full">
+								<div>{author.name}</div>
+								<div className="flex flex-wrap pt-2">
+									{author.socials.map((social, index) => (
+										<a
+											key={index}
+											href={social.url}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="mr-4"
+										>
+											{getSocialIcon(social.type, { size: 16 })}
+										</a>
+									))}
+								</div>
 							</div>
 						</div>
-					</div>
-				))}
+					))}
+				</div>
 			</div>
 		</div>
 	);
