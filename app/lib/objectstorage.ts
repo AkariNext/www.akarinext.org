@@ -2,18 +2,19 @@ import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
 import { db } from "./db.server";
 import { files } from "src/schema";
 import { getMIMEType } from "./helper.server";
+import { env } from "./env.server";
 
 
 class ObjectStorage {
     private client: S3Client;
     constructor() {
         this.client = new S3Client({
-            region: process.env.S3_REGION,
+            region: env.S3_REGION,
             forcePathStyle: true,
-            endpoint: process.env.S3_ENDPOINT,
+            endpoint: env.S3_ENDPOINT,
             credentials: {
-                accessKeyId: process.env.S3_ACCESS_KEY,
-                secretAccessKey: process.env.S3_SECRET_KEY,
+                accessKeyId: env.S3_ACCESS_KEY,
+                secretAccessKey: env.S3_SECRET_KEY,
             }
         });
     }
@@ -27,11 +28,11 @@ class ObjectStorage {
             return await tx.insert(files).values({
                 name: filename,
                 authorId: userId,
-                url: `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET_NAME}/*${filename}`
+                url: `${env.S3_ENDPOINT}/${env.S3_BUCKET_NAME}/*${filename}`
             }).returning();
         })
 
-        await this.client.send(new PutObjectCommand({ Bucket: process.env.S3_BUCKET_NAME, Key: `${process.env.S3_PREFIX}/${createdFile[0].id}`, Body: data, ContentType: mime}));
+        await this.client.send(new PutObjectCommand({ Bucket: env.S3_BUCKET_NAME, Key: `${env.S3_PREFIX}/${createdFile[0].id}`, Body: data, ContentType: mime}));
     }
 }
 
