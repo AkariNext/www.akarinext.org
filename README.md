@@ -23,3 +23,7 @@ npm run dev
 ## 本番環境
 
 k8s内にあるpsql-configmap.yamlのpassword等を変更したうえで apply しておく必要があります
+
+```sh
+kubectl create secret generic akarinext-web-config --from-env-file=./.env
+```

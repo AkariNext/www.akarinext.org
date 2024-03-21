@@ -4,8 +4,7 @@ namespace: akarinext-web
 
 resources:
   - deployment.yaml
-  - psql.yaml
-  - psql-claim.yaml
+  - cloudnative-pg.yaml
 
 images:
 - name: ghcr.io/akarinext/www.akarinext.org

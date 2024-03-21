@@ -6,13 +6,15 @@ authors:
   - aki
 ---
 
+<div class="friendly">
+
 # 利用規約 (Rikkalab)
 
 本利用規約は以下のサービスに適応されます。
 
 - Rikkalab
   - [RIkka Tube (仮)](https://pt.rikkalab.net)
-- Orange Service <small style="font-size: .6rem">Powerd by Rikkalab</small>
+- Orange Service <small>Powerd by Rikkalab</small>
   - [Orange Ac](https://ac.akirin.xyz)
   - [Orange Kr](https://kr.akirin.xyz)
   - [Orange Ti](https://ti.akirin.xyz)
@@ -91,3 +93,5 @@ NSFWは"Not Safe for Work"の略であり"職場や学校などの環境下で�
 ## お問い合わせ
 
 本利用規約についてのお問い合わせは、`@aki@kr.akirin.xyz`へDMまたは、`aki at akirin.xyz`にメールでお願いします。(メールアドレスは正しい形式に書き換えてください)
+
+</div>
