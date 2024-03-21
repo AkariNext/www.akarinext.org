@@ -37,6 +37,7 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
 		{ name: 'twitter:title', content: post.title },
 		{ name: 'twitter:image', content: post.image },
 		{ name: 'og:title', content: post.title },
+		{ name: 'og:description', content: post.summary },
 		{ name: 'og:image', content: post.image },
 		{ name: 'og:type', content: 'article' },
 		{ name: 'og:site_name', content: 'AkariNext' },
