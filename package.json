@@ -35,7 +35,7 @@
     "front-matter": "^4.0.2",
     "isbot": "^5.0.0",
     "lru-cache": "^10.2.0",
-    "lucide-react": "^0.359.0",
+    "lucide-react": "^0.363.0",
     "luxon": "^3.4.4",
     "magika": "^0.2.12",
     "mime-types": "^2.1.35",
