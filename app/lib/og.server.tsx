@@ -2,6 +2,7 @@ import satori from 'satori';
 import moralerspaceData from '../../public/fonts/moralerspace/MoralerspaceNeonNF-Regular.ttf?arraybuffer';
 import socialBackground from '../routes/og.$slug/og-base.png?arraybuffer';
 import { getAuthor } from './member.server';
+import { arrayBufferToBase64 } from './utils';
 
 export async function createOgImageSVG(request: Request) {
 	const requestUrl = new URL(request.url);
@@ -11,7 +12,6 @@ export async function createOgImageSVG(request: Request) {
 	const { title, displayDate, authors } = await getDataFromParams(searchParams);
 
 	const primaryFont = 'moralerspace';
-
 
 	return satori(
 		<div
@@ -23,10 +23,10 @@ export async function createOgImageSVG(request: Request) {
 				width: '100vw',
 				height: '100vh',
 				backgroundRepeat: 'no-repeat',
-				backgroundImage: `url("data:image/png;base64,${_arrayBufferToBase64(
+				backgroundImage: `url("data:image/png;base64,${arrayBufferToBase64(
 					socialBackground,
 				)}")`,
-				padding: '125px 125px 10px 125px',
+				padding: '125px 125px 25px 125px',
 			}}
 		>
 			<div
@@ -38,26 +38,34 @@ export async function createOgImageSVG(request: Request) {
 					gap: 0,
 				}}
 			>
-				<p style={{ margin: 0, padding: 0 }}>{displayDate}</p>
-				<h1 style={{ fontWeight: 'bold', margin: '18px 0', padding: 0 }}>
+				<p style={{ margin: 0, padding: 0, fontSize: '2rem' }}>{displayDate}</p>
+				<h1
+					style={{
+						fontWeight: 'bold',
+						fontSize: '4rem',
+						margin: '18px 0',
+						padding: 0,
+					}}
+				>
 					{title}
 				</h1>
 			</div>
 			<div style={{ display: 'flex' }}>
 				{authors.map((authorName) => {
-					const author = getAuthor(authorName);
+                    const author = getAuthor(authorName);
 					return (
 						<div
-							style={{ display: 'flex', justifyContent: 'center' }}
+							style={{ display: 'flex', alignItems: "center", gap: 8 }}
 							key={authorName}
 						>
 							<img
-								src={`${siteUrl}${author!.avatar}`}
+								src={`${siteUrl}${author!.avatar.replace('webp', 'png')}`}
 								width={100}
 								height={100}
-                                aria-label='Author avatar'
+								aria-label="Author avatar"
+								style={{borderRadius: 50}}
 							/>
-							<p>{author!.name}</p>
+							<p style={{ fontSize: '2rem', margin:0, padding:0 }}>{author!.name}</p>
 						</div>
 					);
 				})}
@@ -81,14 +89,4 @@ export async function getDataFromParams(searchParams: URLSearchParams) {
 	const displayDate = searchParams.get('displayDate');
 	const authors = searchParams.get('authors')?.split(',') ?? [];
 	return { title, displayDate, authors };
-}
-
-function _arrayBufferToBase64(buffer: ArrayBuffer) {
-	let binary = '';
-	const bytes = new Uint8Array(buffer);
-	const len = bytes.byteLength;
-	for (let i = 0; i < len; i++) {
-		binary += String.fromCharCode(bytes[i]);
-	}
-	return btoa(binary);
 }
