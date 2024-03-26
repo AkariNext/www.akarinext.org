@@ -1,7 +1,7 @@
 import { LRUCache } from "lru-cache";
 import invariant from "tiny-invariant";
 import { processMarkdown } from "./md.server";
-import { MEMBERS, TMember } from "./member.server";
+import { MEMBERS, getAuthor, type TMember } from "./member.server";
 import { DateTime } from "luxon";
 
 const POSTS = Object.fromEntries(
@@ -47,9 +47,7 @@ const postsCache = new LRUCache<string, BlogPost>({
     }
 })
 
-function getAuthor(name: string) {
-    return MEMBERS.find((m) => m.name === name);
-}
+
 
 function isValidMarkdownPostFrontmatter(obj: any): obj is MarkdownPost {
     return (

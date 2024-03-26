@@ -1,5 +1,5 @@
 import { json } from '@remix-run/node';
-import { Link, NavLink, useLoaderData } from '@remix-run/react';
+import { NavLink, useLoaderData } from '@remix-run/react';
 import { getBlogPostListings } from '~/lib/blog.server';
 
 export async function loader() {

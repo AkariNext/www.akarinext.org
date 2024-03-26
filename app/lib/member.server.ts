@@ -52,3 +52,7 @@ function validateMember(member: any[]): TMember[] {
 }
 
 export const MEMBERS: TMember[] = validateMember(yaml.parse(membersYamlFile))
+
+export function getAuthor(name: string) {
+    return MEMBERS.find((m) => m.name === name);
+}

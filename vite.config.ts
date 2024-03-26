@@ -5,6 +5,7 @@ import remarkMdxFrontmatter from "remark-mdx-frontmatter";
 import { installGlobals } from "@remix-run/node";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import arraybuffer from "vite-plugin-arraybuffer";
 
 installGlobals();
 
@@ -14,7 +15,9 @@ export default defineConfig({
       remarkFrontmatter,
       remarkMdxFrontmatter,
     ]
-  }), remix(
+  }),
+  arraybuffer(),
+  remix(
     { serverModuleFormat: 'esm', }
   ), tsconfigPaths()],
 });

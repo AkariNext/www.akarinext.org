@@ -34,15 +34,25 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
 	const { siteUrl, post } = data || {};
 	if (!post) return [{ title: '404 Not Found', status: 404 }];
 
+	const ogImageUrl = siteUrl ? new URL(`${siteUrl}/og/${slug}`) : null;
+
+	if (ogImageUrl) {
+		ogImageUrl.searchParams.append('title', post.title);
+		ogImageUrl.searchParams.append('displayDate', post.dateDisplay);
+		ogImageUrl.searchParams.append('authors', post.authors.map((a) => a.name).join(','));
+	}
+
+	const socialImageUrl  = ogImageUrl?.toString();
+
 	return [
 		{ title: `${post.title} | AkariNext` },
-		{ name: 'twitter:card', content: 'summary' },
+		{ name: 'twitter:card', content: 'summary_large_image' },
 		{ name: 'twitter:site', content: '@AkariNext' },
 		{ name: 'twitter:title', content: post.title },
-		{ name: 'twitter:image', content: post.image },
+		{ name: 'twitter:image', content: socialImageUrl },
 		{ name: 'og:title', content: post.title },
 		{ name: 'og:description', content: post.summary },
-		{ name: 'og:image', content: post.image },
+		{ name: 'og:image', content: socialImageUrl },
 		{ name: 'og:type', content: 'article' },
 		{ name: 'og:site_name', content: 'AkariNext' },
 		{ name: 'og:locale', content: 'ja_JP' },
