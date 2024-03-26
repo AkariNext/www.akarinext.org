@@ -46,12 +46,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className="bg-slate-100 max-w-screen-sm sm:max-w-screen-lg w-full mx-auto">
+      <body className="bg-slate-100 w-full mx-auto max-w-screen-sm sm:max-w-screen-xl">
           <div className="px-4 sm:px-8">
-            <div className="mt-4">
-              <Navbar />
-            </div>
-            <main className="mt-8">
+            <Navbar />
+            <main className="mt-20 max-w-screen-sm sm:max-w-screen-lg mx-auto">
               {children}
             </main>
             <Footer links={config.footer.links} />

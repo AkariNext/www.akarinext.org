@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 import { IconMenu2 } from '@tabler/icons-react';
 import { Button } from './ui/button';
 import { useEffect, useState } from 'react';
+import { cn } from '~/lib/utils';
 
 function SheetContentForMobile() {
 	// 実質的にスマホ専用なのっでForMobile
@@ -42,7 +43,11 @@ function SheetContentForMobile() {
 	);
 }
 
-export function Navbar() {
+interface NavbarProps {
+	className?: string;
+}
+
+export function Navbar({ className }: NavbarProps) {
 	const navigation = useNavigation();
 	const [isOpenedSheet, setIsOpenedSheet] = useState<boolean>(false);
 
@@ -53,7 +58,7 @@ export function Navbar() {
 	}, [navigation.state]);
 
 	return (
-		<header className="flex h-16 justify-between items-center rounded-xl p-4 bg-white sticky top-0">
+		<header className={cn("flex h-16 justify-between items-center rounded-xl p-4 bg-white sticky top-8 z-10", className)}>
 			<NavigationMenu>
 				<NavigationMenuList>
 					<NavigationMenuItem className="text-2xl font-bold">

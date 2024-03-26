@@ -7,6 +7,10 @@
   src: url('/fonts/moralerspace/MoralerspaceNeonNF-Regular.ttf') format('truetype');
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 .yx-social-icon {
   @apply text-slate-700;
 }
