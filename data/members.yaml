@@ -39,7 +39,7 @@
   roles:
     - mod
 - name: いかろす
-  avatar: https://cdn.discordapp.com/avatars/344813294558642187/2c3d58e3bf268c39f9927bd6eff2b3a1.webp
+  avatar: /img/avatars/ikaros.webp
   socials:
     - type: steam
       url: https://steamcommunity.com/profiles/76561198831843914
