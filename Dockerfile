@@ -4,8 +4,8 @@ WORKDIR /usr/server
 
 
 COPY ./ .
-RUN corepack enable pnpm \
-    pnpm i
+RUN corepack enable
+RUN pnpm i
 
 
 ENV NODE_ENV=production
