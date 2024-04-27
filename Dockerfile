@@ -2,10 +2,9 @@ FROM node:lts-buster-slim as base
 
 WORKDIR /usr/server
 
-COPY ./package.json ./
-RUN npm install
 
 COPY ./ .
+RUN npm ci
 
 ENV NODE_ENV=production
 RUN npm run build
