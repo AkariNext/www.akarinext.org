@@ -1,15 +1,11 @@
 FROM node:lts-buster-slim as base
 
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+WORKDIR /usr/server
 
+
+COPY ./ .
 RUN corepack enable
-
-COPY . /app
-WORKDIR /app
-
-FROM base AS prod-deps
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+RUN pnpm i
 
 
 FROM base AS build
