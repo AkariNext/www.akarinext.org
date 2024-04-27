@@ -16,7 +16,7 @@ export function ServiceCard({ name, description, thumbnailUrl }: Props) {
 					className="h-[330px] object-cover transition-all hover:scale-95 aspect-[3/4] mb-4 rounded-md"
 				/>
 			</div>
-			<div className="text-xl">{name}</div>
+			<h3 className="text-xl">{name}</h3>
 			<p>{description}</p>
 		</div>
 	);

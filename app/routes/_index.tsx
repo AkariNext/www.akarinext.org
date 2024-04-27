@@ -25,10 +25,10 @@ export default function Index() {
 		<div>
 			<div className="grid grid-cols-1  md:grid-cols-3 w-full  gap-y-4 md:gap-x-4 h-screen items-center">
 				<div className="h-96 col-span-2 rounded-lg flex flex-col p-8 order-2 sm:order-1">
-					<div className="text-4xl">Let&apos;s have fun and play funny!</div>
-					<p className="mt-4">
+					<h1 className="text-4xl">Let&apos;s have fun and play funny!</h1>
+					<h2 className="mt-4">
 						AkariNextで一緒に楽しくゲームや開発を行いましょう！
-					</p>
+					</h2>
 
 					<div className="pt-8">
 						<Link to="/blog/" aria-label="ブログを読む">
@@ -75,23 +75,25 @@ export default function Index() {
           after:rounded-full
         "
 				>
-					<div className="text-slate-700 text-3xl font-bold z-40">
+					<h2 className="text-slate-700 text-3xl font-bold z-40">
 						AkariNextって何！？
-					</div>
+					</h2>
 					<div className="mt-8">
-						AkariNextはゲームやプログラミングといった開発に興味を持つ人たちが集まっているコミュニティーです。
-						主にDiscordを使ってコミュニケーションを取りながら、ゲームをしたり、開発をしたりしています。
-						<br />
-						<br />
-						また、副次的な活動としてサーバーの運営や本サイト上でのブログの執筆なども行っています。
+						<p>
+							AkariNextはゲームやプログラミングといった開発に興味を持つ人たちが集まっているコミュニティーです。
+							主にDiscordを使ってコミュニケーションを取りながら、ゲームをしたり、開発をしたりしています。
+							<br />
+							<br />
+							また、副次的な活動としてサーバーの運営や本サイト上でのブログの執筆なども行っています。
+						</p>
 					</div>
 				</div>
 			</div>
 
 			<div className="mt-16 rounded-lg min-h-96">
-				<div className="text-slate-700 text-2xl font-bold text-center">
+				<h2 className="text-slate-700 text-2xl font-bold text-center">
 					運営メンバー
-				</div>
+				</h2>
 
 				<div className="grid grid-cols-1 md:grid-cols-3 mt-8 gap-8">
 					{displayMembers.map((member) => (
@@ -102,9 +104,9 @@ export default function Index() {
 
 			<div className="mt-8">
 				<div className="col-span-1 w-full h-full bg-slate-200 rounded-lg p-8">
-					<div className="text-slate-700 text-2xl font-bold text-center">
+					<h2 className="text-slate-700 text-2xl font-bold text-center">
 						SERVICES
-					</div>
+					</h2>
 
 					<p className="text-slate-600 text-center mt-4">
 						これらのサービスはAkariNextが運営するサービスのほんのすこしです。詳しくは
@@ -130,14 +132,14 @@ export default function Index() {
 				</div>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
 					<div className="w-full h-full bg-slate-200 rounded-lg p-8">
-						<div className="text-slate-700 text-2xl font-bold text-center">
+						<h2 className="text-slate-700 text-2xl font-bold text-center">
 							PLAYING GAME&apos;S
-						</div>
+						</h2>
 					</div>
 					<div className="w-full h-full bg-slate-200 rounded-lg p-8">
-						<div className="text-slate-700 text-2xl font-bold text-center">
+						<h2 className="text-slate-700 text-2xl font-bold text-center">
 							WORKS
-						</div>
+						</h2>
 					</div>
 				</div>
 			</div>
