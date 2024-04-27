@@ -4,10 +4,11 @@ WORKDIR /usr/server
 
 
 COPY ./ .
-RUN npm ci
+RUN corepack enable pnpm \
+    pnpm i
+
 
 ENV NODE_ENV=production
-RUN npm run build
+RUN pnpm build
 
-CMD ["npm", "run", "start"]
-
+CMD ["pnpm", "start"]
