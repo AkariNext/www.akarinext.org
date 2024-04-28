@@ -232,8 +232,8 @@ importers:
         specifier: ^5.1.0
         version: 5.2.10(@types/node@20.12.7)
       vite-plugin-arraybuffer:
-        specifier: ^0.0.6
-        version: 0.0.6
+        specifier: ^0.0.7
+        version: 0.0.7
       vite-tsconfig-paths:
         specifier: ^4.2.1
         version: 4.3.2(typescript@5.4.5)(vite@5.2.10(@types/node@20.12.7))
@@ -6221,8 +6221,8 @@ packages:
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
 
-  vite-plugin-arraybuffer@0.0.6:
-    resolution: {integrity: sha512-2TXAUuHREy29seo6qgm/lGjUpYxJjzsIGHi7cOScMALK6GHIpV2/3KHZ6uaLVAUGwbYQ8rDhNqYgnPkFLxZgnQ==}
+  vite-plugin-arraybuffer@0.0.7:
+    resolution: {integrity: sha512-c4Egxj7NUGco2Ggw9KUBToOxuc7Ws7mWm0hz/QnaT5Ph8ycC7ypMBOD31NuhPSx+wdUvgIbS1XpMvJLSdHakPA==}
 
   vite-tsconfig-paths@4.3.2:
     resolution: {integrity: sha512-0Vd/a6po6Q+86rPlntHye7F31zA2URZMbH8M3saAZ/xR9QoGN/L21bxEGfXdWmFdNkqPpRdxFT7nmNe12e9/uA==}
@@ -13956,7 +13956,7 @@ snapshots:
       - supports-color
       - terser
 
-  vite-plugin-arraybuffer@0.0.6: {}
+  vite-plugin-arraybuffer@0.0.7: {}
 
   vite-tsconfig-paths@4.3.2(typescript@5.4.5)(vite@5.2.10(@types/node@20.12.7)):
     dependencies:
