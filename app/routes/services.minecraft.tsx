@@ -23,7 +23,6 @@ async function getProtocolVersion(platform: 'pc' | 'bedrock' = 'pc') {
     if (!foundCache) {
         foundCache = (await (await fetch(`https://raw.githubusercontent.com/PrismarineJS/minecraft-data/master/data/${platform}/common/protocolVersions.json`)).json()) as IMinecraftProtocolVersion[]
         protocolVersions.set(platform, foundCache)
-    } else {
     }
     return foundCache
 }
@@ -54,7 +53,7 @@ export async function loader() {
     return json(status)
 }
 
-function isJavaResponse(response: JavaStatusResponse | BedrockStatusResponse): response is JavaStatusResponse  {
+function isJavaResponse(response: JavaStatusResponse | BedrockStatusResponse): response is JavaStatusResponse {
     return "icon" in response
 }
 
@@ -68,7 +67,7 @@ export default function Minecraft() {
                     <div key={server.info.name} className="border-2 rounded-xl py-4">
                         <div className="flex justify-between border-b">
                             <div className="flex gap-4 px-4 pb-4 items-center">
-                                {isJavaResponse(server.status) && server.status.icon ? <img src={server.status.icon} className="h-16 w-16 flex-shrink-0" /> : <IconQuestionMark className="border rounded-full border-slate-300 h-16 w-16 flex-shrink-0" />}
+                                {isJavaResponse(server.status) && server.status.icon ? <img src={server.status.icon} className="h-16 w-16 flex-shrink-0" alt={`${server.info.name} icon`} /> : <IconQuestionMark className="border rounded-full border-slate-300 h-16 w-16 flex-shrink-0" />}
                                 <h2>{server.info.name}</h2>
                             </div>
                             <div className="px-4">
