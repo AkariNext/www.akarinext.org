@@ -1,6 +1,6 @@
 import { json } from "@remix-run/node";
-import { MC_SERVERS } from "~/lib/mc_servers";
-import { statusJava, statusBedrock } from "node-mcstatus"
+import { IMCServer, MC_SERVERS } from "~/lib/mc_servers";
+import { statusJava, statusBedrock, BedrockStatusResponse, JavaStatusResponse } from "node-mcstatus"
 import { useLoaderData } from "@remix-run/react";
 import { Badge } from "~/components/ui/badge";
 import { FileQuestionIcon } from "lucide-react";
@@ -16,6 +16,7 @@ interface IMinecraftProtocolVersion {
 }
 
 const protocolVersions = new LRUCache<string, IMinecraftProtocolVersion[]>({ max: 10, ttl: 60 * 60 * 1000 })
+const serverStatus = new LRUCache<string, {info: IMCServer, status: BedrockStatusResponse | JavaStatusResponse, protocolVersion: IMinecraftProtocolVersion, latestFetchDate: Date}[]>({max: 1, ttl: 60 * 5 * 1000})
 
 async function getProtocolVersion(platform: 'pc' | 'bedrock' = 'pc') {
     let foundCache = protocolVersions.get(platform)
@@ -28,23 +29,28 @@ async function getProtocolVersion(platform: 'pc' | 'bedrock' = 'pc') {
 }
 
 export async function loader() {
+    const foundCache = serverStatus.get('serverStatus')
+    if (foundCache) return json(foundCache)
+
     const status = await Promise.all(MC_SERVERS.map(async (server) => {
         switch (server.type) {
             case 'bedrock': {
                 const status = await statusBedrock(server.address, server.port)
                 const fetchedProtocolVersion = await getProtocolVersion('bedrock')
                 const protocolVersion = fetchedProtocolVersion.filter((v) => v.version === status.version?.protocol)[0]
-                return { info: server, status, protocolVersion }
+                return { info: server, status, protocolVersion, latestFetchDate: new Date() }
             }
 
             default: {
                 const status = await statusJava(server.address, server.port)
                 const fetchedProtocolVersion =  await getProtocolVersion()
                 const protocolVersion = fetchedProtocolVersion.filter((v) => v.version === status.version?.protocol)[0]
-                return { info: server, status, protocolVersion }
+                return { info: server, status, protocolVersion, latestFetchDate: new Date() }
             }
         }
     }))
+
+    serverStatus.set('serverStatus', status)
     return json(status)
 }
 
