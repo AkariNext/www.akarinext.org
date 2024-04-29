@@ -54,6 +54,10 @@ export async function loader() {
     return json(status)
 }
 
+function isJavaResponse(response: JavaStatusResponse | BedrockStatusResponse): response is JavaStatusResponse  {
+    return "icon" in response
+}
+
 export default function Minecraft() {
     const status = useLoaderData<typeof loader>()
     return (
@@ -64,7 +68,7 @@ export default function Minecraft() {
                     <div key={server.info.name} className="border-2 rounded-xl py-4">
                         <div className="flex justify-between border-b">
                             <div className="flex gap-4 px-4 pb-4 items-center">
-                                {(server.status as any).icon ? <img src={(server.status as any).icon} className="h-16 w-16" /> : <IconQuestionMark className="border rounded-full border-slate-300 h-16 w-16" />}
+                                {isJavaResponse(server.status) && server.status.icon ? <img src={server.status.icon} className="h-16 w-16 flex-shrink-0" /> : <IconQuestionMark className="border rounded-full border-slate-300 h-16 w-16 flex-shrink-0" />}
                                 <h2>{server.info.name}</h2>
                             </div>
                             <div className="px-4">
@@ -75,7 +79,7 @@ export default function Minecraft() {
                             <h3>アドレス</h3>
                             <Snippet>{server.status.port === 25565 ? `${server.status.host}` : `${server.status.host}:${server.status.port}`}</Snippet>
                             <h3 className="mt-2">バージョン</h3>
-                            <div dangerouslySetInnerHTML={{ __html: (server.status.version as any)!.name_raw }}></div>
+                            <div dangerouslySetInnerHTML={{ __html: isJavaResponse(server.status) ? server.status.version!.name_raw : server.status.version?.name ?? "?" }}></div>
                             <h3>プレイヤー数</h3>
                             <p>{server.status.players?.online} &#47; {server.status.players?.max}</p>
                             <h3>ステータス取得</h3>
