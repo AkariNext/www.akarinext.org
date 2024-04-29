@@ -37,7 +37,7 @@ function convertDecoratedRoles(roles: PickType<z.infer<typeof memberSchema>, "ro
     return roles.map(r => roleMap[r])
 }
 
-function validateMember(member: any[]): TMember[] {
+function validateMember(member: any[]): TMember[] {  // eslint-disable-line @typescript-eslint/no-explicit-any
     const members: TMember[] = []
     for (const m of member) {
         const result = memberSchema.safeParse(m)

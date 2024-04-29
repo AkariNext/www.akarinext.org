@@ -49,7 +49,7 @@ const postsCache = new LRUCache<string, BlogPost>({
 
 
 
-function isValidMarkdownPostFrontmatter(obj: any): obj is MarkdownPost {
+function isValidMarkdownPostFrontmatter(obj: any): obj is MarkdownPost {  // eslint-disable-line @typescript-eslint/no-explicit-any
     return (
         typeof obj === "object" &&
         obj.title &&
