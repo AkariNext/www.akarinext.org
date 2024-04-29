@@ -4,9 +4,21 @@ import {
 	IconBrandGithub,
 	IconBrandSteam,
 	IconWorld,
-	type TablerIconsProps,
+	type IconProps,
 } from '@tabler/icons-react';
 import { twMerge } from 'tailwind-merge';
+import { CSSProperties, ForwardRefExoticComponent, FunctionComponent, RefAttributes } from 'react';
+
+// reference: https://github.com/tabler/tabler-icons/issues/1035#issuecomment-2059486846
+export type TablerIconsProps = Partial<
+	ForwardRefExoticComponent<Omit<IconProps, 'ref'> & RefAttributes<FunctionComponent<IconProps>>>
+> & {
+	className?: string;
+	size?: string | number;
+	stroke?: string | number;
+	strokeWidth?: string | number;
+	style?: CSSProperties;
+};
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
