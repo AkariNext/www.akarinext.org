@@ -11,13 +11,13 @@ import { CSSProperties, ForwardRefExoticComponent, FunctionComponent, RefAttribu
 
 // reference: https://github.com/tabler/tabler-icons/issues/1035#issuecomment-2059486846
 export type TablerIconsProps = Partial<
-  ForwardRefExoticComponent<Omit<IconProps, 'ref'> & RefAttributes<FunctionComponent<IconProps>>>
+	ForwardRefExoticComponent<Omit<IconProps, 'ref'> & RefAttributes<FunctionComponent<IconProps>>>
 > & {
-  className?: string;
-  size?: string | number;
-  stroke?: string | number;
-  strokeWidth?: string | number;
-  style?: CSSProperties;
+	className?: string;
+	size?: string | number;
+	stroke?: string | number;
+	strokeWidth?: string | number;
+	style?: CSSProperties;
 };
 
 export function cn(...inputs: ClassValue[]) {
