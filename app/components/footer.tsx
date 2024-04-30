@@ -18,7 +18,7 @@ type Props = {
 export function Footer({ links }: Props) {
 	return (
 		<footer className="mt-8">
-			<div className="flex h-16 items-center rounded-xl p-4 bg-white sticky top-0 mb-4">
+			<div className="sm:flex block min-h-16  items-center rounded-xl p-4 bg-white sticky mb-4">
 				<NavigationMenu>
 					<NavigationMenuList>
 						<NavigationMenuItem className="text-2xl font-bold">
@@ -33,7 +33,7 @@ export function Footer({ links }: Props) {
 						</NavigationMenuItem>
 					</NavigationMenuList>
 				</NavigationMenu>
-				<NavigationMenu className="hidden sm:block">
+				<NavigationMenu>
 					<NavigationMenuList>
 						{links.map((link, index) =>
 							link.alt ? (
