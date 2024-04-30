@@ -23,6 +23,7 @@ export const meta: MetaFunction = () => {
   return [
     { title: "AkariNext" },
     { name: "description", content: "開発からゲームまでもっと楽しいネットライフをAkariNextで！" },
+    { name: 'theme-color', content: '#0F172A' }
   ];
 };
 
