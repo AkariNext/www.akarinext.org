@@ -6,6 +6,7 @@ import {
   ScrollRestoration,
   useLoaderData,
 } from "@remix-run/react";
+import { ManifestLink } from '@remix-pwa/sw';
 import { Navbar } from "./components/navbar";
 
 import "~/tailwind.css";
@@ -23,6 +24,7 @@ export const meta: MetaFunction = () => {
   return [
     { title: "AkariNext" },
     { name: "description", content: "開発からゲームまでもっと楽しいネットライフをAkariNextで！" },
+    { name: 'theme-color', content: '#0F172A' }
   ];
 };
 
@@ -44,16 +46,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
+        <ManifestLink />
         <Links />
       </head>
       <body className="bg-slate-100 w-full mx-auto max-w-screen-sm sm:max-w-screen-xl">
-          <div className="px-4 sm:px-8">
-            <Navbar />
-            <main className="mt-20 max-w-screen-sm sm:max-w-screen-lg mx-auto">
-              {children}
-            </main>
-            <Footer links={config.footer.links} />
-          </div>
+        <div className="px-4 sm:px-8">
+          <Navbar />
+          <main className="mt-20 max-w-screen-sm sm:max-w-screen-lg mx-auto">
+            {children}
+          </main>
+          <Footer links={config.footer.links} />
+        </div>
         <ScrollRestoration />
         <Scripts />
       </body>
