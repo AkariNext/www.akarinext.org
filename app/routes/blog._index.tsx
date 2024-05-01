@@ -18,7 +18,7 @@ export default function BlogIndex() {
 			<div className="text-2xl mb-8 text-center">最新の記事</div>
 			<div className='flex flex-wrap gap-8'>
 				{posts.map((post, index) => (
-					<NavLink to={`/blog/${post.slug}`} key={index} className='sm:w-[calc(100%/3-32px)] w-full border-2 py-4 rounded-lg' unstable_viewTransition prefetch='intent'>
+					<NavLink to={`/blog/${post.slug}`} key={index} className='sm:w-[calc(100%/3-32px)] w-full border-2 py-2 rounded-lg' unstable_viewTransition prefetch='intent'>
 						{({ isTransitioning }) => (
 							<div className='flex flex-col h-full p-8'>
 								<div className='flex items-center justify-center border-b-2 mb-4'>
@@ -33,7 +33,7 @@ export default function BlogIndex() {
 										? { viewTransitionName: 'blog-title' }
 										: undefined
 								}>{post.title}</h2>
-								<p className='text-gray-600'>{post.dateDisplay}</p>
+								<p className='text-gray-600 pt-8'>{post.dateDisplay}</p>
 							</div>
 
 						)}
