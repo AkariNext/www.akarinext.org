@@ -3,6 +3,7 @@ import invariant from "tiny-invariant";
 import { processMarkdown } from "./md.server";
 import { MEMBERS, getAuthor, type TMember } from "./member.server";
 import { DateTime } from "luxon";
+import * as keywords from "emojilib";
 
 const POSTS = Object.fromEntries(
     Object.entries(
@@ -26,11 +27,10 @@ const AUTHORS = MEMBERS.map((m) => m.name);
 interface MarkdownPost {
     title: string;
     summary: string;
+    emoji: string;
     date: Date;
     dateDisplay: string;
     draft?: boolean;
-    image?: string;
-    imageAlt?: string;
     authors: string[];
     html: string;
 }
@@ -54,10 +54,9 @@ function isValidMarkdownPostFrontmatter(obj: any): obj is MarkdownPost {  // esl
         typeof obj === "object" &&
         obj.title &&
         obj.summary &&
+        typeof obj.emoji === 'string' &&
         obj.date instanceof Date &&
         (typeof obj.dfraft === "undefined" || typeof obj.draft === "boolean") &&
-        (typeof obj.image === "undefined" || typeof obj.image === "string") &&
-        (typeof obj.imageAlt === "undefined" || typeof obj.imageAlt === "string") &&
         Array.isArray(obj.authors)
     );
 }
@@ -80,9 +79,8 @@ export async function getBlogPost(slug: string): Promise<BlogPost> {
 
     const post: BlogPost = {
         ...attributes,
-        image: attributes.image || "https://picsum.photos/200/300",
-        imageAlt: attributes.imageAlt || "",
         authors: validatedAuthors.map(getAuthor).filter((a): a is TMember => !!a),
+        emoji: keywords.default[attributes.emoji][0].replaceAll('_', '-')!,
         dateDisplay: DateTime.fromJSDate(attributes.date)
             .plus(new Date().getTimezoneOffset()) // タイムゾーンを考慮する
             .toLocaleString(DateTime.DATE_FULL, { locale: 'ja-JP' }),
@@ -105,6 +103,6 @@ export async function getBlogPostListings() {
     }
 
     return listings
-    .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .map(({ ...listing }) => listing);
+        .sort((a, b) => b.date.getTime() - a.date.getTime())
+        .map(({ ...listing }) => listing);
 }
