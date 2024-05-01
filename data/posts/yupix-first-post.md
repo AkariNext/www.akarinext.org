@@ -2,6 +2,7 @@
 title: 初めまして（ゆぴ）
 summary: AkariNext初のブログ！
 date: 2024-03-09
+emoji: 🌸
 authors:
   - yupix
 ---

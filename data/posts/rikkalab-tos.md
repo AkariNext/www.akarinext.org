@@ -2,6 +2,7 @@
 title: 利用規約 (Rikkalab)
 summary: Rikkalabに適応される利用規約
 date: 2024-03-09
+emoji: 📖
 authors:
   - aki
 ---
