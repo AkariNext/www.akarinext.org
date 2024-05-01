@@ -55,7 +55,7 @@ importers:
         version: 0.10.1(typescript@5.4.5)(zod@3.23.5)
       '@tabler/icons-react':
         specifier: ^3.0.0
-        version: 3.2.0(react@18.3.1)
+        version: 3.3.0(react@18.3.1)
       class-variance-authority:
         specifier: ^0.7.0
         version: 0.7.0
@@ -2341,13 +2341,13 @@ packages:
       typescript:
         optional: true
 
-  '@tabler/icons-react@3.2.0':
-    resolution: {integrity: sha512-b1mZT1XpZrzvbM+eFe1YbYbxkzgJ18tM4knZKqXh0gnHDZ6XVLIH3TzJZ3HZ7PTkUqZLZ7XcGae3qQVGburlBw==}
+  '@tabler/icons-react@3.3.0':
+    resolution: {integrity: sha512-Qn1Po+0gErh1zCWlaOdoVoGqeonWfSuiboYgwZBs6PIJNsj7yr3bIa4BkHmgJgtlXLT9LvCzt/RvwlgjxLfjjg==}
     peerDependencies:
       react: '>= 16'
 
-  '@tabler/icons@3.2.0':
-    resolution: {integrity: sha512-h8GQ2rtxgiSjltrVz4vcopAxTPSpUSUi5nBfJ09H3Bk4fJk6wZ/dVUjzhv/BHfDwGTkAxZBiYe/Q/T95cPeg5Q==}
+  '@tabler/icons@3.3.0':
+    resolution: {integrity: sha512-PLVe9d7b59sKytbx00KgeGhQG3N176Ezv8YMmsnSz4s0ifDzMWlp/h2wEfQZ0ZNe8e377GY2OW6kovUe3Rnd0g==}
 
   '@tensorflow/tfjs-backend-cpu@4.18.0':
     resolution: {integrity: sha512-zk6NyGGsv0mCDnc5xWxLB5Zi8GaHVI2gg7KC0FSw/r5wW9SfA3ZIqUHVZhbIVhNqZSWy6L/+EIJa7l6q1XCkrg==}
@@ -9058,12 +9058,12 @@ snapshots:
     optionalDependencies:
       typescript: 5.4.5
 
-  '@tabler/icons-react@3.2.0(react@18.3.1)':
+  '@tabler/icons-react@3.3.0(react@18.3.1)':
     dependencies:
-      '@tabler/icons': 3.2.0
+      '@tabler/icons': 3.3.0
       react: 18.3.1
 
-  '@tabler/icons@3.2.0': {}
+  '@tabler/icons@3.3.0': {}
 
   '@tensorflow/tfjs-backend-cpu@4.18.0(@tensorflow/tfjs-core@4.18.0)':
     dependencies:
