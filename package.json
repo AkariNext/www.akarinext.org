@@ -42,6 +42,7 @@
     "luxon": "^3.4.4",
     "magika": "^0.2.12",
     "mime-types": "^2.1.35",
+    "node-emoji": "^2.1.3",
     "node-mcstatus": "^1.2.0",
     "pg": "^8.11.3",
     "postgres": "^3.4.3",
