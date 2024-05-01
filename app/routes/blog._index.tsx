@@ -1,6 +1,7 @@
 import { json } from '@remix-run/node';
 import { NavLink, useLoaderData } from '@remix-run/react';
 import { getBlogPostListings } from '~/lib/blog.server';
+import { InlineIcon } from '@iconify/react';
 
 export async function loader() {
 	return json(
@@ -15,72 +16,29 @@ export default function BlogIndex() {
 	return (
 		<div>
 			<div className="text-2xl mb-8 text-center">最新の記事</div>
-			<NavLink to={`/blog/${posts[0].slug}`} unstable_viewTransition>
-				{({ isTransitioning }) => (
-					<>
-						<div className="relative grid lg:grid-cols-12 sm:grid-cols-12 items-center justify-start sm:justify-between gap-4 bg-slate-200 p-8 rounded-2xl">
-							<div
-								className="lg:order-1 sm:order-2 w-full rounded-2xl lg:col-start-2 sm:col-start-1 lg:col-span-7"
-								style={
+			<div className='flex flex-wrap gap-8'>
+				{posts.map((post, index) => (
+					<NavLink to={`/blog/${post.slug}`} key={index} className='sm:w-[calc(100%/3-32px)] w-full border-2 py-2 rounded-lg' unstable_viewTransition prefetch='intent'>
+						{({ isTransitioning }) => (
+							<div className='flex flex-col h-full p-8'>
+								<div className='flex items-center justify-center border-b-2 mb-4'>
+									<InlineIcon icon={`fluent-emoji-flat:${post.emoji}`} className='h-16 w-16 bg-white p-2 rounded-lg mb-4' style={
+										isTransitioning
+											? { viewTransitionName: 'blog-image' }
+											: undefined
+									} />
+								</div>
+								<h2 className="grow" style={
 									isTransitioning
 										? { viewTransitionName: 'blog-title' }
 										: undefined
-								}
-							>
-								<div className="text-2xl">{posts[0].title}</div>
-								<div>{posts[0].dateDisplay}</div>
+								}>{post.title}</h2>
+								<p className='text-gray-600 pt-8'>{post.dateDisplay}</p>
 							</div>
-							<img
-								src={posts[0].image}
-								alt={posts[0].imageAlt}
-								className="w-full object-cover lg:col-span-3 sm:col-span-1 h-96 rounded-lg aspect-[3/4] lg:order-2 sm:order-1"
-								style={
-									isTransitioning
-										? { viewTransitionName: 'blog-image' }
-										: undefined
-								}
-							/>
-						</div>
-					</>
-				)}
-			</NavLink>
-			<div className="flex flex-wrap justify-center gap-x-8 mt-8">
-				{posts.slice(1).map((post, index) => (
-					<div key={index} className="mb-8">
-						<NavLink
-							to={`/blog/${post.slug}`}
-							prefetch="intent"
-							unstable_viewTransition
-						>
-							{({ isTransitioning }) => (
-								<>
-									<div>
-										<img
-											style={
-												isTransitioning
-													? { viewTransitionName: 'blog-image' }
-													: undefined
-											}
-											src={post.image}
-											alt={post.imageAlt}
-											className="rounded-lg w-full object-cover h-[500px]"
-										/>
-									</div>
-									<div
-										className="mt-8"
-										style={
-											isTransitioning
-												? { viewTransitionName: 'blog-title' }
-												: undefined
-										}
-									>
-										<div className="text-2xl">{post.title}</div>
-										<div>{post.dateDisplay}</div>
-									</div>
-								</>
-							)}
-						</NavLink>
-					</div>
+
+						)}
+
+					</NavLink>
 				))}
 			</div>
 		</div>

@@ -2,6 +2,7 @@
 title: 初めまして（いかろす）
 summary: AkariNext初のいかろすのブログ！
 date: 2024-03-28
+emoji: 🌟
 authors:
   - ikaros
 ---

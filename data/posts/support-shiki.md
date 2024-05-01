@@ -2,6 +2,7 @@
 title: Shikiをサポートしました
 summary: 本ブログでShikiをサポート
 date: 2024-03-12
+emoji: 🎨
 authors:
   - yupix
 ---

@@ -9,6 +9,7 @@ import {
 import '../mdx.css';
 import { getSocialIcon } from '~/lib/utils';
 import { getBlogPost } from '../lib/blog.server';
+import { InlineIcon } from '@iconify/react/dist/iconify.js';
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
 	const { slug } = params;
@@ -42,7 +43,7 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
 		ogImageUrl.searchParams.append('authors', post.authors.map((a) => a.name).join(','));
 	}
 
-	const socialImageUrl  = ogImageUrl?.toString();
+	const socialImageUrl = ogImageUrl?.toString();
 
 	return [
 		{ title: `${post.title} | AkariNext` },
@@ -67,12 +68,8 @@ export default function BlogPost() {
 			<div className="flex justify-center px-8 sm:px-0">
 				<div className="max-w-2xl w-full">
 					<div className="flex justify-center">
-						<img
-							src={post.image}
-							alt={post.title}
-							className="aspect-square rounded-lg"
-							style={{ viewTransitionName: 'blog-image' }}
-						/>
+						<InlineIcon style={{ viewTransitionName: 'blog-image' }} icon={`fluent-emoji-flat:${post.emoji}`} className='h-16 w-16 bg-white p-2 rounded-lg mb-4' />
+
 					</div>
 					<div style={{ viewTransitionName: 'blog-title' }}>
 						<div className="text-4xl mt-8">{post.title}</div>

@@ -2,6 +2,7 @@
 title: 2FASとAuthmeを使った二要素認証
 summary: "結論: Bitwardenで良い"
 date: 2024-03-21
+emoji: 🔑
 authors:
   - yupix
 ---

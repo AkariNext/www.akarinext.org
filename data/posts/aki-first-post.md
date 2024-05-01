@@ -2,6 +2,7 @@
 title: 初めまして（あき）
 summary: AkariNext初のakiのブログ！
 date: 2024-03-09
+emoji: 👋
 authors:
   - aki
 ---
