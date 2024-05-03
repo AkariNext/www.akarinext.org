@@ -55,7 +55,7 @@ importers:
         version: 2.9.1(typescript@5.4.5)
       '@t3-oss/env-core':
         specifier: ^0.10.0
-        version: 0.10.1(typescript@5.4.5)(zod@3.23.5)
+        version: 0.10.1(typescript@5.4.5)(zod@3.23.6)
       '@tabler/icons-react':
         specifier: ^3.0.0
         version: 3.3.0(react@18.3.1)
@@ -136,7 +136,7 @@ importers:
         version: 11.1.0
       remix-utils:
         specifier: ^7.5.0
-        version: 7.6.0(@remix-run/node@2.9.1(typescript@5.4.5))(@remix-run/react@2.9.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.4.5))(@remix-run/router@1.16.0)(react@18.3.1)(zod@3.23.5)
+        version: 7.6.0(@remix-run/node@2.9.1(typescript@5.4.5))(@remix-run/react@2.9.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.4.5))(@remix-run/router@1.16.0)(react@18.3.1)(zod@3.23.6)
       satori:
         specifier: ^0.10.13
         version: 0.10.13
@@ -163,7 +163,7 @@ importers:
         version: 2.4.2
       zod:
         specifier: ^3.22.4
-        version: 3.23.5
+        version: 3.23.6
     devDependencies:
       '@biomejs/biome':
         specifier: 1.7.2
@@ -6502,8 +6502,8 @@ packages:
   yoga-wasm-web@0.3.3:
     resolution: {integrity: sha512-N+d4UJSJbt/R3wqY7Coqs5pcV0aUj2j9IaQ3rNj9bVCLld8tTGKRa2USARjnvZJWVx1NDmQev8EknoczaOQDOA==}
 
-  zod@3.23.5:
-    resolution: {integrity: sha512-fkwiq0VIQTksNNA131rDOsVJcns0pfVUjHzLrNBiF/O/Xxb5lQyEXkhZWcJ7npWsYlvs+h0jFWXXy4X46Em1JA==}
+  zod@3.23.6:
+    resolution: {integrity: sha512-RTHJlZhsRbuA8Hmp/iNL7jnfc4nZishjsanDAfEY1QpDQZCahUp3xDzl+zfweE9BklxMUcgBgS1b7Lvie/ZVwA==}
 
   zustand@4.5.2:
     resolution: {integrity: sha512-2cN1tPkDVkwCy5ickKrI7vijSjPksFRfqS6237NzT0vqSsztTNnQdHw9mmN7uBdk3gceVXU0a+21jFzFzAc9+g==}
@@ -7599,10 +7599,10 @@ snapshots:
 
   '@hono/node-server@1.11.1': {}
 
-  '@hono/zod-validator@0.2.1(hono@4.2.8)(zod@3.23.5)':
+  '@hono/zod-validator@0.2.1(hono@4.2.8)(zod@3.23.6)':
     dependencies:
       hono: 4.2.8
-      zod: 3.23.5
+      zod: 3.23.6
 
   '@humanwhocodes/config-array@0.11.14':
     dependencies:
@@ -9076,9 +9076,9 @@ snapshots:
       '@smithy/types': 2.12.0
       tslib: 2.6.2
 
-  '@t3-oss/env-core@0.10.1(typescript@5.4.5)(zod@3.23.5)':
+  '@t3-oss/env-core@0.10.1(typescript@5.4.5)(zod@3.23.6)':
     dependencies:
-      zod: 3.23.5
+      zod: 3.23.6
     optionalDependencies:
       typescript: 5.4.5
 
@@ -10169,7 +10169,7 @@ snapshots:
     dependencies:
       '@esbuild-kit/esm-loader': 2.6.5
       '@hono/node-server': 1.11.1
-      '@hono/zod-validator': 0.2.1(hono@4.2.8)(zod@3.23.5)
+      '@hono/zod-validator': 0.2.1(hono@4.2.8)(zod@3.23.6)
       camelcase: 7.0.1
       chalk: 5.3.0
       commander: 9.5.0
@@ -10183,7 +10183,7 @@ snapshots:
       minimatch: 7.4.6
       semver: 7.6.0
       superjson: 2.2.1
-      zod: 3.23.5
+      zod: 3.23.6
     transitivePeerDependencies:
       - supports-color
 
@@ -12644,7 +12644,7 @@ snapshots:
   node-mcstatus@1.2.0:
     dependencies:
       superagent: 8.1.2
-      zod: 3.23.5
+      zod: 3.23.6
     transitivePeerDependencies:
       - supports-color
 
@@ -13343,7 +13343,7 @@ snapshots:
       mdast-util-to-markdown: 2.1.0
       unified: 11.0.4
 
-  remix-utils@7.6.0(@remix-run/node@2.9.1(typescript@5.4.5))(@remix-run/react@2.9.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.4.5))(@remix-run/router@1.16.0)(react@18.3.1)(zod@3.23.5):
+  remix-utils@7.6.0(@remix-run/node@2.9.1(typescript@5.4.5))(@remix-run/react@2.9.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.4.5))(@remix-run/router@1.16.0)(react@18.3.1)(zod@3.23.6):
     dependencies:
       type-fest: 4.17.0
     optionalDependencies:
@@ -13351,7 +13351,7 @@ snapshots:
       '@remix-run/react': 2.9.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.4.5)
       '@remix-run/router': 1.16.0
       react: 18.3.1
-      zod: 3.23.5
+      zod: 3.23.6
 
   require-directory@2.1.1: {}
 
@@ -14338,7 +14338,7 @@ snapshots:
 
   yoga-wasm-web@0.3.3: {}
 
-  zod@3.23.5: {}
+  zod@3.23.6: {}
 
   zustand@4.5.2(@types/react@18.3.1)(react@18.3.1):
     dependencies:
