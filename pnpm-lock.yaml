@@ -182,7 +182,7 @@ importers:
         version: 2.9.1(@remix-run/react@2.9.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.4.5))(@remix-run/serve@2.9.1(typescript@5.4.5))(@types/node@20.12.7)(typescript@5.4.5)(vite@5.2.11(@types/node@20.12.7))
       '@shikijs/rehype':
         specifier: ^1.1.7
-        version: 1.4.0
+        version: 1.5.0
       '@types/luxon':
         specifier: ^3.4.2
         version: 3.4.2
@@ -2140,11 +2140,14 @@ packages:
   '@shikijs/core@1.4.0':
     resolution: {integrity: sha512-CxpKLntAi64h3j+TwWqVIQObPTED0FyXLHTTh3MKXtqiQNn2JGcMQQ362LftDbc9kYbDtrksNMNoVmVXzKFYUQ==}
 
-  '@shikijs/rehype@1.4.0':
-    resolution: {integrity: sha512-Ba6QHYx+EIEvmqyNy/B49KAz3rXsTfAqYRY3KTZjPWonytokGOiJ1q/FV9l13D/ad6Qv+eWKhkAz6ITxx6ziFA==}
+  '@shikijs/core@1.5.0':
+    resolution: {integrity: sha512-tdYjQu+jnvlPbJg4OjgCQ16zAfHlLk+RzA9o025aeaIyUww6W/Vd9TQ2t+gdZgK1fox29/L2yyqXLU6ErzYA0w==}
 
-  '@shikijs/transformers@1.4.0':
-    resolution: {integrity: sha512-kzvlWmWYYSeaLKRce/kgmFFORUtBtFahfXRKndor0b60ocYiXufBQM6d6w1PlMuUkdk55aor9xLvy9wy7hTEJg==}
+  '@shikijs/rehype@1.5.0':
+    resolution: {integrity: sha512-AEV6ehjwBpQGA7WhIu499kfbPkxeUGEXlXaSxpEvT8cGfpJMUzap3guWpsRat7RrYS2hzB8Q8cw0PNfYLUiDcA==}
+
+  '@shikijs/transformers@1.5.0':
+    resolution: {integrity: sha512-WYCLJ4MhW1LmVqfVjUZny9XLh32kk/mo/y5sCXt5sc5rU21K6LA+yLWHdb0eYhmSc4n+FWTxW3ZNiZs57uwyOA==}
 
   '@shuding/opentype.js@1.4.0-beta.0':
     resolution: {integrity: sha512-3NgmNyH3l/Hv6EvsWJbsvpcpUba6R8IREQ83nH83cyakCw7uM1arZKNfHwv1Wz6jgqrF/j4x5ELvR6PnK9nTcA==}
@@ -5813,6 +5816,9 @@ packages:
   shiki@1.4.0:
     resolution: {integrity: sha512-5WIn0OL8PWm7JhnTwRWXniy6eEDY234mRrERVlFa646V2ErQqwIFd2UML7e0Pq9eqSKLoMa3Ke+xbsF+DAuy+Q==}
 
+  shiki@1.5.0:
+    resolution: {integrity: sha512-AMax9zrUW8u8bnvNhnmAD9mHzk244mWCDBZm+zh4Ir3lzncF/sGUcVd5gpy0IlWvOKBUUJ8uu/BFpusGJ/PdVw==}
+
   side-channel@1.0.6:
     resolution: {integrity: sha512-fDW/EZ6Q9RiO8eFG8Hj+7u/oW+XrPTIChwCOM2+th2A6OblDtYYIpve9m+KvI9Z4C9qSEXlaGR6bTEYHReuglA==}
     engines: {node: '>= 0.4'}
@@ -8746,18 +8752,20 @@ snapshots:
 
   '@shikijs/core@1.4.0': {}
 
-  '@shikijs/rehype@1.4.0':
+  '@shikijs/core@1.5.0': {}
+
+  '@shikijs/rehype@1.5.0':
     dependencies:
-      '@shikijs/transformers': 1.4.0
+      '@shikijs/transformers': 1.5.0
       '@types/hast': 3.0.4
       hast-util-to-string: 3.0.0
-      shiki: 1.4.0
+      shiki: 1.5.0
       unified: 11.0.4
       unist-util-visit: 5.0.0
 
-  '@shikijs/transformers@1.4.0':
+  '@shikijs/transformers@1.5.0':
     dependencies:
-      shiki: 1.4.0
+      shiki: 1.5.0
 
   '@shuding/opentype.js@1.4.0-beta.0':
     dependencies:
@@ -13543,6 +13551,10 @@ snapshots:
   shiki@1.4.0:
     dependencies:
       '@shikijs/core': 1.4.0
+
+  shiki@1.5.0:
+    dependencies:
+      '@shikijs/core': 1.5.0
 
   side-channel@1.0.6:
     dependencies:
