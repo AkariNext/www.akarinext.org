@@ -33,6 +33,13 @@ export async function getProcessor() {
             import('shiki/langs/javascript.mjs'),
             import('shiki/langs/typescript.mjs'),
             import('shiki/langs/python.mjs'),
+            import('shiki/langs/bash.mjs'),
+            import('shiki/langs/shell.mjs'),
+            import('shiki/langs/diff.mjs'),
+            import('shiki/langs/java.mjs'),
+            import('shiki/langs/json.mjs'),
+            import('shiki/langs/json5.mjs'),
+
         ],
         loadWasm: getWasm
     })
