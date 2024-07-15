@@ -37,7 +37,7 @@ importers:
         version: 1.0.7(@types/react-dom@18.3.0)(@types/react@18.3.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@reactuses/core':
         specifier: ^5.0.8
-        version: 5.0.15(react@18.3.1)
+        version: 5.0.16(react@18.3.1)
       '@remix-pwa/sw':
         specifier: ^3.0.3
         version: 3.0.4(@remix-run/dev@2.9.1(@remix-run/react@2.9.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.4.5))(@remix-run/serve@2.9.1(typescript@5.4.5))(@types/node@20.12.8)(typescript@5.4.5)(vite@5.2.12(@types/node@20.12.8)))(@remix-run/react@2.9.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.4.5))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.4.5)
@@ -1239,6 +1239,7 @@ packages:
   '@humanwhocodes/config-array@0.11.14':
     resolution: {integrity: sha512-3T8LkOmg45BV5FICb15QQMsyUSWrQ8AygVfC7ZG32zOalnqrilm018ZVCw0eapXux8FtA33q8PSRSstjee3jSg==}
     engines: {node: '>=10.10.0'}
+    deprecated: Use @eslint/config-array instead
 
   '@humanwhocodes/module-importer@1.0.1':
     resolution: {integrity: sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA==}
@@ -1246,6 +1247,7 @@ packages:
 
   '@humanwhocodes/object-schema@2.0.3':
     resolution: {integrity: sha512-93zYdMES/c1D69yZiKDBj0V24vqNzB/koF26KPaagAfd3P/4gUlh3Dys5ogAK+Exi9QyzlD8x/08Zt7wIKcDcA==}
+    deprecated: Use @eslint/object-schema instead
 
   '@iconify/react@4.1.1':
     resolution: {integrity: sha512-jed14EjvKjee8mc0eoscGxlg7mSQRkwQG3iX3cPBCO7UlOjz0DtlvTqxqEcHUJGh+z1VJ31Yhu5B9PxfO0zbdg==}
@@ -1838,8 +1840,8 @@ packages:
       react: '>=17'
       react-dom: '>=17'
 
-  '@reactuses/core@5.0.15':
-    resolution: {integrity: sha512-54Y+pW30hKAFrxnMUPX22rtxXifVdjy659m3G7Yxx++xpToixPTAXxGT4uN9m8oDMCB2qLNKgZuKLCIoaKKP4A==}
+  '@reactuses/core@5.0.16':
+    resolution: {integrity: sha512-7MlJ38xBkL8UnnPU5Y/XR2vfFNIE97zNtYU66RtZW4r6u8kTN15vOtjPIZS3pOaSQEHAuJjQBA0f+avojXfC0w==}
     peerDependencies:
       react: ^16.8.0  || ^17.0.0 || ^18.0.0
 
@@ -8437,7 +8439,7 @@ snapshots:
       - '@types/react'
       - immer
 
-  '@reactuses/core@5.0.15(react@18.3.1)':
+  '@reactuses/core@5.0.16(react@18.3.1)':
     dependencies:
       js-cookie: 3.0.5
       lodash-es: 4.17.21
