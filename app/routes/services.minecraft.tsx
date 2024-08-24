@@ -65,12 +65,12 @@ export default function Minecraft() {
                 const diff_date = new Date(new Date().getTime() - new Date(server.latestFetchDate).getTime())
                 return (
                     <div key={server.info.name} className="border-2 rounded-xl py-4">
-                        <div className="flex justify-between border-b">
-                            <div className="flex gap-4 px-4 pb-4 items-center">
+                        <div className="flex justify-between border-b items-center px-4 pb-2 mb-2">
+                            <div className="flex gap-4 items-center">
                                 {isJavaResponse(server.status) && server.status.icon ? <img src={server.status.icon} className="h-16 w-16 flex-shrink-0" alt={`${server.info.name} icon`} /> : <IconQuestionMark className="border rounded-full border-slate-300 h-16 w-16 flex-shrink-0" />}
                                 <h2>{server.info.name}</h2>
                             </div>
-                            <div className="px-4">
+                            <div>
                                 <Badge className={server.status.online ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'}>{server.status.online ? 'Online' : 'Offline'}</Badge>
                             </div>
                         </div>
@@ -80,11 +80,11 @@ export default function Minecraft() {
                             <h3 className="mt-2">バージョン</h3>
                             <div dangerouslySetInnerHTML={{ __html: isJavaResponse(server.status) ? server.status.version!.name_raw : server.status.version?.name ?? "?" }}></div>
                             <h3>プレイヤー数</h3>
-                            <p>{server.status.players?.online} &#47; {server.status.players?.max}</p>
+                            {server.status.players ? <p>{server.status.players.online} &#47; {server.status.players.max}</p> : <p>不明</p>}
                             <h3>ステータス取得</h3>
                             <p>{diff_date.getMinutes()}分{diff_date.getSeconds()}秒前</p>
                             <h3>プロトコルバージョン</h3>
-                            <p>{server.status.version?.protocol} ({server.protocolVersion.minecraftVersion})</p>
+                            {server.protocolVersion ? <p>{server.protocolVersion.majorVersion} ({server.protocolVersion.minecraftVersion})</p> : <p>不明</p>}
                         </div>
                     </div>
                 )
