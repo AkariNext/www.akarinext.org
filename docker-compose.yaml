@@ -6,3 +6,13 @@ services:
     volumes:
       - ./app:/usr/server/app
       - ./public:/usr/server/public
+  db:
+    image: postgres:16
+    volumes:
+      - ./data:/var/lib/postgresql/data:/docker-entrypoint-initdb.d
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      - POSTGRES_DB: ${POSTGRES_DB}
+      - POSTGRES_USER: ${postgres}
+      - POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
