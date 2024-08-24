@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
 import { db } from "./db.server";
 import { files } from "src/schema";
