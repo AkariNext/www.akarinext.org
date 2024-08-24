@@ -3,9 +3,10 @@ kind: Kustomization
 namespace: akarinext-web
 
 resources:
-  - deployment.yaml
-  - cloudnative-pg.yaml
+- deployment.yaml
+- cloudnative-pg.yaml
 
 images:
 - name: ghcr.io/akarinext/www.akarinext.org
-  newTag: latest
+  newName: ghcr.io/akarinext/www.akarinext.org
+  newTag: sha-fc2750b
