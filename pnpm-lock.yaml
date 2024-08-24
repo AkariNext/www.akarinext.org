@@ -54,8 +54,8 @@ importers:
         specifier: ^2.9.1
         version: 2.9.1(typescript@5.4.5)
       '@t3-oss/env-core':
-        specifier: ^0.10.0
-        version: 0.10.1(typescript@5.4.5)(zod@3.23.8)
+        specifier: ^0.11.0
+        version: 0.11.0(typescript@5.4.5)(zod@3.23.8)
       '@tabler/icons-react':
         specifier: ^3.0.0
         version: 3.4.0(react@18.3.1)
@@ -1239,6 +1239,7 @@ packages:
   '@humanwhocodes/config-array@0.11.14':
     resolution: {integrity: sha512-3T8LkOmg45BV5FICb15QQMsyUSWrQ8AygVfC7ZG32zOalnqrilm018ZVCw0eapXux8FtA33q8PSRSstjee3jSg==}
     engines: {node: '>=10.10.0'}
+    deprecated: Use @eslint/config-array instead
 
   '@humanwhocodes/module-importer@1.0.1':
     resolution: {integrity: sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA==}
@@ -1246,6 +1247,7 @@ packages:
 
   '@humanwhocodes/object-schema@2.0.3':
     resolution: {integrity: sha512-93zYdMES/c1D69yZiKDBj0V24vqNzB/koF26KPaagAfd3P/4gUlh3Dys5ogAK+Exi9QyzlD8x/08Zt7wIKcDcA==}
+    deprecated: Use @eslint/object-schema instead
 
   '@iconify/react@4.1.1':
     resolution: {integrity: sha512-jed14EjvKjee8mc0eoscGxlg7mSQRkwQG3iX3cPBCO7UlOjz0DtlvTqxqEcHUJGh+z1VJ31Yhu5B9PxfO0zbdg==}
@@ -2355,8 +2357,8 @@ packages:
     resolution: {integrity: sha512-IHk53BVw6MPMi2Gsn+hCng8rFA3ZmR3Rk7GllxDUW9qFJl/hiSvskn7XldkECapQVkIg/1dHpMAxI9xSTaLLSA==}
     engines: {node: '>=14.0.0'}
 
-  '@t3-oss/env-core@0.10.1':
-    resolution: {integrity: sha512-GcKZiCfWks5CTxhezn9k5zWX3sMDIYf6Kaxy2Gx9YEQftFcz8hDRN56hcbylyAO3t4jQnQ5ifLawINsNgCDpOg==}
+  '@t3-oss/env-core@0.11.0':
+    resolution: {integrity: sha512-PSalC5bG0a7XbyoLydiQdAnx3gICX6IQNctvh+TyLrdFxsxgocdj9Ui7sd061UlBzi+z4aIGjnem1kZx9QtUgQ==}
     peerDependencies:
       typescript: '>=5.0.0'
       zod: ^3.0.0
@@ -9135,7 +9137,7 @@ snapshots:
       '@smithy/types': 2.12.0
       tslib: 2.6.2
 
-  '@t3-oss/env-core@0.10.1(typescript@5.4.5)(zod@3.23.8)':
+  '@t3-oss/env-core@0.11.0(typescript@5.4.5)(zod@3.23.8)':
     dependencies:
       zod: 3.23.8
     optionalDependencies:
