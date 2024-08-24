@@ -28,12 +28,12 @@ export default function BlogIndex() {
 											: undefined
 									} />
 								</div>
-								<h2 className="grow" style={
+								<h2 className="grow select-none" style={
 									isTransitioning
 										? { viewTransitionName: 'blog-title' }
 										: undefined
 								}>{post.title}</h2>
-								<p className='text-gray-600 pt-8'>{post.dateDisplay}</p>
+								<p className='text-gray-600 pt-8 select-none'>{post.dateDisplay}</p>
 							</div>
 
 						)}
