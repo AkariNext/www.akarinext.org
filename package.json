@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.529.1",
-    "@iconify/react": "^4.1.1",
+    "@iconify/react": "^5.0.0",
     "@misskey-dev/summaly": "^5.1.0",
     "@nasa-gcn/remix-seo": "^2.0.0",
     "@paralleldrive/cuid2": "^2.2.2",
