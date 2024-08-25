@@ -28,6 +28,9 @@ FROM node:lts-buster-slim as final
 
 WORKDIR /usr/server
 
+# pnpmをインストール
+RUN corepack enable
+
 # ビルド成果物をコピー
 COPY --from=build /usr/server /usr/server
 
