@@ -90,7 +90,7 @@
         }
 
         & .link-card-thumbnail {
-            @apply col-span-1 sm:col-span-2;
+            @apply col-span-1 sm:col-span-2 my-0;
             height: fit-content;
         }
 
