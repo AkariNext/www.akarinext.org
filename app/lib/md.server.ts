@@ -1,9 +1,9 @@
 import parseFrontMatter from "front-matter";
-import { getHighlighterCore } from 'shiki/core'
+import { createHighlighterCore  } from 'shiki/core'
 import getWasm from 'shiki/wasm'
 
 
-let highlighter: Awaited<ReturnType<typeof getHighlighterCore>>;  // 何度も初期化しないためにキャッシュする
+let highlighter: Awaited<ReturnType<typeof createHighlighterCore>>;  // 何度も初期化しないためにキャッシュする
 let processor: Awaited<ReturnType<typeof getProcessor>>;  // 何度も初期化しないためにキャッシュする
 export async function getProcessor() {
     const [
@@ -25,7 +25,7 @@ export async function getProcessor() {
         import("rehype-autolink-headings"),
         import("@shikijs/rehype/core"),
     ])
-    highlighter = highlighter || await getHighlighterCore({
+    highlighter = highlighter || await createHighlighterCore({
         themes: [
             import('shiki/themes/github-dark.mjs')
         ],
