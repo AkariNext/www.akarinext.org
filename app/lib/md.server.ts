@@ -51,13 +51,13 @@ export default function remarkLinkCard() {
 
             if (cachedSummary) {
                 node.type = 'html';
-                node.value = cachedSummary.player ? youtubePlayer(cachedSummary, url) : defaultSummary(cachedSummary, url);
+                node.value = cachedSummary.player.url?.includes('youtube') ? youtubePlayer(cachedSummary, url) : defaultSummary(cachedSummary, url);
             } else {
                 const promise = summaly(url)
                     .then(summaryData => {
                         cache.set(url, summaryData); // キャッシュに保存
                         node.type = 'html';
-                        node.value = summaryData.player ? youtubePlayer(summaryData, url) : defaultSummary(summaryData, url);
+                        node.value = summaryData.player.url?.includes('youtube') ? youtubePlayer(summaryData, url) : defaultSummary(summaryData, url);
                     })
                     .catch(error => {
                         console.error(`Failed to fetch title for URL: ${url}`, error);
