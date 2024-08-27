@@ -7,6 +7,7 @@ const memberRoleEnum = z.enum(['mod', 'dev', 'designer']);
 
 const memberSchema = z.object({
 	name: z.string(),
+	displayName: z.optional(z.string()),
 	avatar: z.string(),
 	socials: z.array(
 		z.object({

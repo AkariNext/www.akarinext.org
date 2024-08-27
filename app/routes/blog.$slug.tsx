@@ -95,7 +95,7 @@ export default function BlogPost() {
 								className="w-16 h-16 rounded-full"
 							/>
 							<div className="py-2 h-full">
-								<div>{author.name}</div>
+								<div>{author.displayName ? author.displayName : author.name}</div>
 								<div className="flex flex-wrap pt-2">
 									{author.socials.map((social, index) => (
 										<a

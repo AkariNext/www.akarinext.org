@@ -38,7 +38,8 @@
       url: https://nr.akarinext.org/@alumis
   roles:
     - mod
-- name: いかろす
+- name: ikaros
+  displayName: いかろす
   avatar: /img/avatars/ikaros.webp
   socials:
     - type: steam

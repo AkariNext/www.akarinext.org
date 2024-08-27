@@ -14,7 +14,7 @@ export function MemberCard({ member }: MemberCardProps) {
 			className="flex justify-center items-center flex-col bg-slate-200 rounded-lg p-8"
 		>
 			<img src={member.avatar} className="h-24 rounded-lg" alt="" />
-			<div className="mt-2 text-slate-700 text-lg font-bold">{member.name}</div>
+			<div className="mt-2 text-slate-700 text-lg font-bold">{member.displayName ? member.displayName : member.name}</div>
 			<div className="flex flex-row gap-2">
 				{member.socials.map((social, index) => (
 					<a
