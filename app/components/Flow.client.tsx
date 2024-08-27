@@ -1,9 +1,14 @@
-import ReactFlow, { Background, Controls, type Node, type Edge } from 'reactflow';
+import ReactFlow, {
+	Background,
+	Controls,
+	type Node,
+	type Edge,
+} from 'reactflow';
 import 'reactflow/dist/style.css';
 
 interface FlowProps {
-	edges: Edge<any>[];  // eslint-disable-line @typescript-eslint/no-explicit-any
-	nodes: Node<any, string | undefined>[] | undefined;  // eslint-disable-line @typescript-eslint/no-explicit-any
+	edges: Edge<any>[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+	nodes: Node<any, string | undefined>[] | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export function Flow({ nodes, edges }: FlowProps) {

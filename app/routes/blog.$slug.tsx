@@ -40,7 +40,10 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
 	if (ogImageUrl) {
 		ogImageUrl.searchParams.append('title', post.title);
 		ogImageUrl.searchParams.append('displayDate', post.dateDisplay);
-		ogImageUrl.searchParams.append('authors', post.authors.map((a) => a.name).join(','));
+		ogImageUrl.searchParams.append(
+			'authors',
+			post.authors.map((a) => a.name).join(','),
+		);
 	}
 
 	const socialImageUrl = ogImageUrl?.toString();
@@ -68,8 +71,11 @@ export default function BlogPost() {
 			<div className="flex justify-center px-8 sm:px-0">
 				<div className="max-w-2xl w-full">
 					<div className="flex justify-center">
-						<InlineIcon style={{ viewTransitionName: 'blog-image' }} icon={`fluent-emoji-flat:${post.emoji}`} className='h-16 w-16 bg-white p-2 rounded-lg mb-4' />
-
+						<InlineIcon
+							style={{ viewTransitionName: 'blog-image' }}
+							icon={`fluent-emoji-flat:${post.emoji}`}
+							className="h-16 w-16 bg-white p-2 rounded-lg mb-4"
+						/>
 					</div>
 					<div style={{ viewTransitionName: 'blog-title' }}>
 						<div className="text-4xl mt-8">{post.title}</div>
@@ -78,7 +84,6 @@ export default function BlogPost() {
 				</div>
 			</div>
 			<div className="mdx">
-				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation> */}
 				<div dangerouslySetInnerHTML={{ __html: post.html }} />
 
 				<div className="border-t mt-8 block">

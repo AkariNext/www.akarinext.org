@@ -24,7 +24,13 @@ export default function Services() {
 			<div className="flex flex-wrap justify-center  gap-x-8">
 				{services.map((service, index) => (
 					<div key={index} className="mb-8">
-						{service.name.toLowerCase() === 'minecraft' ? <Link to="/services/minecraft"><ServiceCard {...service} /></Link> : <ServiceCard {...service} />}
+						{service.name.toLowerCase() === 'minecraft' ? (
+							<Link to="/services/minecraft">
+								<ServiceCard {...service} />
+							</Link>
+						) : (
+							<ServiceCard {...service} />
+						)}
 					</div>
 				))}
 			</div>

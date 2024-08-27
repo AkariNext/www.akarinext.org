@@ -7,6 +7,7 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import arraybuffer from "vite-plugin-arraybuffer";
 import { remixPWA } from '@remix-pwa/dev'
+import { devErrorBoundary } from "@metronome-sh/dev-error-boundary";
 
 installGlobals();
 
@@ -21,5 +22,5 @@ export default defineConfig({
   remixPWA(),
   remix(
     { serverModuleFormat: 'esm', }
-  ), tsconfigPaths()],
+  ), tsconfigPaths(), devErrorBoundary()],
 });

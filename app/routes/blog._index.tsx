@@ -16,28 +16,43 @@ export default function BlogIndex() {
 	return (
 		<div>
 			<div className="text-2xl mb-8 text-center">最新の記事</div>
-			<div className='flex flex-wrap gap-8'>
+			<div className="flex flex-wrap gap-8">
 				{posts.map((post, index) => (
-					<NavLink to={`/blog/${post.slug}`} key={index} className='sm:w-[calc(100%/3-32px)] w-full border-2 py-2 rounded-lg' unstable_viewTransition prefetch='intent'>
+					<NavLink
+						to={`/blog/${post.slug}`}
+						key={index}
+						className="sm:w-[calc(100%/3-32px)] w-full border-2 py-2 rounded-lg"
+						unstable_viewTransition
+						prefetch="intent"
+					>
 						{({ isTransitioning }) => (
-							<div className='flex flex-col h-full p-8'>
-								<div className='flex items-center justify-center border-b-2 mb-4'>
-									<InlineIcon icon={`fluent-emoji-flat:${post.emoji}`} className='h-16 w-16 bg-white p-2 rounded-lg mb-4' style={
-										isTransitioning
-											? { viewTransitionName: 'blog-image' }
-											: undefined
-									} />
+							<div className="flex flex-col h-full p-8">
+								<div className="flex items-center justify-center border-b-2 mb-4">
+									<InlineIcon
+										icon={`fluent-emoji-flat:${post.emoji}`}
+										className="h-16 w-16 bg-white p-2 rounded-lg mb-4"
+										style={
+											isTransitioning
+												? { viewTransitionName: 'blog-image' }
+												: undefined
+										}
+									/>
 								</div>
-								<h2 className="grow select-none" style={
-									isTransitioning
-										? { viewTransitionName: 'blog-title' }
-										: undefined
-								}>{post.title}</h2>
-								<p className='text-gray-600 pt-8 select-none'>{post.dateDisplay}</p>
+								<h2
+									className="grow select-none"
+									style={
+										isTransitioning
+											? { viewTransitionName: 'blog-title' }
+											: undefined
+									}
+								>
+									{post.title}
+								</h2>
+								<p className="text-gray-600 pt-8 select-none">
+									{post.dateDisplay}
+								</p>
 							</div>
-
 						)}
-
 					</NavLink>
 				))}
 			</div>

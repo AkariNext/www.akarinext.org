@@ -52,10 +52,10 @@ export async function createOgImageSVG(request: Request) {
 			</div>
 			<div style={{ display: 'flex' }}>
 				{authors.map((authorName) => {
-                    const author = getAuthor(authorName);
+					const author = getAuthor(authorName);
 					return (
 						<div
-							style={{ display: 'flex', alignItems: "center", gap: 8 }}
+							style={{ display: 'flex', alignItems: 'center', gap: 8 }}
 							key={authorName}
 						>
 							<img
@@ -63,9 +63,11 @@ export async function createOgImageSVG(request: Request) {
 								width={100}
 								height={100}
 								aria-label="Author avatar"
-								style={{borderRadius: 50}}
+								style={{ borderRadius: 50 }}
 							/>
-							<p style={{ fontSize: '2rem', margin:0, padding:0 }}>{author!.name}</p>
+							<p style={{ fontSize: '2rem', margin: 0, padding: 0 }}>
+								{author!.name}
+							</p>
 						</div>
 					);
 				})}
