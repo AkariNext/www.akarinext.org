@@ -164,9 +164,6 @@ importers:
       unist-util-visit:
         specifier: ^5.0.0
         version: 5.0.0
-      unist-util-visit-parents:
-        specifier: ^6.0.1
-        version: 6.0.1
       yaml:
         specifier: ^2.4.1
         version: 2.5.0

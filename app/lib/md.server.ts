@@ -6,6 +6,7 @@ import { summaly } from '@misskey-dev/summaly';
 import { LRUCache } from 'lru-cache';
 import { visitParents } from 'unist-util-visit-parents';
 import Summary from '@misskey-dev/summaly/built/summary';
+import { visit } from "unist-util-visit";
 
 const cache = new LRUCache<string, any>({
 	max: 500, // キャッシュの最大エントリ数
@@ -41,12 +42,37 @@ export default function remarkLinkCard() {
 	return async function transformer(tree: any) {
 		const promises: Promise<void>[] = [];
 
-		visitParents(tree, 'link', (node: any, parents: any[]) => {
-			if (parents.filter((parent: any) => parent.type === 'list').length > 0) {
-				return;
-			}
+		visit(tree, 'paragraph', (node, index, parent) => {
+			/*要件
+			
+			1. リンクのみの段落に対してのみ処理を行う
+			2. リンクのテキストがリンク先URLと同じ場合のみ処理を行う
+			3. リスト内のリンクはスキップする
+			4. リンク先がキャッシュに存在する場合はキャッシュを使う
+			5. キャッシュが存在しない場合はsummalyを使って情報を取得する
+			6. キャッシュに情報を保存する
+			7. キャッシュを使ってリンクカードを生成する
+			8. リンク先がyoutubeの場合は埋め込みプレイヤーを生成する
+			9. リンク先がyoutubeでない場合はデフォルトのリンクカードを生成する
+			*/
 
-			const url = node.url;
+			
+			const maybelink = node.children[0];  // おそらくリンク
+
+			if (node.children.length !== 1) return;
+			if (maybelink.type !== 'link') return;
+			if (maybelink.children.length !== 1) return;
+
+			const isPlainText = maybelink.children[0].type === 'text' && maybelink.url === maybelink.children[0].value;
+			if (!isPlainText) return;
+
+			if (!parent || index === undefined) return;
+
+			// listの中にある場合はスキップ
+			if (parent.type === 'list' || parent.type === 'listItem') return;
+
+			const url = maybelink.url;
+
 			const cachedSummary = cache.get(url);
 
 			if (cachedSummary) {
