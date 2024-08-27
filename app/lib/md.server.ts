@@ -4,7 +4,6 @@ import getWasm from 'shiki/wasm';
 import { summaly } from '@misskey-dev/summaly';
 
 import { LRUCache } from 'lru-cache';
-import { visitParents } from 'unist-util-visit-parents';
 import Summary from '@misskey-dev/summaly/built/summary';
 import { visit } from "unist-util-visit";
 
