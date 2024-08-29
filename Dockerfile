@@ -31,6 +31,10 @@ WORKDIR /usr/server
 # pnpmをインストール
 RUN corepack enable
 
+# opensslをインストール(prismaの依存関係)
+RUN apt-get update -y && apt-get install -y openssl
+
+
 # ビルド成果物をコピー
 COPY --from=build /usr/server /usr/server
 
