@@ -63,9 +63,7 @@
 				"useValidTypeof": "error"
 			}
 		},
-		"ignore": [
-			"app/components/ui/*"
-		]
+		"ignore": ["app/components/ui/*"]
 	},
 	"javascript": {
 		"formatter": {
@@ -74,14 +72,10 @@
 	},
 	"overrides": [
 		{
-			"include": [
-				"**/*.{js,jsx,ts,tsx}"
-			]
+			"include": ["**/*.{js,jsx,ts,tsx}"]
 		},
 		{
-			"include": [
-				"**/*.{ts,tsx}"
-			],
+			"include": ["**/*.{ts,tsx}"],
 			"linter": {
 				"rules": {}
 			}

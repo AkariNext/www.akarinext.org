@@ -66,7 +66,7 @@ export async function createOgImageSVG(request: Request) {
 								style={{ borderRadius: 50 }}
 							/>
 							<p style={{ fontSize: '2rem', margin: 0, padding: 0 }}>
-								{author!.displayName ? author!.displayName :author!.name}
+								{author!.displayName ? author!.displayName : author!.name}
 							</p>
 						</div>
 					);

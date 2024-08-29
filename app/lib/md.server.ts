@@ -5,7 +5,7 @@ import { summaly } from '@misskey-dev/summaly';
 
 import { LRUCache } from 'lru-cache';
 import Summary from '@misskey-dev/summaly/built/summary';
-import { visit } from "unist-util-visit";
+import { visit } from 'unist-util-visit';
 
 const cache = new LRUCache<string, any>({
 	max: 500, // キャッシュの最大エントリ数
@@ -55,14 +55,15 @@ export default function remarkLinkCard() {
 			9. リンク先がyoutubeでない場合はデフォルトのリンクカードを生成する
 			*/
 
-			
-			const maybelink = node.children[0];  // おそらくリンク
+			const maybelink = node.children[0]; // おそらくリンク
 
 			if (node.children.length !== 1) return;
 			if (maybelink.type !== 'link') return;
 			if (maybelink.children.length !== 1) return;
 
-			const isPlainText = maybelink.children[0].type === 'text' && maybelink.url === maybelink.children[0].value;
+			const isPlainText =
+				maybelink.children[0].type === 'text' &&
+				maybelink.url === maybelink.children[0].value;
 			if (!isPlainText) return;
 
 			if (!parent || index === undefined) return;
