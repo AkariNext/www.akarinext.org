@@ -38,6 +38,7 @@
 		"emojilib": "^3.0.12",
 		"file-type": "^19.0.0",
 		"front-matter": "^4.0.2",
+		"ioredis": "^5.4.1",
 		"isbot": "^5.0.0",
 		"lru-cache": "^11.0.0",
 		"lucide-react": "^0.436.0",
