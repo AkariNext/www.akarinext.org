@@ -85,11 +85,6 @@
 			"linter": {
 				"rules": {}
 			}
-		},
-		{
-			"include": [
-				".eslintrc.cjs"
-			]
 		}
 	],
 	"vcs": {
