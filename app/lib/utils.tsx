@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import {
+	IconBadgeVr,
 	IconBrandDiscord,
 	IconBrandGithub,
 	IconBrandSteam,
@@ -40,6 +41,8 @@ export function getSocialIcon(type: string, props?: TablerIconsProps) {
 			return <IconBrandGithub className={className} {...props} />;
 		case 'steam':
 			return <IconBrandSteam className={className} {...props} />;
+		case 'vrchat':
+			return <IconBadgeVr className={className} {...props} />;
 		default:
 			return <IconWorld className={className} {...props} />;
 	}
