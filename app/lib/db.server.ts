@@ -1,14 +1,6 @@
-import postgres from 'postgres';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import * as schema from '../../src/schema';
-import { env } from './env.server';
+import { PrismaClient } from '@prisma/client';
 
-export const connection = postgres({
-	database: env.POSTGRES_DB,
-	username: env.POSTGRES_USER,
-	password: env.POSTGRES_PASSWORD,
-	host: env.POSTGRES_HOST,
-	port: env.POSTGRES_PORT ? Number.parseInt(env.POSTGRES_PORT) : 5432,
-});
+import { singleton } from '~/lib/singleton.server';
 
-export const db = drizzle(connection, { schema });
+// hard-code a unique key so we can look up the client when this module gets re-imported
+export const db = singleton('prisma', () => new PrismaClient());
