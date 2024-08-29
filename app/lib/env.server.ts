@@ -13,6 +13,10 @@ export const env = createEnv({
 			.default('akarinext-web-pg-rw.akarinext-web'),
 		POSTGRES_PORT: z.optional(z.string()).default('5432'),
 
+		KEYDB_HOST: z.string(),
+		KEYDB_PORT: z.string(),
+		KEYDB_PASSWORD: z.string(),
+
 		S3_BUCKET_NAME: z.string(),
 		S3_ACCESS_KEY: z.string(),
 		S3_SECRET_KEY: z.string(),
