@@ -24,7 +24,7 @@ export default function Index() {
 	return (
 		<div>
 			<div className="grid grid-cols-1  md:grid-cols-3 w-full  gap-y-4 md:gap-x-4 h-screen items-center">
-				<div className="h-96 col-span-2 rounded-lg flex flex-col p-8 order-2 sm:order-1">
+				<div className="h-96 col-span-2 rounded-lg flex flex-col p-8 md:p-16 order-2 sm:order-1">
 					<h1 className="text-4xl">Let&apos;s have fun and play funny!</h1>
 					<h2 className="mt-4">
 						AkariNextで一緒に楽しくゲームや開発を行いましょう！
@@ -52,7 +52,8 @@ export default function Index() {
 					className="
           ball
           mt-8
-        bg-white
+        bg-white/90
+		  akari-container
           rounded-3xl
           p-8
 
@@ -90,19 +91,37 @@ export default function Index() {
 				</div>
 			</div>
 
-			<div className="mt-16 rounded-lg min-h-96">
-				<h2 className="text-slate-700 text-2xl font-bold text-center">
-					運営メンバー
-				</h2>
+			<div className='akari-container'>
+				<div className="mt-28 rounded-lg min-h-[500px] grid grid-cols-1 md:grid-cols-3">
+					<div className='rounded-l-xl' style={{background: "url(/img/hero.webp)", backgroundPosition: "75% 45%"}} />
 
-				<div className="grid grid-cols-1 md:grid-cols-3 mt-8 gap-8">
-					{displayMembers.map((member) => (
-						<MemberCard key={member.name} member={member} />
-					))}
+					<div className='bg-white py-8 col-span-2 rounded-r-xl flex justify-center flex-col'>
+						<div className='flex justify-between items-center px-8'>
+						<h2 className="text-slate-700 text-2xl font-bold">
+							運営メンバー
+						</h2>
+						<Link to="/members/" aria-label="メンバーを見る">
+							<Button variant={"ghost"} size={'lg'}  className="rounded-3xl">
+								VIEW ALL
+							</Button>
+						</Link>
+						</div>
+						<p className='px-8 mt-8 border-b pb-4'>
+							AkariNextを運営するメンバーです。
+						</p>
+						<div className="flex flex-wrap justify-center gap-4 col-col-span-1 md:col-span-2">
+
+							{displayMembers.map((member) => (
+								<div key={member.name} className='w-full md:w-3/12'>
+									<MemberCard member={member} />
+								</div>
+							))}
+						</div>
+					</div>
 				</div>
 			</div>
 
-			<div className="mt-8">
+			{/* <div className="mt-8">
 				<div className="col-span-1 w-full h-full bg-slate-200 rounded-lg p-8">
 					<h2 className="text-slate-700 text-2xl font-bold text-center">
 						SERVICES
@@ -142,7 +161,7 @@ export default function Index() {
 						</h2>
 					</div>
 				</div>
-			</div>
+			</div> */}
 		</div>
 	);
 }

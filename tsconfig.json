@@ -12,7 +12,8 @@
 		"types": [
 			"@remix-run/node",
 			"vite/client",
-			"vite-plugin-arraybuffer/types"
+			"vite-plugin-arraybuffer/types",
+			"@remix-run/react/future/single-fetch.d.ts"
 		],
 		"isolatedModules": true,
 		"esModuleInterop": true,

@@ -2,9 +2,13 @@
     @apply flex;
 }
 
-.mdx {
-    @apply bg-slate-50 p-4 sm:p-8 rounded-lg max-w-screen-sm sm:max-w-screen-lg m-auto leading-[1.7];
+.post-header {
+    @apply my-16;
+}
 
+.mdx {
+    max-width: min(1200px, 90%);
+    @apply bg-slate-50 p-4 sm:p-8 rounded-lg m-auto leading-[1.7];
 
     & h1,
     h2,
@@ -47,7 +51,7 @@
     }
 
     & a {
-        @apply text-blue-500 hover:underline;
+        @apply text-blue-500 hover:underline break-all;
     }
 
     & p {

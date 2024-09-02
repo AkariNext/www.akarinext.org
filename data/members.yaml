@@ -1,5 +1,6 @@
 - name: yupix
   avatar: /img/avatars/yupix.webp
+  bio: 気ままに生きてる
   socials:
     - type: github
       url: https://github.com/yupix

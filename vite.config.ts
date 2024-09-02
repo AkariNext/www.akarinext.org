@@ -9,7 +9,7 @@ import arraybuffer from 'vite-plugin-arraybuffer';
 import { remixPWA } from '@remix-pwa/dev';
 import { devErrorBoundary } from '@metronome-sh/dev-error-boundary';
 
-installGlobals();
+installGlobals({nativeFetch: true});
 
 export default defineConfig({
 	plugins: [
@@ -18,8 +18,8 @@ export default defineConfig({
 		}),
 		arraybuffer(),
 		remixPWA(),
-		remix({ serverModuleFormat: 'esm' }),
+		remix({ serverModuleFormat: 'esm', future: {unstable_singleFetch: true} }),
 		tsconfigPaths(),
-		devErrorBoundary(),
+		// devErrorBoundary(),
 	],
 });

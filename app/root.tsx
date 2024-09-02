@@ -11,6 +11,7 @@ import { ManifestLink } from '@remix-pwa/sw';
 import { Navbar } from './components/navbar';
 
 import '~/tailwind.css';
+import '~/style.css';
 import { type LinksFunction, type MetaFunction, json } from '@remix-run/node';
 import { Footer } from './components/footer';
 import { CONFIG } from './lib/config.server';
@@ -76,10 +77,10 @@ export function Layout({ children }: { children: ReactNode }) {
 				<ManifestLink />
 				<Links />
 			</head>
-			<body className="bg-slate-100 w-full mx-auto max-w-screen-sm sm:max-w-screen-xl">
-				<div className="px-4 sm:px-8">
+			<body className="bg-slate-100 w-full">
+				<div>
 					<Navbar />
-					<main className="mt-20 max-w-screen-sm sm:max-w-screen-lg mx-auto">
+					<main className="mx-auto">
 						{children}
 					</main>
 					<Footer links={config.footer.links} />

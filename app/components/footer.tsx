@@ -17,8 +17,8 @@ type Props = {
 
 export function Footer({ links }: Props) {
 	return (
-		<footer className="mt-8">
-			<div className="sm:flex block min-h-16  items-center rounded-xl p-4 bg-white sticky mb-4">
+		<footer className="mt-16 bg-white p-4">
+			<div className="sm:flex block min-h-16  items-center sticky mb-4">
 				<NavigationMenu>
 					<NavigationMenuList>
 						<NavigationMenuItem className="text-2xl font-bold">
@@ -72,7 +72,7 @@ export function Footer({ links }: Props) {
 					</NavigationMenuList>
 				</NavigationMenu>
 			</div>
-			<div className="mt-4">&copy; 2024 AkariNext</div>
+			<div className="mt-4 px-3">&copy; 2024 AkariNext</div>
 		</footer>
 	);
 }

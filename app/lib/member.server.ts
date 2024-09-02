@@ -16,6 +16,7 @@ const memberSchema = z.object({
 			alt: z.string().optional(),
 		}),
 	),
+	bio: z.optional(z.string()),
 	roles: z.array(memberRoleEnum),
 });
 

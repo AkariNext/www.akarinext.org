@@ -1,5 +1,5 @@
 import invariant from 'tiny-invariant';
-import { useLoaderData } from '@remix-run/react';
+import { Link, useLoaderData } from '@remix-run/react';
 import {
 	type LoaderFunctionArgs,
 	type MetaFunction,
@@ -10,6 +10,7 @@ import '../mdx.css';
 import { getSocialIcon } from '~/lib/utils';
 import { getBlogPost } from '../lib/blog.server';
 import { InlineIcon } from '@iconify/react/dist/iconify.js';
+import { Avatar } from '~/components/Avatar';
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
 	const { slug } = params;
@@ -68,7 +69,7 @@ export default function BlogPost() {
 
 	return (
 		<div>
-			<div className="flex justify-center px-8 sm:px-0">
+			<div className="flex justify-center px-8 sm:px-0 post-header">
 				<div className="max-w-2xl w-full">
 					<div className="flex justify-center">
 						<InlineIcon
@@ -79,7 +80,7 @@ export default function BlogPost() {
 					</div>
 					<div style={{ viewTransitionName: 'blog-title' }}>
 						<div className="text-4xl mt-8">{post.title}</div>
-						<div className="mt-2 mb-8">{post.dateDisplay}</div>
+						<div className="mt-2">{post.dateDisplay}</div>
 					</div>
 				</div>
 			</div>
@@ -87,13 +88,12 @@ export default function BlogPost() {
 				<div dangerouslySetInnerHTML={{ __html: post.html }} />
 
 				<div className="border-t mt-8 block">
+
 					{post.authors.map((author) => (
-						<div key={author.name} className="flex items-stretch gap-4 mt-4">
-							<img
-								src={author.avatar}
-								alt={author.name}
-								className="w-16 h-16 rounded-full"
-							/>
+						<div key={author.name} className="flex items-center gap-4 mt-4">
+							<Link to={`/member/${author.name}`}>
+								<Avatar src={author.avatar} alt={author.name} />
+							</Link>
 							<div className="py-2 h-full">
 								<div>
 									{author.displayName ? author.displayName : author.name}
@@ -105,7 +105,7 @@ export default function BlogPost() {
 											href={social.url}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="mr-4"
+											className="mr-4 hover:transform hover:scale-110 transition-transform"
 										>
 											{getSocialIcon(social.type, { size: 16 })}
 										</a>

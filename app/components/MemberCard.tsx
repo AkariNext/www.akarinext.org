@@ -11,7 +11,7 @@ export function MemberCard({ member }: MemberCardProps) {
 	return (
 		<div
 			key={member.name}
-			className="flex justify-center items-center flex-col bg-slate-200 rounded-lg p-8"
+			className="flex justify-center items-center flex-col backdrop-blur-sm bg-white rounded-lg p-6"
 		>
 			<img src={member.avatar} className="h-24 rounded-lg" alt="" />
 			<div className="mt-2 text-slate-700 text-lg font-bold">

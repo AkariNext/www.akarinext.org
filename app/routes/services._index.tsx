@@ -18,10 +18,10 @@ export default function Services() {
 	const { services } = useLoaderData<typeof loader>();
 	return (
 		<div>
-			<div className="text-2xl mb-8 text-center">
+			<div className="text-2xl mb-8 text-center bg-white py-10">
 				AkariNextが提供しているサービス
 			</div>
-			<div className="flex flex-wrap justify-center  gap-x-8">
+			<div className="flex flex-wrap justify-center gap-x-8">
 				{services.map((service, index) => (
 					<div key={index} className="mb-8">
 						{service.name.toLowerCase() === 'minecraft' ? (

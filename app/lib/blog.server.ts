@@ -114,3 +114,21 @@ export async function getBlogPostListings() {
 		.sort((a, b) => b.date.getTime() - a.date.getTime())
 		.map(({ ...listing }) => listing);
 }
+
+
+export async function getBlogPostListingsByUsername(username: string) {
+	const slugs = Object.keys(POSTS);
+	const listings = [];
+
+	for (const slug of slugs) {
+		const { ...listing } = await getBlogPost(slug);
+		if (listing.draft === false) continue;
+		if (listing.authors.some((author) => author.name === username)) {
+			listings.push({ slug, ...listing });
+		}
+	}
+
+	return listings
+		.sort((a, b) => b.date.getTime() - a.date.getTime())
+		.map(({ ...listing }) => listing);
+}
