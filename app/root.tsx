@@ -7,7 +7,6 @@ import {
 	useLoaderData,
 	useRouteError,
 } from '@remix-run/react';
-import { ManifestLink } from '@remix-pwa/sw';
 import { Navbar } from './components/navbar';
 
 import '~/tailwind.css';
