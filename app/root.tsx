@@ -73,7 +73,6 @@ export function Layout({ children }: { children: ReactNode }) {
 				<meta charSet="utf-8" />
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
 				<Meta />
-				<ManifestLink />
 				<Links />
 			</head>
 			<body className="bg-slate-100 w-full">
