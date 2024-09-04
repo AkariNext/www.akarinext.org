@@ -7,8 +7,9 @@ import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import arraybuffer from 'vite-plugin-arraybuffer';
 import { devErrorBoundary } from '@metronome-sh/dev-error-boundary';
+import {flatRoutes} from 'remix-flat-routes';
 
-installGlobals({nativeFetch: true});
+installGlobals({ nativeFetch: true });
 
 export default defineConfig({
 	plugins: [
@@ -16,7 +17,16 @@ export default defineConfig({
 			remarkPlugins: [remarkFrontmatter, remarkMdxFrontmatter],
 		}),
 		arraybuffer(),
-		remix({ serverModuleFormat: 'esm', future: {unstable_singleFetch: true} }),
+		remix({
+			ignoredRouteFiles: ['**/*'],
+			serverModuleFormat: 'esm',
+			future: { unstable_singleFetch: true },
+			routes: async (defineRoutes) => {
+				return flatRoutes('routes', defineRoutes, {
+					ignoredRouteFiles: ['.*', '**/*.css', '**/__*.*'],
+				});
+			},
+		}),
 		tsconfigPaths(),
 		// devErrorBoundary(),
 	],
