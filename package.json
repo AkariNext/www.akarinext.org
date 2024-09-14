@@ -55,7 +55,7 @@
 		"remark-parse": "^11.0.0",
 		"remark-rehype": "^11.1.0",
 		"remix-utils": "^7.5.0",
-		"satori": "^0.10.13",
+		"satori": "^0.11.0",
 		"shiki": "^1.3.0",
 		"svg2img": "^1.0.0-beta.2",
 		"tailwind-merge": "^2.2.1",
