@@ -133,7 +133,7 @@ importers:
         version: 11.1.0
       remix-utils:
         specifier: ^7.5.0
-        version: 7.6.0(@remix-run/node@2.11.2(typescript@5.5.4))(@remix-run/react@2.11.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4))(@remix-run/router@1.19.1)(react@18.3.1)(zod@3.23.8)
+        version: 7.7.0(@remix-run/node@2.11.2(typescript@5.5.4))(@remix-run/react@2.11.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4))(@remix-run/router@1.19.1)(react@18.3.1)(zod@3.23.8)
       satori:
         specifier: ^0.10.13
         version: 0.10.14
@@ -5093,12 +5093,11 @@ packages:
   remark-stringify@11.0.0:
     resolution: {integrity: sha512-1OSmLd3awB/t8qdoEOMazZkNsfVTeY4fTsgzcQFdXNq8ToTN4ZGwrMnlda4K6smTFKD+GRV6O48i6Z4iKgPPpw==}
 
-  remix-utils@7.6.0:
-    resolution: {integrity: sha512-BPhCUEy+nwrhDDDg2v3+LFSszV6tluMbeSkbffj2o4tqZxt5Kn69Y9sNpGxYLAj8gjqeYDuxjv55of+gYnnykA==}
+  remix-utils@7.7.0:
+    resolution: {integrity: sha512-J8NhP044nrNIam/xOT1L9a4RQ9FSaA2wyrUwmN8ZT+c/+CdAAf70yfaLnvMyKcV5U+8BcURQ/aVbth77sT6jGA==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@remix-run/cloudflare': ^2.0.0
-      '@remix-run/deno': ^2.0.0
       '@remix-run/node': ^2.0.0
       '@remix-run/react': ^2.0.0
       '@remix-run/router': ^1.7.2
@@ -5109,8 +5108,6 @@ packages:
       zod: ^3.22.4
     peerDependenciesMeta:
       '@remix-run/cloudflare':
-        optional: true
-      '@remix-run/deno':
         optional: true
       '@remix-run/node':
         optional: true
@@ -5534,8 +5531,8 @@ packages:
     resolution: {integrity: sha512-Ne2YiiGN8bmrmJJEuTWTLJR32nh/JdL1+PSicowtNb0WFpn59GK8/lfD61bVtzguz7b3PBt74nxpv/Pw5po5Rg==}
     engines: {node: '>=8'}
 
-  type-fest@4.25.0:
-    resolution: {integrity: sha512-bRkIGlXsnGBRBQRAY56UXBm//9qH4bmJfFvq83gSz41N282df+fjy8ofcEgc1sM8geNt5cl6mC2g9Fht1cs8Aw==}
+  type-fest@4.26.1:
+    resolution: {integrity: sha512-yOGpmOAL7CkKe/91I5O3gPICmJNLJ1G4zFYVAsRHg7M64biSnPtRj0WNQt++bRkjYOqjWXrhnUw1utzmVErAdg==}
     engines: {node: '>=16'}
 
   type-is@1.6.18:
@@ -11994,9 +11991,9 @@ snapshots:
       mdast-util-to-markdown: 2.1.0
       unified: 11.0.5
 
-  remix-utils@7.6.0(@remix-run/node@2.11.2(typescript@5.5.4))(@remix-run/react@2.11.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4))(@remix-run/router@1.19.1)(react@18.3.1)(zod@3.23.8):
+  remix-utils@7.7.0(@remix-run/node@2.11.2(typescript@5.5.4))(@remix-run/react@2.11.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4))(@remix-run/router@1.19.1)(react@18.3.1)(zod@3.23.8):
     dependencies:
-      type-fest: 4.25.0
+      type-fest: 4.26.1
     optionalDependencies:
       '@remix-run/node': 2.11.2(typescript@5.5.4)
       '@remix-run/react': 2.11.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
@@ -12470,7 +12467,7 @@ snapshots:
 
   type-fest@0.7.1: {}
 
-  type-fest@4.25.0: {}
+  type-fest@4.26.1: {}
 
   type-is@1.6.18:
     dependencies:
