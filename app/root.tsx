@@ -4,7 +4,7 @@ import {
 	Outlet,
 	Scripts,
 	ScrollRestoration,
-	useLoaderData,
+	useRouteLoaderData,
 	useRouteError,
 } from '@remix-run/react';
 import { Navbar } from './components/navbar';
@@ -65,7 +65,8 @@ export function ErrorBoundary() {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
-	const { config } = useLoaderData<typeof loader>();
+	// TODO: これどうにかしたい
+	const { config } = useRouteLoaderData<typeof loader>("root");
 
 	return (
 		<html lang="ja">
@@ -81,7 +82,7 @@ export function Layout({ children }: { children: ReactNode }) {
 					<main className="mx-auto">
 						{children}
 					</main>
-					<Footer links={config.footer.links} />
+					<Footer links={config?.footer.links} />
 				</div>
 				<ScrollRestoration />
 				<Scripts />
