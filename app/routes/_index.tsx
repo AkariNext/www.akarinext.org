@@ -1,12 +1,13 @@
-import { json } from '@remix-run/node';
+import { json, LoaderFunctionArgs } from '@remix-run/node';
 import { Link, useLoaderData } from '@remix-run/react';
 import { Button } from '~/components/ui/button';
 import { MEMBERS } from '~/lib/member.server';
 import { SERVICES } from '~/lib/services.server';
 import { ServiceCard } from '~/components/ServiceCard';
 import { MemberCard } from '~/components/MemberCard';
+import { authenticator } from '~/lib/auth.server';
 
-export function loader() {
+export async function loader({request}:LoaderFunctionArgs) {
 	return json(
 		{ members: MEMBERS, services: SERVICES.slice(0, 3) },
 		{

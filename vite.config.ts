@@ -28,6 +28,6 @@ export default defineConfig({
 			},
 		}),
 		tsconfigPaths(),
-		// devErrorBoundary(),
+		devErrorBoundary(),
 	],
 });
