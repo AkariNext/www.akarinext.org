@@ -5,14 +5,6 @@ import { z } from 'zod';
 
 export const env = createEnv({
 	server: {
-		POSTGRES_USER: z.string(),
-		POSTGRES_PASSWORD: z.string(),
-		POSTGRES_DB: z.string(),
-		POSTGRES_HOST: z
-			.optional(z.string())
-			.default('akarinext-web-pg-rw.akarinext-web'),
-		POSTGRES_PORT: z.optional(z.string()).default('5432'),
-
 		S3_BUCKET_NAME: z.string(),
 		S3_ACCESS_KEY: z.string(),
 		S3_SECRET_KEY: z.string(),
@@ -23,7 +15,9 @@ export const env = createEnv({
 		// OIDCはPKCEを使うので、クライアントシークレットは不要
 		OIDC_CLIENT_ID: z.string(),
 		OIDC_ISSUER: z.string(),
-		OIDC_REDIRECT_URIS: z.array(z.string()),
+		OIDC_REDIRECT_URIS: z.string().transform((v) => v.split(',')),
+		OIDC_USERINFO_ENDPOINT: z.string(),
+		SESSION_SECRET: z.string(),
 	},
 	runtimeEnv: process.env,
 });
