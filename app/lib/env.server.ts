@@ -19,6 +19,11 @@ export const env = createEnv({
 		S3_REGION: z.string(),
 		S3_ENDPOINT: z.string(),
 		S3_PREFIX: z.string().default('*'),
+
+		// OIDCはPKCEを使うので、クライアントシークレットは不要
+		OIDC_CLIENT_ID: z.string(),
+		OIDC_ISSUER: z.string(),
+		OIDC_REDIRECT_URIS: z.array(z.string()),
 	},
 	runtimeEnv: process.env,
 });
