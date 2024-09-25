@@ -1,7 +1,6 @@
 import { json } from '@remix-run/node';
-import { NavLink, useLoaderData } from '@remix-run/react';
+import { useLoaderData } from '@remix-run/react';
 import { getBlogPostListings } from '~/lib/blog.server';
-import { InlineIcon } from '@iconify/react';
 import { ArticleCardWithLink } from '~/components/ArticleCard';
 
 export async function loader() {
