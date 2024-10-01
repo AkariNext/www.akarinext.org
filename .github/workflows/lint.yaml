@@ -4,14 +4,29 @@ on:
   push:
     branches: [ "master" ]
   pull_request:
+    
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+  issues: write
 
 jobs:
   biome:
     name: Linter 🧹
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
+    steps:
+      - name: Check out code.
+        uses: actions/checkout@v4
+      - name: lint
+        uses: mongolyy/reviewdog-action-biome@v1.6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-check
+
+  biome-pr:
+    name: Linter 🧹
+    runs-on: ubuntu-latest
     steps:
       - name: Check out code.
         uses: actions/checkout@v4
