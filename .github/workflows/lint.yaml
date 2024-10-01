@@ -25,7 +25,8 @@ jobs:
           reporter: github-check
 
   biome-pr:
-    name: Linter 🧹
+    if: github.event_name == 'pull_request'
+    name: Pull request Linter 🧹
     runs-on: ubuntu-latest
     steps:
       - name: Check out code.
