@@ -15,7 +15,7 @@ export const env = createEnv({
 		// OIDCはPKCEを使うので、クライアントシークレットは不要
 		OIDC_CLIENT_ID: z.string(),
 		OIDC_ISSUER: z.string(),
-		OIDC_REDIRECT_URIS: z.string().transform((v) => v.split(',')),
+		OIDC_REDIRECT_URIS: z.string().transform((value) => value.split(',')),
 		OIDC_USERINFO_ENDPOINT: z.string(),
 		SESSION_SECRET: z.string(),
 	},
