@@ -145,7 +145,7 @@ importers:
         version: 1.0.0-beta.2
       tailwind-merge:
         specifier: ^2.2.1
-        version: 2.5.2
+        version: 2.5.3
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.10)
@@ -5410,8 +5410,8 @@ packages:
     resolution: {integrity: sha512-Tq05Q0HTXDJZM+9ub9HCPPDbui2VavugF+/H9b1Ur9ykXbPsSUPFeXFZdDlutvDsVWZO8JjHKRdT3grpNSwwSg==}
     engines: {node: '>= 10'}
 
-  tailwind-merge@2.5.2:
-    resolution: {integrity: sha512-kjEBm+pvD+6eAwzJL2Bi+02/9LFLal1Gs61+QB7HvTfQQ0aXwC5LGT8PEt1gS0CWKktKe6ysPTAy3cBC5MeiIg==}
+  tailwind-merge@2.5.3:
+    resolution: {integrity: sha512-d9ZolCAIzom1nf/5p4LdD5zvjmgSxY0BGgdSvmXIoMYAiPdAW/dSpP7joCDYFY7r/HkEa2qmPtkgsu0xjQeQtw==}
 
   tailwindcss-animate@1.0.7:
     resolution: {integrity: sha512-bl6mpH3T7I3UFxuvDEXLxy/VuFxBk5bbzplh7tXI68mwMokNYd1t9qPBHlnyTwfa4JGC4zP516I1hYYtQ/vspA==}
@@ -7307,7 +7307,7 @@ snapshots:
       shiki: 1.15.0
       source-map: 0.7.4
       stacktrace-parser: 0.1.10
-      tailwind-merge: 2.5.2
+      tailwind-merge: 2.5.3
       vite: 5.4.2(@types/node@20.16.2)(terser@5.31.6)
       zustand: 4.5.5(@types/react@18.3.5)(react@18.3.1)
     transitivePeerDependencies:
@@ -12327,7 +12327,7 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  tailwind-merge@2.5.2: {}
+  tailwind-merge@2.5.3: {}
 
   tailwindcss-animate@1.0.7(tailwindcss@3.4.10):
     dependencies:
