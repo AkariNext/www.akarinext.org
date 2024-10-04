@@ -14,7 +14,7 @@ import {
 } from 'react';
 import { uploadHandler } from '~/lib/s3.server';
 import { authenticator } from '~/lib/auth.server';
-import { action as PreveiwAction } from './preview';
+import { action as PreveiwAction } from './blog+/preview';
 import { IconPencil, IconPlayerPlay } from '@tabler/icons-react';
 import { useMarkdownEditor } from '~/hooks/md';
 import { cn } from '~/lib/utils';
