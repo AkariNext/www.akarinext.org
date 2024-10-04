@@ -6,6 +6,7 @@ import { SERVICES } from '~/lib/services.server';
 import { MemberCard } from '~/components/MemberCard';
 import { Navbar } from '~/components/navbar';
 import { Footer } from '~/components/footer';
+import { useUser } from '~/lib/user';
 
 export async function loader() {
 	return json(
@@ -19,12 +20,13 @@ export async function loader() {
 }
 
 export default function Index() {
+	const user = useUser() ?? undefined
 	const { members } = useLoaderData<typeof loader>();
 	const displayMembers = members.slice(0, 3); // 3人だけ表示する残りはView allで専用ページにて表示する
 
 	return (
 		<div>
-			<Navbar />
+			<Navbar user={user} />
 			<div className="grid grid-cols-1  md:grid-cols-3 w-full  gap-y-4 md:gap-x-4 h-screen items-center">
 				<div className="h-96 col-span-2 rounded-lg flex flex-col p-8 md:p-16 order-2 sm:order-1">
 					<h1 className="text-4xl">Let&apos;s have fun and play funny!</h1>

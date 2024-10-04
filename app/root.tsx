@@ -9,8 +9,13 @@ import {
 
 import '~/tailwind.css';
 import '~/style.css';
-import { type LinksFunction, type MetaFunction } from '@remix-run/node';
+import {
+	LoaderFunctionArgs,
+	type LinksFunction,
+	type MetaFunction,
+} from '@remix-run/node';
 import { ReactNode } from 'react';
+import { authenticator } from './lib/auth.server';
 
 export const links: LinksFunction = () => {
 	return [
@@ -43,6 +48,11 @@ export const meta: MetaFunction = () => {
 // 	);
 // }
 
+export async function loader({ request }: LoaderFunctionArgs) {
+	const user = await authenticator.isAuthenticated(request);
+	return { user };
+}
+
 export function ErrorBoundary() {
 	const error = useRouteError();
 	console.error(error);
@@ -71,9 +81,7 @@ export function Layout({ children }: { children: ReactNode }) {
 			</head>
 			<body className="bg-slate-100 w-full">
 				<div>
-					<main className="mx-auto">
-						{children}
-					</main>
+					<main className="mx-auto">{children}</main>
 				</div>
 				<ScrollRestoration />
 				<Scripts />
