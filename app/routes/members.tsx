@@ -19,11 +19,11 @@ export function loader() {
 
 export default function MembersIndex() {
 	const { members } = useLoaderData<typeof loader>();
-    const user = useUser() ?? undefined
+	const user = useUser() ?? undefined;
 
 	return (
 		<div>
-			<Navbar user={user}/>
+			<Navbar user={user} />
 			<div className="text-slate-700 text-2xl font-bold text-center">
 				Members
 			</div>

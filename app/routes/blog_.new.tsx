@@ -130,7 +130,10 @@ export default function EditArticle() {
 
 	return (
 		<div className="akari-container py-10">
-			<input placeholder="Title" className='bg-transparent focus-within:outline-none text-2xl mb-4'></input>
+			<input
+				placeholder="Title"
+				className="bg-transparent focus-within:outline-none text-2xl mb-4"
+			></input>
 
 			<div className="grid sm:grid-cols-1 md:grid-cols-12 gap-4 grid-flow-dense">
 				<div className="col-span-10">

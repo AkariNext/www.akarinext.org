@@ -129,13 +129,7 @@ export function Navbar({ className, user }: NavbarProps) {
 						</NavigationMenuLink>
 						{user ? (
 							<NavigationMenuItem asChild>
-								<Avatar
-									src={
-										user.avatarUrl
-									}
-									alt=""
-									size='sm'
-								/>
+								<Avatar src={user.avatarUrl} alt="" size="sm" />
 							</NavigationMenuItem>
 						) : (
 							<NavigationMenuLink asChild>

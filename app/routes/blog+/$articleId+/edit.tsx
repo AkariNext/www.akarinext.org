@@ -35,7 +35,9 @@ export default function EditArticle() {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [previewContent, setPreviewContent] = useState<string>();
 
-	const handlePaste: ClipboardEventHandler<HTMLTextAreaElement> = async (event) => {
+	const handlePaste: ClipboardEventHandler<HTMLTextAreaElement> = async (
+		event,
+	) => {
 		const items = event.clipboardData?.items || [];
 		for (let item of items) {
 			if (item.kind === 'file') {

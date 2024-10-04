@@ -16,7 +16,7 @@ export type User = {
   id: string;
   name: string;
   avatarUrl?: string;
-}
+};
 
 export let authenticator = new Authenticator<OIDCUser>(sessionStorage);
 
@@ -42,7 +42,7 @@ authenticator.use(
       redirect_uris: env.OIDC_REDIRECT_URIS,
 			response_type: 'code',
       scopes: ['openid', 'profile', 'email'],
-      token_endpoint_auth_method: "none"
+			token_endpoint_auth_method: 'none',
 		},
 		async ({ tokens }): Promise<User> => {
 			if (!tokens.id_token) {
@@ -97,13 +97,11 @@ authenticator.use(
 				});
 
       return {
-        ...response,
         id: user.id,
         name: user.name,
           avatarUrl,
 				};
       }
-
 		},
 	),
 	'oidc',

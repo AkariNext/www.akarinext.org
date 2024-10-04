@@ -20,7 +20,7 @@ export async function loader() {
 }
 
 export default function Index() {
-	const user = useUser() ?? undefined
+	const user = useUser() ?? undefined;
 	const { members } = useLoaderData<typeof loader>();
 	const displayMembers = members.slice(0, 3); // 3人だけ表示する残りはView allで専用ページにて表示する
 

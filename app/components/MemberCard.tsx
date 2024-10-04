@@ -38,7 +38,9 @@ export function MemberCard({ member }: MemberCardProps) {
 			</div>
 			<div className="flex gap-1 flex-row flex-wrap border-t pt-2 mt-2">
 				{member.roles.map((role, index) => (
-					<Badge key={index} className='select-none'>{role}</Badge>
+					<Badge key={index} className="select-none">
+						{role}
+					</Badge>
 				))}
 			</div>
 		</div>

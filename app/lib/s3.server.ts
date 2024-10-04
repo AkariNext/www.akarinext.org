@@ -39,7 +39,7 @@ export async function uploadStreamToSpaces(
 	contentType: FileTypeResult,
 ) {
 	const key = uuidv4();
-	
+
 	const parallelUploads = new Upload({
 		client: s3Client,
 		params: {
@@ -49,7 +49,6 @@ export async function uploadStreamToSpaces(
 			ContentType: contentType.mime,
 		},
 	});
-
 
 	const res = await parallelUploads.done();
 	await db.file.create({
@@ -81,7 +80,7 @@ export const uploadFromUrl = async (authorId: string, url: string) => {
 		contentType,
 	);
 	return uploadedFileLocation;
-}
+};
 
 export const uploadHandler = (
 	authorId: string,

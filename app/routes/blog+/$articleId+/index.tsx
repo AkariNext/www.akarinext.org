@@ -88,7 +88,6 @@ export default function BlogPost() {
 				<div dangerouslySetInnerHTML={{ __html: post.html }} />
 
 				<div className="border-t mt-8 block">
-
 					{post.authors.map((author) => (
 						<div key={author.name} className="flex items-center gap-4 mt-4">
 							<Link to={`/member/${author.name}`}>
