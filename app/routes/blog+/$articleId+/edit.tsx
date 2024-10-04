@@ -5,10 +5,9 @@ import {
 } from '@remix-run/node';
 import '~/mdx.css';
 
-import { useEffect, useRef, useState } from 'react';
+import { ClipboardEventHandler, useEffect, useRef, useState } from 'react';
 import { uploadHandler } from '~/lib/s3.server';
 import { authenticator } from '~/lib/auth.server';
-import { v4 as uuidv4 } from 'uuid';
 import { action as PreveiwAction } from '../preview';
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -36,27 +35,27 @@ export default function EditArticle() {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [previewContent, setPreviewContent] = useState<string>();
 
-	const handlePaste = async (event) => {
-		const items = event.clipboardData.items;
+	const handlePaste: ClipboardEventHandler<HTMLTextAreaElement> = async (event) => {
+		const items = event.clipboardData?.items || [];
 		for (let item of items) {
 			if (item.kind === 'file') {
 				const file = item.getAsFile();
+				if (!file) {
+					continue;
+				}
 				await uploadFile(file);
 			}
 		}
 	};
 
-	const uploadFile = async (file) => {
+	const uploadFile = async (file: File) => {
 		const formData = new FormData();
 		formData.append('file', file);
-		const newMarker = uuidv4();
 
 		fetcher.submit(formData, {
 			method: 'post',
 			encType: 'multipart/form-data',
 		});
-
-		return newMarker;
 	};
 
 	const onPreview = () => {
