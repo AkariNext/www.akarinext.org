@@ -32,6 +32,7 @@ model User {
   posts       Post[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  avatarUrl   String?
   Comment     Comment[]
   File        File[]
   followers   User[]    @relation("Follow")
