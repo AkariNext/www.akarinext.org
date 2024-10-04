@@ -46,9 +46,11 @@ code:not(pre code) {
   @apply bg-white h-full;
 }
 
-.ͼ1 .cm-scroller:focus {
-  outline: none;
+.ͼ1.cm-focused {
+  outline: none !important;
 }
+
+
 
 pre code {
   counter-reset: step;
