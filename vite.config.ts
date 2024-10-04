@@ -12,6 +12,9 @@ import {flatRoutes} from 'remix-flat-routes';
 installGlobals({ nativeFetch: true });
 
 export default defineConfig({
+	build: {
+		target: "ES2023",
+	},
 	plugins: [
 		mdx({
 			remarkPlugins: [remarkFrontmatter, remarkMdxFrontmatter],
