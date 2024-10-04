@@ -1,7 +1,10 @@
 import { json } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
+import { Footer } from '~/components/footer';
 import { MemberCard } from '~/components/MemberCard';
+import { Navbar } from '~/components/navbar';
 import { MEMBERS } from '~/lib/member.server';
+import { useUser } from '~/lib/user';
 
 export function loader() {
 	return json(
@@ -16,9 +19,11 @@ export function loader() {
 
 export default function MembersIndex() {
 	const { members } = useLoaderData<typeof loader>();
+	const user = useUser() ?? undefined;
 
 	return (
 		<div>
+			<Navbar user={user} />
 			<div className="text-slate-700 text-2xl font-bold text-center">
 				Members
 			</div>
@@ -29,6 +34,7 @@ export default function MembersIndex() {
 					<MemberCard key={member.name} member={member} />
 				))}
 			</div>
+			<Footer />
 		</div>
 	);
 }

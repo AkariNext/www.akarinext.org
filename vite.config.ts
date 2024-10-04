@@ -7,11 +7,14 @@ import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import arraybuffer from 'vite-plugin-arraybuffer';
 import { devErrorBoundary } from '@metronome-sh/dev-error-boundary';
-import {flatRoutes} from 'remix-flat-routes';
+import { flatRoutes } from 'remix-flat-routes';
 
 installGlobals({ nativeFetch: true });
 
 export default defineConfig({
+	build: {
+		target: 'ES2023',
+	},
 	plugins: [
 		mdx({
 			remarkPlugins: [remarkFrontmatter, remarkMdxFrontmatter],
@@ -28,6 +31,6 @@ export default defineConfig({
 			},
 		}),
 		tsconfigPaths(),
-		// devErrorBoundary(),
+		devErrorBoundary(),
 	],
 });

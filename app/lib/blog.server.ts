@@ -115,7 +115,6 @@ export async function getBlogPostListings() {
 		.map(({ ...listing }) => listing);
 }
 
-
 export async function getBlogPostListingsByUsername(username: string) {
 	const slugs = Object.keys(POSTS);
 	const listings = [];
