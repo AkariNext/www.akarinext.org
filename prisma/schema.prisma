@@ -34,6 +34,8 @@ model User {
   updatedAt   DateTime  @updatedAt
   Comment     Comment[]
   File        File[]
+  followers   User[]    @relation("Follow")
+  following   User[]    @relation("Follow")
 
   @@unique([sub, name])
 }
