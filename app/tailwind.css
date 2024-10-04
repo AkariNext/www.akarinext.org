@@ -24,7 +24,23 @@ h3 {
 }
 
 h4 {
-  @apply text-xl
+  @apply text-lg
+}
+
+h5 {
+  @apply text-base
+}
+
+h6 {
+  @apply text-sm
+}
+
+a, p {
+  @apply text-base
+}
+
+li {
+  @apply text-base
 }
 
 .yx-social-icon {
