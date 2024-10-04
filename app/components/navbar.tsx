@@ -72,85 +72,85 @@ export function Navbar({ className }: NavbarProps) {
 	return (
 		<header
 			className={cn(
-				'flex h-16 border-b border-gray-200 justify-between items-center bg-white top-0 sticky z-30 px-4',
+				'border-b border-gray-200  bg-white top-0 sticky z-30',
 				className,
 			)}
 		>
-			<NavigationMenu>
-				<NavigationMenuList>
-					<NavigationMenuItem className="text-2xl font-bold">
+			<div
+				className="m-auto header-wrapper flex justify-between items-center h-16"
+				style={{ maxWidth: 'min(1200px, 90%)' }}
+			>
+				<NavigationMenu>
+					<NavigationMenuList>
+						<NavigationMenuItem className="text-2xl font-bold">
+							<NavigationMenuLink
+								className={navigationMenuTriggerStyle()}
+								asChild
+							>
+								<Link
+									to="/"
+									aria-label="トップページへ移動する"
+									prefetch="intent"
+								>
+									AkariNext
+								</Link>
+							</NavigationMenuLink>
+						</NavigationMenuItem>
+					</NavigationMenuList>
+				</NavigationMenu>
+				<NavigationMenu className="hidden sm:block">
+					<NavigationMenuList>
 						<NavigationMenuLink
 							className={navigationMenuTriggerStyle()}
 							asChild
 						>
 							<Link
-								to="/"
-								aria-label="トップページへ移動する"
+								to="/blog"
+								aria-label="ブログページへ移動する"
 								prefetch="intent"
 							>
-								AkariNext
+								ブログ
 							</Link>
 						</NavigationMenuLink>
-					</NavigationMenuItem>
-				</NavigationMenuList>
-			</NavigationMenu>
-			<NavigationMenu className="hidden sm:block">
-				<NavigationMenuList>
-					<NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-						<Link
-							to="/blog"
-							aria-label="ブログページへ移動する"
-							prefetch="intent"
-						>
-							ブログ
-						</Link>
-					</NavigationMenuLink>
-					<NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-						<Link
-							to="/services"
-							aria-label="サービス一覧へ移動する"
-							prefetch="intent"
-						>
-							サービス
-						</Link>
-					</NavigationMenuLink>
-				</NavigationMenuList>
-			</NavigationMenu>
-			<NavigationMenu>
-				<NavigationMenuList>
-					<NavigationMenuItem className="hidden sm:block">
 						<NavigationMenuLink
 							className={navigationMenuTriggerStyle()}
 							asChild
-							aria-label="利用規約ページへ移動する"
 						>
-							<Link to="/tos" prefetch="intent">
-								利用規約
+							<Link
+								to="/services"
+								aria-label="サービス一覧へ移動する"
+								prefetch="intent"
+							>
+								サービス
 							</Link>
 						</NavigationMenuLink>
-					</NavigationMenuItem>
-					<NavigationMenuItem>
-						<Sheet
-							open={isOpenedSheet}
-							onOpenChange={(isOpen) => setIsOpenedSheet(isOpen)}
-						>
-							<SheetTrigger asChild className="block sm:hidden">
-								<Button
-									variant={'ghost'}
-									size="icon"
-									className="flex justify-center"
-									onClick={() => setIsOpenedSheet(true)}
-								>
-									<IconMenu2 className="" />
-								</Button>
-							</SheetTrigger>
-							<SheetContent side="left">
-								<SheetContentForMobile />
-							</SheetContent>
-						</Sheet>
-					</NavigationMenuItem>
-				</NavigationMenuList>
-			</NavigationMenu>
+					</NavigationMenuList>
+				</NavigationMenu>
+				<NavigationMenu className="sm:hidden">
+					<NavigationMenuList>
+						<NavigationMenuItem>
+							<Sheet
+								open={isOpenedSheet}
+								onOpenChange={(isOpen) => setIsOpenedSheet(isOpen)}
+							>
+								<SheetTrigger asChild className="block">
+									<Button
+										variant={'ghost'}
+										size="icon"
+										className="flex justify-center"
+										onClick={() => setIsOpenedSheet(true)}
+									>
+										<IconMenu2 className="" />
+									</Button>
+								</SheetTrigger>
+								<SheetContent side="left">
+									<SheetContentForMobile />
+								</SheetContent>
+							</Sheet>
+						</NavigationMenuItem>
+					</NavigationMenuList>
+				</NavigationMenu>
+			</div>
 		</header>
 	);
 }

@@ -4,16 +4,12 @@ import {
 	Outlet,
 	Scripts,
 	ScrollRestoration,
-	useRouteLoaderData,
 	useRouteError,
 } from '@remix-run/react';
-import { Navbar } from './components/navbar';
 
 import '~/tailwind.css';
 import '~/style.css';
-import { type LinksFunction, type MetaFunction, json } from '@remix-run/node';
-import { Footer } from './components/footer';
-import { CONFIG } from './lib/config.server';
+import { type LinksFunction, type MetaFunction } from '@remix-run/node';
 import { ReactNode } from 'react';
 
 export const links: LinksFunction = () => {
@@ -36,16 +32,16 @@ export const meta: MetaFunction = () => {
 	];
 };
 
-export function loader() {
-	return json(
-		{ config: CONFIG },
-		{
-			headers: {
-				'Cache-Control': 'max-age=300',
-			},
-		},
-	);
-}
+// export function loader() {
+// 	return json(
+// 		{ config: CONFIG },
+// 		{
+// 			headers: {
+// 				'Cache-Control': 'max-age=300',
+// 			},
+// 		},
+// 	);
+// }
 
 export function ErrorBoundary() {
 	const error = useRouteError();
@@ -65,9 +61,6 @@ export function ErrorBoundary() {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
-	// TODO: これどうにかしたい
-	const { config } = useRouteLoaderData<typeof loader>("root");
-
 	return (
 		<html lang="ja">
 			<head>
@@ -78,11 +71,9 @@ export function Layout({ children }: { children: ReactNode }) {
 			</head>
 			<body className="bg-slate-100 w-full">
 				<div>
-					<Navbar />
 					<main className="mx-auto">
 						{children}
 					</main>
-					<Footer links={config?.footer.links} />
 				</div>
 				<ScrollRestoration />
 				<Scripts />
