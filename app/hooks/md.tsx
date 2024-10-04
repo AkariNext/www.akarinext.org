@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useRef, useState } from "react";
 
-import { EditorView, keymap, ViewUpdate } from "@codemirror/view";
+import { EditorView, keymap, ViewUpdate, placeholder } from "@codemirror/view";
 import { EditorState, StateEffect } from "@codemirror/state";
 import { defaultKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown"
@@ -62,6 +62,7 @@ export const useMarkdownEditor = ({
                 base: markdownLanguage,
                 completeHTMLTags: false,
             }),
+            placeholder("Write with Markdown"),
             updateListener, keymap.of([indentWithTab, ...defaultKeymap])];
     }, [updateListener, defaultKeymap]);
 
