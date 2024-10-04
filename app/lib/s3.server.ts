@@ -64,6 +64,25 @@ export async function uploadStreamToSpaces(
 	return res.Location;
 }
 
+export const uploadFromUrl = async (authorId: string, url: string) => {
+	const response = await fetch(url);
+	const buffer = Buffer.from(await response.arrayBuffer());
+	const body = convertToStream(buffer);
+	const contentType = await fileTypeFromBuffer(buffer);
+
+	if (!contentType) {
+		throw new Error('Could not determine file type');
+	}
+
+	const uploadedFileLocation = await uploadStreamToSpaces(
+		authorId,
+		body,
+		'',
+		contentType,
+	);
+	return uploadedFileLocation;
+}
+
 export const uploadHandler = (
 	authorId: string,
 	allowedContentTypes?: string[],

@@ -2,16 +2,23 @@ import 'dotenv/config';
 
 import { Authenticator } from 'remix-auth';
 import { sessionStorage } from './session.server';
-import {OIDCStrategy, OIDCStrategyBaseUser} from "remix-auth-openid"
+import { OIDCStrategy, OIDCStrategyBaseUser } from 'remix-auth-openid';
 import { db } from './db.server';
 import { env } from './env.server';
+import { uploadFromUrl } from './s3.server';
 
-interface User extends OIDCStrategyBaseUser {
-  id: string;
-  name: string;
+interface OIDCUser extends OIDCStrategyBaseUser {
+	id: string;
+	name: string;
 }
 
-export let authenticator = new Authenticator<User>(sessionStorage);
+export type User = {
+  id: string;
+  name: string;
+  avatarUrl?: string;
+}
+
+export let authenticator = new Authenticator<OIDCUser>(sessionStorage);
 
 interface Profile {
   sub: string;
@@ -28,7 +35,7 @@ interface Profile {
 }
 
 authenticator.use(
-	await OIDCStrategy.init<User>(
+	await OIDCStrategy.init<OIDCUser>(
 		{
 			issuer: env.OIDC_ISSUER,
 			client_id: env.OIDC_CLIENT_ID,
@@ -52,36 +59,49 @@ authenticator.use(
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
         expiredAt: new Date().getTime() / 1000 + (tokens.expires_in ?? 0),
-      }
+			};
 
       const foundUser = await db.user.findFirst({
         where: {
           sub: tokens.claims().sub,
-        }
-      })
+				},
+			});
 
-      if (foundUser) return {...response, id: foundUser.id, name: foundUser.name};
-
+			if (foundUser)
+				return { ...response, id: foundUser.id, name: foundUser.name };
 
       const profileResponse = await fetch(env.OIDC_USERINFO_ENDPOINT, {
         headers: {
-          Authorization: `Bearer ${tokens.access_token}`
-        }
-      })
+					Authorization: `Bearer ${tokens.access_token}`,
+				},
+			});
       
-      const profile: Profile = await profileResponse.json()
+			const profile: Profile = await profileResponse.json();
 
       const user = await db.user.create({
         data: {
           sub: tokens.claims().sub,
           name: profile.name,
-        }
-      })
+				},
+			});
+
+			const avatarUrl = await uploadFromUrl(user.id, profile.picture);
+			if (avatarUrl) {
+				await db.user.update({
+					where: {
+						id: user.id,
+					},
+					data: {
+						avatarUrl,
+					},
+				});
 
       return {
         ...response,
         id: user.id,
         name: user.name,
+          avatarUrl,
+				};
       }
 
 		},
