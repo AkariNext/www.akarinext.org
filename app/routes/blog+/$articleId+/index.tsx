@@ -84,7 +84,7 @@ export default function BlogPost() {
 					</div>
 				</div>
 			</div>
-			<div className="mdx">
+			<div className="mdx mdx-container">
 				<div dangerouslySetInnerHTML={{ __html: post.html }} />
 
 				<div className="border-t mt-8 block">

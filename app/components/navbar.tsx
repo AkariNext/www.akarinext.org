@@ -72,7 +72,7 @@ export function Navbar({ className }: NavbarProps) {
 	return (
 		<header
 			className={cn(
-				'flex h-16 border-b border-gray-200 justify-between items-center bg-white top-0 sticky z-10 px-4',
+				'flex h-16 border-b border-gray-200 justify-between items-center bg-white top-0 sticky z-30 px-4',
 				className,
 			)}
 		>

@@ -116,7 +116,7 @@ export default function EditArticle() {
 			/>
 			{previewContent && (
 				<div
-					className="mdx"
+					className="mdx mdx-container"
 					dangerouslySetInnerHTML={{ __html: previewContent }}
 				></div>
 			)}

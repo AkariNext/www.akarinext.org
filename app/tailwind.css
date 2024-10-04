@@ -39,6 +39,17 @@ code:not(pre code) {
   @apply bg-slate-100 rounded-md p-1;
 }
 
+
+.ͼ1 .cm-scroller {
+  height: 80vh !important;
+  border-radius: 8px !important;
+  @apply bg-white h-full;
+}
+
+.ͼ1 .cm-scroller:focus {
+  outline: none;
+}
+
 pre code {
   counter-reset: step;
   counter-increment: step 0;
