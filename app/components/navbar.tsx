@@ -11,6 +11,8 @@ import { IconMenu2 } from '@tabler/icons-react';
 import { Button } from './ui/button';
 import { useEffect, useState } from 'react';
 import { cn } from '~/lib/utils';
+import { Avatar } from './Avatar';
+import { User } from '~/lib/auth.server';
 
 function SheetContentForMobile() {
 	// 実質的にスマホ専用なのっでForMobile
@@ -57,9 +59,10 @@ function SheetContentForMobile() {
 
 interface NavbarProps {
 	className?: string;
+	user?: User;
 }
 
-export function Navbar({ className }: NavbarProps) {
+export function Navbar({ className, user }: NavbarProps) {
 	const navigation = useNavigation();
 	const [isOpenedSheet, setIsOpenedSheet] = useState<boolean>(false);
 
@@ -124,6 +127,27 @@ export function Navbar({ className }: NavbarProps) {
 								サービス
 							</Link>
 						</NavigationMenuLink>
+						{user ? (
+							<NavigationMenuItem asChild>
+								<Avatar
+									src={
+										user.avatarUrl
+									}
+									alt=""
+									size='sm'
+								/>
+							</NavigationMenuItem>
+						) : (
+							<NavigationMenuLink asChild>
+								<Link
+									to="/login"
+									aria-label="ログインページへ移動する"
+									prefetch="intent"
+								>
+									ログイン
+								</Link>
+							</NavigationMenuLink>
+						)}
 					</NavigationMenuList>
 				</NavigationMenu>
 				<NavigationMenu className="sm:hidden">
