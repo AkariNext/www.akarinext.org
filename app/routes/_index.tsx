@@ -35,7 +35,7 @@ export default function Index() {
 					</h2>
 
 					<div className="pt-8">
-						<Link to="/blog/" aria-label="ブログを読む">
+						<Link to="/articles/" aria-label="ブログを読む">
 							<Button size={'lg'} className="rounded-3xl">
 								Read the blog
 							</Button>

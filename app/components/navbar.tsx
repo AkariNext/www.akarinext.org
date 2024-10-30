@@ -22,7 +22,7 @@ function SheetContentForMobile() {
 				<li>
 					<Button variant="outline" asChild className="w-full">
 						<Link
-							to="/blog"
+							to="/articles/"
 							aria-label="ブログページへ移動する"
 							prefetch="intent"
 						>
@@ -108,7 +108,7 @@ export function Navbar({ className, user }: NavbarProps) {
 							asChild
 						>
 							<Link
-								to="/blog"
+								to="/articles/"
 								aria-label="ブログページへ移動する"
 								prefetch="intent"
 							>

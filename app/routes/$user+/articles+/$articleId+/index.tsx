@@ -8,7 +8,7 @@ import {
 
 import '~/mdx.css';
 import { getSocialIcon } from '~/lib/utils';
-import { getBlogPost } from '../../../lib/blog.server';
+import { getBlogPost } from '../../../../lib/blog.server';
 import { InlineIcon } from '@iconify/react/dist/iconify.js';
 import { Avatar } from '~/components/Avatar';
 
