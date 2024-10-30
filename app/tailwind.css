@@ -57,7 +57,7 @@ code:not(pre code) {
 
 
 .ͼ1 .cm-scroller {
-  height: 80vh !important;
+  height: 50vh !important;
   border-radius: 8px !important;
   @apply bg-white h-full;
 }
