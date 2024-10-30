@@ -35,8 +35,8 @@ model User {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   avatarUrl   String? @map("avatar_url")
-  comment     Comment[] 
-  file        File[]
+  comments     Comment[] 
+  files        File[]
   followers   User[]    @relation("Follow")
   following   User[]    @relation("Follow")
 
@@ -50,10 +50,10 @@ model Post {
   category  String
   tags      String[]
   published Boolean   @default(false)
-  author    User[]
+  authors    User[]
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
-  Comment   Comment[]
+  comments   Comment[]
 }
 
 model Comment {
@@ -71,5 +71,5 @@ model Role {
   id          String   @id @default(uuid())
   name        String   @unique
   permissions String[]
-  user        User[]
+  users        User[]
 }
