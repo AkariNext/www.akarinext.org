@@ -42,6 +42,7 @@
 		"class-variance-authority": "^0.7.0",
 		"clsx": "^2.1.1",
 		"dotenv": "^16.4.5",
+		"emoji-picker-react": "^4.12.0",
 		"emojilib": "^3.0.12",
 		"file-type": "^19.6.0",
 		"front-matter": "^4.0.2",
