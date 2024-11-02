@@ -45,6 +45,7 @@ model User {
 
 model Post {
   id        String    @id @default(cuid())
+  emoji     String
   title     String
   content   String // Markdown
   category  String
