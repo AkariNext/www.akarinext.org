@@ -15,8 +15,9 @@ export const useMarkdownEditor = ({ doc, setDoc }: UseMarkdownEditorProps) => {
 	const [container, setContainer] = useState<HTMLDivElement>();
 	const [view, setView] = useState<EditorView>();
 	const fetcher = useFetcher<typeof action>();
-	const [uploadingImages, setUploadingImages] = useState<{ [key: string]: { cursorPos: number | null } }>({});
-
+	const [uploadingImages, setUploadingImages] = useState<{
+		[key: string]: { cursorPos: number | null };
+	}>({});
 
 	const imageUpload = async (files: File[], cursorPos: number | null) => {
 		const formData = new FormData();
@@ -78,8 +79,10 @@ export const useMarkdownEditor = ({ doc, setDoc }: UseMarkdownEditorProps) => {
 
 					// DataTransferItemList インターフェイスを使用して、ファイルにアクセスする
 					if (event.dataTransfer.items) {
-						let files = Object.values(event.dataTransfer.items).map((item) => item.getAsFile()).filter((file) => file) as File[];
-						imageUpload(files, cursorPos)						
+						let files = Object.values(event.dataTransfer.items)
+							.map((item) => item.getAsFile())
+							.filter((file) => file) as File[];
+						imageUpload(files, cursorPos);
 					} else {
 						// DataTransfer インターフェイスを使用してファイルにアクセスする
 						for (let i = 0; i < event.dataTransfer.files.length; i++) {
@@ -92,14 +95,14 @@ export const useMarkdownEditor = ({ doc, setDoc }: UseMarkdownEditorProps) => {
 
 				// 画像ファイルがペーストされたときの処理
 				paste(event, view) {
-					console.log(event.clipboardData, "ペースト");
+					console.log(event.clipboardData, 'ペースト');
 					if (!event.clipboardData?.files?.length) return;
 
 					const files = Object.values(event.clipboardData.files) as File[];
 					imageUpload(files, view.state.selection.main.head);
 				},
 			}),
-		[imageUpload]
+		[imageUpload],
 	);
 
 	// const customKeymap = useMemo(() => {
