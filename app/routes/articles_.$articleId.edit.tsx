@@ -1,10 +1,10 @@
-import { useFetcher, useLoaderData, useNavigation } from '@remix-run/react';
+import { useFetcher, useLoaderData } from '@remix-run/react';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import '~/mdx.css';
 
 import { useCallback, useEffect, useState } from 'react';
 import { authenticator } from '~/lib/auth.server';
-import { action as PreveiwAction } from './article+/preview';
+import { action as PreviewAction } from './article+/preview';
 import {
 	IconAdjustmentsHorizontal,
 	IconArrowBackUp,
@@ -23,10 +23,12 @@ import { Post } from '@prisma/client';
 import Loader from '~/components/Loader';
 import EmojiPicker, { EmojiStyle } from 'emoji-picker-react';
 import { ClientOnly } from 'remix-utils/client-only';
+import * as emojilib from 'emojilib';
 
 const schema = z.object({
 	title: z.string(),
 	markdown: z.string(),
+	emoji: z.string(),
 });
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -63,7 +65,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		failureRedirect: '/login',
 	});
 
-
 	const articleId = params.articleId;
 	if (typeof articleId !== 'string') {
 		throw new Error('Invalid articleId');
@@ -77,7 +78,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		return submission.reply();
 	}
 
-	const { title, markdown } = submission.value;
+	const { title, markdown, emoji } = submission.value;
 
 	const foundPost = await db.post.findFirst({
 		where: {
@@ -111,6 +112,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 			data: {
 				title: title,
 				content: markdown,
+				emoji,
 			},
 			...include,
 		});
@@ -122,6 +124,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 				category: 'dev',
 				authors: { connect: { id: user.id } },
 				content: markdown,
+				emoji,
 			},
 			...include,
 		});
@@ -136,14 +139,16 @@ export default function EditArticle() {
 
 	// フェッチャー系
 	const fetcher = useFetcher<typeof action>();
-	const previewFetcher = useFetcher<typeof PreveiwAction>();
+	const previewFetcher = useFetcher<typeof PreviewAction>();
 
 	// ブログのデータ系
 	const [title, setTitle] = useState<undefined | string>(post?.title);
 	const [doc, setDoc] = useState<undefined | string>(post?.content);
+	const [emoji, setEmoji] = useState<undefined | string>(post?.emoji);
 
 	// フラグ系
 	const [isSaved, setIsSaved] = useState(true);
+	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 	const [isPreview, setIsPreview] = useState(false);
 	const [enablePageEditBar, setEnablePageEditBar] = useState(false);
 
@@ -153,13 +158,13 @@ export default function EditArticle() {
 	const save = useCallback(() => {
 		setIsSaved(true);
 
-		if (!doc || !title) {
+		if (!doc || !title || !emoji) {
 			throw new Error('Invalid data');
 		}
 
-		fetcher.submit({ markdown: doc, title }, { method: 'POST' });
+		fetcher.submit({ markdown: doc, title, emoji }, { method: 'POST' });
 		setIsSaved(true);
-	}, [doc, fetcher, title]);
+	}, [doc, fetcher, title, emoji]);
 
 	useEffect(() => {
 		setIsSaved(doc === post?.content);
@@ -169,6 +174,10 @@ export default function EditArticle() {
 
 	const onEditor = () => {
 		setIsPreview(false);
+	};
+
+	const handleEmojiPicker = () => {
+		setShowEmojiPicker(!showEmojiPicker);
 	};
 
 	const onPreview = () => {
@@ -301,17 +310,37 @@ export default function EditArticle() {
 					</p>
 					<div>
 						<h2>アイコンを変更</h2>
-						<div className="h-16 w-16 rounded-md bg-gray-100">
-							<ClientOnly>
-								{() => (
-									<EmojiPicker
-										onEmojiClick={(emojiObject) =>
-											console.log(emojiObject.emoji)
-										}
-									/>
-								)}
-							</ClientOnly>
+						<div
+							className="h-16 w-16 rounded-md bg-gray-100 flex justify-center items-center"
+							onClick={handleEmojiPicker}
+						>
+							{emoji ? (
+								<img
+									src={`https://cdn.jsdelivr.net/npm/fluentui-emoji@latest/icons/flat/${emoji}.svg`}
+									alt={emoji}
+									className="h-10 w-10"
+								/>
+							) : null}
 						</div>
+						<ClientOnly>
+							{() => (
+								<EmojiPicker
+									className="mt-4"
+									width={'100%'}
+									emojiStyle={EmojiStyle.NATIVE}
+									open={showEmojiPicker}
+									onEmojiClick={(emojiObject) => {
+										setEmoji(
+											emojilib.default[emojiObject.emoji][0].replaceAll(
+												'_',
+												'-',
+											),
+										);
+										handleEmojiPicker();
+									}}
+								/>
+							)}
+						</ClientOnly>
 					</div>
 					<div>
 						<h5>タグ</h5>
