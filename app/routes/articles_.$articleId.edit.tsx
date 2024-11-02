@@ -21,11 +21,13 @@ import { z } from 'zod';
 import { parseWithZod } from '@conform-to/zod';
 import { Post } from '@prisma/client';
 import Loader from '~/components/Loader';
+import EmojiPicker, { EmojiStyle } from 'emoji-picker-react';
+import { ClientOnly } from 'remix-utils/client-only';
 
 const schema = z.object({
 	title: z.string(),
 	markdown: z.string(),
-})
+});
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const articleId = params.articleId;
@@ -61,8 +63,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		failureRedirect: '/login',
 	});
 
-	await new Promise((resolve) => setTimeout(resolve, 1000));
-
 
 	const articleId = params.articleId;
 	if (typeof articleId !== 'string') {
@@ -71,14 +71,13 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
 	const form = await request.formData();
 
-	const submission = parseWithZod(form, {schema});
+	const submission = parseWithZod(form, { schema });
 
 	if (submission.status !== 'success') {
 		return submission.reply();
 	}
 
 	const { title, markdown } = submission.value;
-
 
 	const foundPost = await db.post.findFirst({
 		where: {
@@ -93,16 +92,16 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
 	let post: Post;
 	const include = {
-			include: {
-				authors: {
-					select: {
-						id: true,
-						avatarUrl: true,
-						displayName: true,
-					},
+		include: {
+			authors: {
+				select: {
+					id: true,
+					avatarUrl: true,
+					displayName: true,
 				},
-			}
-	}
+			},
+		},
+	};
 
 	if (foundPost) {
 		post = await db.post.update({
@@ -113,7 +112,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 				title: title,
 				content: markdown,
 			},
-			...include
+			...include,
 		});
 	} else {
 		post = await db.post.create({
@@ -124,7 +123,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 				authors: { connect: { id: user.id } },
 				content: markdown,
 			},
-			...include
+			...include,
 		});
 	}
 
@@ -222,7 +221,15 @@ export default function EditArticle() {
 								onClick={save}
 								className="rounded-2xl px-2 w-28 py-2 bg-primary text-accent"
 							>
-								{fetcher.state === 'submitting' ? <div className='flex items-center gap-1 justify-center'><Loader/> 保存中</div> : isSaved ? '保存済み' : '保存'}
+								{fetcher.state === 'submitting' ? (
+									<div className="flex items-center gap-1 justify-center">
+										<Loader /> 保存中
+									</div>
+								) : isSaved ? (
+									'保存済み'
+								) : (
+									'保存'
+								)}
 							</button>
 						</div>
 					</div>
@@ -237,12 +244,10 @@ export default function EditArticle() {
 
 					<div className="grid sm:grid-cols-1 md:grid-cols-12 gap-4 grid-flow-dense">
 						<div className="col-span-10">
-							{
-								<div
-									ref={editor}
-									className={cn({ hidden: isPreview === true })}
-								></div>
-							}
+							<div
+								ref={editor}
+								className={cn({ hidden: isPreview === true })}
+							></div>
 							{previewFetcher.state === 'loading' && (
 								<div className="mdx m-0">プレビューを生成中です...</div>
 							)}
@@ -258,7 +263,7 @@ export default function EditArticle() {
 						<div className="relative col-span-2 flex gap-2 h-min bg-white border rounded-full w-min px-2 py-1 items-center">
 							<div
 								className={cn(
-									'absolute h-10 w-10 px-2 py-1 rounded-full z-10 transition-all duration-300 content-[\'\']',
+									"absolute h-10 w-10 px-2 py-1 rounded-full z-10 transition-all duration-300 content-['']",
 									isPreview ? 'right-2' : 'right-14',
 									isPreview ? 'bg-blue-400' : 'bg-gray-200',
 								)}
@@ -295,7 +300,18 @@ export default function EditArticle() {
 						公開設定
 					</p>
 					<div>
-						<p>アイコンを変更</p>
+						<h2>アイコンを変更</h2>
+						<div className="h-16 w-16 rounded-md bg-gray-100">
+							<ClientOnly>
+								{() => (
+									<EmojiPicker
+										onEmojiClick={(emojiObject) =>
+											console.log(emojiObject.emoji)
+										}
+									/>
+								)}
+							</ClientOnly>
+						</div>
 					</div>
 					<div>
 						<h5>タグ</h5>

@@ -59,7 +59,7 @@ export function ArticleCardWithLink({
 	slug,
 }: ArticleCardProps & { slug: string }) {
 	return (
-		<NavLink to={`/blog/${slug}`} unstable_viewTransition prefetch="intent">
+		<NavLink to={`/article/${slug}`} viewTransition prefetch="intent">
 			{({ isTransitioning }) => (
 				<ArticleCard
 					title={title}
