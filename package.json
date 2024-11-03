@@ -69,7 +69,7 @@
 		"remix-auth-openid": "^0.2.2",
 		"remix-flat-routes": "^0.6.5",
 		"remix-utils": "^7.7.0",
-		"satori": "^0.10.14",
+		"satori": "^0.11.0",
 		"shiki": "^1.22.2",
 		"svg2img": "1.0.0-beta.2",
 		"tailwind-merge": "^2.5.4",
