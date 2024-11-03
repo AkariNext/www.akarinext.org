@@ -8,7 +8,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN corepack enable
 RUN pnpm fetch
 
-RUN apt-get update -y && apt-get install -y openssl
+RUN apt-get update -y && apt-get install -y openssl curl wget git jq
 
 # ビルドステージ
 FROM base as build
@@ -34,7 +34,7 @@ WORKDIR /usr/server
 RUN corepack enable
 
 # opensslをインストール(prismaの依存関係)
-RUN apt-get update -y && apt-get install -y openssl
+RUN apt-get update -y && apt-get install -y openssl curl wget git jq
 
 
 # ビルド成果物をコピー
