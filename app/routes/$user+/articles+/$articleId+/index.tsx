@@ -7,10 +7,10 @@ import {
 } from '@remix-run/node';
 
 import '~/mdx.css';
-import { getSocialIcon } from '~/lib/utils';
-import { getBlogPost } from '../../../../lib/blog.server';
 import { InlineIcon } from '@iconify/react/dist/iconify.js';
 import { Avatar } from '~/components/Avatar';
+import { db } from "~/lib/db.server";
+import { processMarkdown } from '~/lib/md.server';
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
 	const { articleId } = params;
@@ -18,9 +18,36 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 	const requestUrl = new URL(request.url);
 	const siteUrl = `${requestUrl.protocol}//${requestUrl.host}`;
 
-	const post = await getBlogPost(articleId);
+	const post = await db.post.findFirst({
+		where: {
+			id: params.articleid,
+			authors: {
+				some: {
+					name: params.user
+				}
+			},
+		},
+		include: {
+			authors: {
+				select: {
+					name: true,
+					displayName: true,
+					avatarUrl: true
+				}
+			}
+		}
+	})
+
+	if (!post) {
+		throw new Response(null)
+	}
+
+	const html = await processMarkdown(post.content);
+
+
+	// const post = await getBlogPost(articleId);
 	return json(
-		{ siteUrl, post },
+		{ siteUrl, post, html },
 		{
 			headers: {
 				'Cache-Control': 'max-age=300',
@@ -40,7 +67,7 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
 
 	if (ogImageUrl) {
 		ogImageUrl.searchParams.append('title', post.title);
-		ogImageUrl.searchParams.append('displayDate', post.dateDisplay);
+		ogImageUrl.searchParams.append('displayDate', post.createdAt);
 		ogImageUrl.searchParams.append(
 			'authors',
 			post.authors.map((a) => a.name).join(','),
@@ -56,7 +83,7 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
 		{ name: 'twitter:title', content: post.title },
 		{ name: 'twitter:image', content: socialImageUrl },
 		{ name: 'og:title', content: post.title },
-		{ name: 'og:description', content: post.summary },
+		// { name: 'og:description', content: post.summary },
 		{ name: 'og:image', content: socialImageUrl },
 		{ name: 'og:type', content: 'article' },
 		{ name: 'og:site_name', content: 'AkariNext' },
@@ -65,7 +92,7 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
 };
 
 export default function BlogPost() {
-	const { post } = useLoaderData<typeof loader>();
+	const { post, html } = useLoaderData<typeof loader>();
 
 	return (
 		<div>
@@ -80,24 +107,24 @@ export default function BlogPost() {
 					</div>
 					<div style={{ viewTransitionName: 'blog-title' }}>
 						<div className="text-4xl mt-8">{post.title}</div>
-						<div className="mt-2">{post.dateDisplay}</div>
+						<div className="mt-2">{post.createdAt}</div>
 					</div>
 				</div>
 			</div>
 			<div className="mdx mdx-container">
-				<div dangerouslySetInnerHTML={{ __html: post.html }} />
+				<div dangerouslySetInnerHTML={{ __html: html.html }} />
 
 				<div className="border-t mt-8 block">
 					{post.authors.map((author) => (
 						<div key={author.name} className="flex items-center gap-4 mt-4">
 							<Link to={`/member/${author.name}`}>
-								<Avatar src={author.avatar} alt={author.name} />
+								<Avatar src={author.avatarUrl} alt={author.name} />
 							</Link>
 							<div className="py-2 h-full">
 								<div>
 									{author.displayName ? author.displayName : author.name}
 								</div>
-								<div className="flex flex-wrap pt-2">
+								{/* <div className="flex flex-wrap pt-2">
 									{author.socials.map((social, index) => (
 										<a
 											key={index}
@@ -109,7 +136,7 @@ export default function BlogPost() {
 											{getSocialIcon(social.type, { size: 16 })}
 										</a>
 									))}
-								</div>
+								</div> */}
 							</div>
 						</div>
 					))}

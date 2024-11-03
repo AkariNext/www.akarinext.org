@@ -56,10 +56,11 @@ export function ArticleCardWithLink({
 	emoji,
 	dateDisplay,
 	classes,
-	slug,
-}: ArticleCardProps & { slug: string }) {
+	articleId,
+	authorName,
+}: ArticleCardProps & { articleId: string, authorName: string }) {
 	return (
-		<NavLink to={`/article/${slug}`} viewTransition prefetch="intent">
+		<NavLink to={`/${authorName}/articles/${articleId}`} viewTransition prefetch="intent">
 			{({ isTransitioning }) => (
 				<ArticleCard
 					title={title}
