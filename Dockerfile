@@ -21,7 +21,7 @@ RUN pnpm install --offline
 
 # ビルド
 ENV NODE_ENV=production
-RUN pnpm build
+RUN pnpm prisma generate && pnpm build && pnpm prisma migrate deploy
 
 # 最終ステージ
 FROM node:lts-buster-slim as final
