@@ -8,6 +8,8 @@ COPY package.json pnpm-lock.yaml ./
 RUN corepack enable
 RUN pnpm fetch
 
+RUN apt-get update -y && apt-get install -y openssl
+
 # ビルドステージ
 FROM base as build
 
