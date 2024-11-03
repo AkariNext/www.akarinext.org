@@ -43,7 +43,7 @@ authenticator.use(
 		{
 			issuer: env.OIDC_ISSUER,
 			client_id: env.OIDC_CLIENT_ID,
-			redirect_uris: ['http://localhost:5173/auth/callback'],
+			redirect_uris: [process.env.NODE_ENV === "development" ? 'http://localhost:5173/auth/callback' : "https://www.akarinext.org/auth/callback"],
 			response_type: 'code',
 			scopes: ['openid', 'profile', 'email'],
 			token_endpoint_auth_method: 'none',
