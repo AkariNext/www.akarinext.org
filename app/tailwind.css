@@ -24,7 +24,23 @@ h3 {
 }
 
 h4 {
-  @apply text-xl
+  @apply text-lg
+}
+
+h5 {
+  @apply text-base
+}
+
+h6 {
+  @apply text-sm
+}
+
+a, p {
+  @apply text-base
+}
+
+li {
+  @apply text-base
 }
 
 .yx-social-icon {
@@ -38,6 +54,19 @@ pre {
 code:not(pre code) {
   @apply bg-slate-100 rounded-md p-1;
 }
+
+
+.ͼ1 .cm-scroller {
+  height: 50vh !important;
+  border-radius: 8px !important;
+  @apply bg-white h-full;
+}
+
+.ͼ1.cm-focused {
+  outline: none !important;
+}
+
+
 
 pre code {
   counter-reset: step;

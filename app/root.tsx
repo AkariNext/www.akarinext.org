@@ -4,17 +4,18 @@ import {
 	Outlet,
 	Scripts,
 	ScrollRestoration,
-	useLoaderData,
 	useRouteError,
 } from '@remix-run/react';
-import { Navbar } from './components/navbar';
 
 import '~/tailwind.css';
 import '~/style.css';
-import { type LinksFunction, type MetaFunction, json } from '@remix-run/node';
-import { Footer } from './components/footer';
-import { CONFIG } from './lib/config.server';
+import {
+	LoaderFunctionArgs,
+	type LinksFunction,
+	type MetaFunction,
+} from '@remix-run/node';
 import { ReactNode } from 'react';
+import { authenticator } from './lib/auth.server';
 
 export const links: LinksFunction = () => {
 	return [
@@ -36,15 +37,20 @@ export const meta: MetaFunction = () => {
 	];
 };
 
-export function loader() {
-	return json(
-		{ config: CONFIG },
-		{
-			headers: {
-				'Cache-Control': 'max-age=300',
-			},
-		},
-	);
+// export function loader() {
+// 	return json(
+// 		{ config: CONFIG },
+// 		{
+// 			headers: {
+// 				'Cache-Control': 'max-age=300',
+// 			},
+// 		},
+// 	);
+// }
+
+export async function loader({ request }: LoaderFunctionArgs) {
+	const user = await authenticator.isAuthenticated(request);
+	return { user };
 }
 
 export function ErrorBoundary() {
@@ -65,8 +71,6 @@ export function ErrorBoundary() {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
-	const { config } = useLoaderData<typeof loader>();
-
 	return (
 		<html lang="ja">
 			<head>
@@ -77,11 +81,7 @@ export function Layout({ children }: { children: ReactNode }) {
 			</head>
 			<body className="bg-slate-100 w-full">
 				<div>
-					<Navbar />
-					<main className="mx-auto">
-						{children}
-					</main>
-					<Footer links={config.footer.links} />
+					<main className="mx-auto">{children}</main>
 				</div>
 				<ScrollRestoration />
 				<Scripts />

@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["typedSql"]
 }
 
@@ -14,3 +14,63 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model File {
+  id       String @id
+  filename String
+  mimetype String
+  url      String @unique
+  author   User   @relation(fields: [userId], references: [id])
+  userId   String @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model User {
+  id          String    @id @default(cuid())
+  sub         String
+  name        String
+  displayName String? @map("display_name")
+  roles       Role[]
+  posts       Post[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  avatarUrl   String? @map("avatar_url")
+  comments     Comment[] 
+  files        File[]
+  followers   User[]    @relation("Follow")
+  following   User[]    @relation("Follow")
+
+  @@unique([sub, name])
+}
+
+model Post {
+  id        String    @id @default(cuid())
+  emoji     String
+  title     String
+  content   String // Markdown
+  category  String
+  tags      String[]
+  published Boolean   @default(false)
+  authors    User[]
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  comments   Comment[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String @map("author_id")
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  permissions String[]
+  users        User[]
+}

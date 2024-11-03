@@ -8,17 +8,17 @@ import {
 
 import '~/mdx.css';
 import { getSocialIcon } from '~/lib/utils';
-import { getBlogPost } from '../../lib/blog.server';
+import { getBlogPost } from '../../../../lib/blog.server';
 import { InlineIcon } from '@iconify/react/dist/iconify.js';
 import { Avatar } from '~/components/Avatar';
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
-	const { slug } = params;
-	invariant(!!slug, 'Expected slug to be defined');
+	const { articleId } = params;
+	invariant(!!articleId, 'Expected articleId to be defined');
 	const requestUrl = new URL(request.url);
 	const siteUrl = `${requestUrl.protocol}//${requestUrl.host}`;
 
-	const post = await getBlogPost(slug);
+	const post = await getBlogPost(articleId);
 	return json(
 		{ siteUrl, post },
 		{
@@ -30,13 +30,13 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 }
 
 export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
-	const { slug } = params;
-	invariant(!!slug, 'Expected slug to be defined');
+	const { articleId } = params;
+	invariant(!!articleId, 'Expected articleId to be defined');
 
 	const { siteUrl, post } = data || {};
 	if (!post) return [{ title: '404 Not Found', status: 404 }];
 
-	const ogImageUrl = siteUrl ? new URL(`${siteUrl}/og/${slug}`) : null;
+	const ogImageUrl = siteUrl ? new URL(`${siteUrl}/og/${articleId}`) : null;
 
 	if (ogImageUrl) {
 		ogImageUrl.searchParams.append('title', post.title);
@@ -84,11 +84,10 @@ export default function BlogPost() {
 					</div>
 				</div>
 			</div>
-			<div className="mdx">
+			<div className="mdx mdx-container">
 				<div dangerouslySetInnerHTML={{ __html: post.html }} />
 
 				<div className="border-t mt-8 block">
-
 					{post.authors.map((author) => (
 						<div key={author.name} className="flex items-center gap-4 mt-4">
 							<Link to={`/member/${author.name}`}>
