@@ -1,4 +1,4 @@
-import { Link, useNavigation } from '@remix-run/react';
+import { Form, Link, useNavigation, useSubmit } from '@remix-run/react';
 import {
 	NavigationMenu,
 	NavigationMenuItem,
@@ -7,12 +7,20 @@ import {
 	navigationMenuTriggerStyle,
 } from './ui/navigation-menu';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
-import { IconMenu2 } from '@tabler/icons-react';
+import { IconMenu2, IconPencil, IconUser } from '@tabler/icons-react';
 import { Button } from './ui/button';
 import { useEffect, useState } from 'react';
 import { cn } from '~/lib/utils';
 import { Avatar } from './Avatar';
 import { User } from '~/lib/auth.server';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu';
 
 function SheetContentForMobile() {
 	// 実質的にスマホ専用なのっでForMobile
@@ -128,9 +136,35 @@ export function Navbar({ className, user }: NavbarProps) {
 							</Link>
 						</NavigationMenuLink>
 						{user ? (
-							<NavigationMenuItem asChild>
-								<Avatar src={user.avatarUrl} alt="" size="sm" />
-							</NavigationMenuItem>
+							<>
+								<NavigationMenuItem asChild>
+									<DropdownMenu>
+										<DropdownMenuTrigger>
+											<Avatar src={user.avatarUrl} alt="" size="sm" />
+										</DropdownMenuTrigger>
+										<DropdownMenuContent>
+											<DropdownMenuLabel>My Account</DropdownMenuLabel>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem>
+												<Link to={`/${user.name}`}>
+													<IconUser /> プロフィール
+												</Link>
+											</DropdownMenuItem>
+											<DropdownMenuItem>
+												{/*<Link to="/dashboard">*/}
+													<IconPencil />
+													記事の管理
+												{/*</Link>*/}
+											</DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								</NavigationMenuItem>
+								<NavigationMenuItem asChild>
+									<Form action="/article/new" method="POST">
+										<Button type="submit">新規作成</Button>
+									</Form>
+								</NavigationMenuItem>
+							</>
 						) : (
 							<NavigationMenuLink asChild>
 								<Link
