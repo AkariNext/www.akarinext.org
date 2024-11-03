@@ -14,8 +14,8 @@ export async function loader({params}: LoaderFunctionArgs) {
             name: true,
             displayName: true,
             avatarUrl: true,
-            posts: true
-        }
+            posts: true,
+        },
     })
 
     return foundUser
@@ -64,9 +64,8 @@ export default function Member() {
                         </div>
                     </div>
                     <div className="akari-container">
-                        <Suspense>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 my-10">
-                                {res.posts.map((post) => (
+                                {res.posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((post) => (
                                     <div key={post.id}>
                                         <ArticleCardWithLink
                                             articleId={post.id}
@@ -79,7 +78,6 @@ export default function Member() {
                                     </div>
                                 ))}
                             </div>
-                        </Suspense>
                     </div>
                 </div>
             ) : (
