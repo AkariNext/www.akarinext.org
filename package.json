@@ -44,7 +44,7 @@
 		"clsx": "^2.1.1",
 		"dotenv": "^16.4.5",
 		"emoji-picker-react": "^4.12.0",
-		"emojilib": "^3.0.12",
+		"emojilib": "^4.0.0",
 		"file-type": "^19.6.0",
 		"front-matter": "^4.0.2",
 		"isbot": "^5.1.17",
