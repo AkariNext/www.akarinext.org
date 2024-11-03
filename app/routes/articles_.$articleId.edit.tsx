@@ -40,14 +40,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	const foundPost = await db.post.findFirst({
 		where: {
 			id: articleId,
-			authors: {
-				some: {
+			author: {
 					id: user.id,
-				},
 			},
 		},
 		include: {
-			authors: {
+			author: {
 				select: {
 					id: true,
 					avatarUrl: true,
@@ -83,10 +81,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	const foundPost = await db.post.findFirst({
 		where: {
 			id: articleId,
-			authors: {
-				some: {
+			author: {
 					id: user.id,
-				},
 			},
 		},
 	});
@@ -94,7 +90,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	let post: Post;
 	const include = {
 		include: {
-			authors: {
+			author: {
 				select: {
 					id: true,
 					avatarUrl: true,
@@ -122,7 +118,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 				id: articleId,
 				title: title,
 				category: 'dev',
-				authors: { connect: { id: user.id } },
+				authorId: user.id,
 				content: markdown,
 				emoji,
 			},

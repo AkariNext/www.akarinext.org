@@ -33,6 +33,7 @@ CREATE TABLE "Post" (
     "category" TEXT NOT NULL,
     "tags" TEXT[],
     "published" BOOLEAN NOT NULL DEFAULT false,
+    "authorId" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -67,12 +68,6 @@ CREATE TABLE "_Follow" (
 );
 
 -- CreateTable
-CREATE TABLE "_PostToUser" (
-    "A" TEXT NOT NULL,
-    "B" TEXT NOT NULL
-);
-
--- CreateTable
 CREATE TABLE "_RoleToUser" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL
@@ -94,12 +89,6 @@ CREATE UNIQUE INDEX "_Follow_AB_unique" ON "_Follow"("A", "B");
 CREATE INDEX "_Follow_B_index" ON "_Follow"("B");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "_PostToUser_AB_unique" ON "_PostToUser"("A", "B");
-
--- CreateIndex
-CREATE INDEX "_PostToUser_B_index" ON "_PostToUser"("B");
-
--- CreateIndex
 CREATE UNIQUE INDEX "_RoleToUser_AB_unique" ON "_RoleToUser"("A", "B");
 
 -- CreateIndex
@@ -107,6 +96,9 @@ CREATE INDEX "_RoleToUser_B_index" ON "_RoleToUser"("B");
 
 -- AddForeignKey
 ALTER TABLE "File" ADD CONSTRAINT "File_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Post" ADD CONSTRAINT "Post_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Comment" ADD CONSTRAINT "Comment_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -119,12 +111,6 @@ ALTER TABLE "_Follow" ADD CONSTRAINT "_Follow_A_fkey" FOREIGN KEY ("A") REFERENC
 
 -- AddForeignKey
 ALTER TABLE "_Follow" ADD CONSTRAINT "_Follow_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_PostToUser" ADD CONSTRAINT "_PostToUser_A_fkey" FOREIGN KEY ("A") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_PostToUser" ADD CONSTRAINT "_PostToUser_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_RoleToUser" ADD CONSTRAINT "_RoleToUser_A_fkey" FOREIGN KEY ("A") REFERENCES "Role"("id") ON DELETE CASCADE ON UPDATE CASCADE;

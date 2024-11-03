@@ -21,14 +21,12 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 	const post = await db.post.findFirst({
 		where: {
 			id: params.articleid,
-			authors: {
-				some: {
+			author: {
 					name: params.user
-				}
 			},
 		},
 		include: {
-			authors: {
+			author: {
 				select: {
 					name: true,
 					displayName: true,
@@ -68,10 +66,7 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
 	if (ogImageUrl) {
 		ogImageUrl.searchParams.append('title', post.title);
 		ogImageUrl.searchParams.append('displayDate', post.createdAt);
-		ogImageUrl.searchParams.append(
-			'authors',
-			post.authors.map((a) => a.name).join(','),
-		);
+		ogImageUrl.searchParams.append('authors',post.author.name);
 	}
 
 	const socialImageUrl = ogImageUrl?.toString();
@@ -115,31 +110,29 @@ export default function BlogPost() {
 				<div dangerouslySetInnerHTML={{ __html: html.html }} />
 
 				<div className="border-t mt-8 block">
-					{post.authors.map((author) => (
-						<div key={author.name} className="flex items-center gap-4 mt-4">
-							<Link to={`/member/${author.name}`}>
-								<Avatar src={author.avatarUrl} alt={author.name} />
-							</Link>
-							<div className="py-2 h-full">
-								<div>
-									{author.displayName ? author.displayName : author.name}
-								</div>
-								{/* <div className="flex flex-wrap pt-2">
-									{author.socials.map((social, index) => (
-										<a
-											key={index}
-											href={social.url}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="mr-4 hover:transform hover:scale-110 transition-transform"
-										>
-											{getSocialIcon(social.type, { size: 16 })}
-										</a>
-									))}
-								</div> */}
+					<div key={post.author.name} className="flex items-center gap-4 mt-4">
+						<Link to={`/member/${post.author.name}`}>
+							<Avatar src={post.author.avatarUrl} alt={post.author.name} />
+						</Link>
+						<div className="py-2 h-full">
+							<div>
+								{post.author.displayName ? post.author.displayName : post.author.name}
 							</div>
+							{/* <div className="flex flex-wrap pt-2">
+								{author.socials.map((social, index) => (
+									<a
+										key={index}
+										href={social.url}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="mr-4 hover:transform hover:scale-110 transition-transform"
+									>
+										{getSocialIcon(social.type, { size: 16 })}
+									</a>
+								))}
+							</div> */}
 						</div>
-					))}
+					</div>
 				</div>
 			</div>
 		</div>
