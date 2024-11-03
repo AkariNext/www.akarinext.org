@@ -3,7 +3,7 @@ import { Footer } from '~/components/footer';
 import { Navbar } from '~/components/navbar';
 import { useUser } from '~/lib/user';
 
-export default function BlogLayout() {
+export default function ArticlesLayout() {
 	const user = useUser() ?? undefined;
 	return (
 		<>
