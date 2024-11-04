@@ -102,8 +102,8 @@ importers:
         specifier: ^4.12.0
         version: 4.12.0(react@18.3.1)
       emojilib:
-        specifier: ^3.0.12
-        version: 3.0.12
+        specifier: ^4.0.0
+        version: 4.0.0
       file-type:
         specifier: ^19.6.0
         version: 19.6.0
@@ -3267,8 +3267,8 @@ packages:
   emoji-regex@9.2.2:
     resolution: {integrity: sha512-L18DaJsXSUk2+42pv8mLs5jJT2hqFkFE4j21wOmgbUqsZ2hL72NsUU785g9RXgo3s0ZNgVl42TiHp3ZtOv/Vyg==}
 
-  emojilib@3.0.12:
-    resolution: {integrity: sha512-b52zmWqBwv9juk6lKaTdYxRQSnpsnT58Sj/x6fE8fZWcsNd43gAPXUbtjLKJvVlPS9FFNCN6nB9Vh1xipnCzXw==}
+  emojilib@4.0.0:
+    resolution: {integrity: sha512-nHdbvbIuWi/KrZESwJw5meOSK6S3uokcvBooIpNp9leDtVJWW091drLm8pwF2B7JrMq0UPgGJ7Haw+myeRaU8g==}
 
   encodeurl@1.0.2:
     resolution: {integrity: sha512-TPJXq8JqFaVYm2CWmPvnP2Iyo4ZSM7/QKcSmuMLDObfpH5fi7RUGmd/rTDf+rut/saiDiQEeVTNgAmJEdAOx0w==}
@@ -9679,7 +9679,7 @@ snapshots:
 
   emoji-regex@9.2.2: {}
 
-  emojilib@3.0.12: {}
+  emojilib@4.0.0: {}
 
   encodeurl@1.0.2: {}
 
