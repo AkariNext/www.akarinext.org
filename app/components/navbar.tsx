@@ -1,4 +1,4 @@
-import { Form, Link, useNavigation, useSubmit } from '@remix-run/react';
+import { Form, Link, useNavigation } from '@remix-run/react';
 import {
 	NavigationMenu,
 	NavigationMenuItem,
@@ -7,7 +7,7 @@ import {
 	navigationMenuTriggerStyle,
 } from './ui/navigation-menu';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
-import { IconMenu2, IconPencil, IconUser } from '@tabler/icons-react';
+import { IconChartBar, IconMenu2, IconUser } from '@tabler/icons-react';
 import { Button } from './ui/button';
 import { useEffect, useState } from 'react';
 import { cn } from '~/lib/utils';
@@ -151,10 +151,10 @@ export function Navbar({ className, user }: NavbarProps) {
 												</Link>
 											</DropdownMenuItem>
 											<DropdownMenuItem>
-												{/*<Link to="/dashboard">*/}
-													<IconPencil />
-													記事の管理
-												{/*</Link>*/}
+												<Link to="/dashboard">
+													<IconChartBar />
+													ダッシュボード
+												</Link>
 											</DropdownMenuItem>
 										</DropdownMenuContent>
 									</DropdownMenu>
