@@ -20,10 +20,10 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
 	const post = await db.post.findFirst({
 		where: {
-			id: params.articleid,
+			id: params.articleId,
 			author: {
-					name: params.user
-			},
+				name: params.user
+			}
 		},
 		include: {
 			author: {
