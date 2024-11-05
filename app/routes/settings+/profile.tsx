@@ -17,11 +17,11 @@ export async function loader({request}: LoaderFunctionArgs) {
 
     
 
-    return await db.user.findFirst({
+    return db.user.findFirst({
         where: {
             id: user.id
         }
-    })
+    });
 }
 
 export async function action({request}: ActionFunctionArgs) {
@@ -42,14 +42,14 @@ export async function action({request}: ActionFunctionArgs) {
 
     const {displayName} = submission.value
 
-    return await db.user.update({
+    return db.user.update({
         where: {
             id: user.id
         },
         data: {
             displayName
         }
-    })
+    });
 }
 
 export default function EditProfile() {
@@ -61,7 +61,7 @@ export default function EditProfile() {
         <>
             <Form method="POST">
                 <label htmlFor="displayName">表示名</label>
-                <input name="displayName" placeholder="表示名をここに入力" value={user?.displayName || undefined}></input>
+                <input name="displayName" placeholder="表示名をここに入力" defaultValue={user?.displayName || undefined}></input>
 
                 <Button type="submit">送信</Button>
             </Form>
