@@ -71,6 +71,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ className, user }: NavbarProps) {
+	console.log(user)
 	const navigation = useNavigation();
 	const [isOpenedSheet, setIsOpenedSheet] = useState<boolean>(false);
 

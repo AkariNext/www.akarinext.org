@@ -10,12 +10,13 @@ import { uploadFromUrl } from './s3.server';
 interface OIDCUser extends OIDCStrategyBaseUser {
 	id: string;
 	name: string;
+	avatarUrl?: string | null;
 }
 
 export type User = {
 	id: string;
 	name: string;
-	avatarUrl?: string;
+	avatarUrl?: string | null;
 };
 
 export let authenticator = new Authenticator<OIDCUser>(sessionStorage);
@@ -48,7 +49,7 @@ authenticator.use(
 			scopes: ['openid', 'profile', 'email'],
 			token_endpoint_auth_method: 'none',
 		},
-		async ({ tokens }): Promise<User> => {
+		async ({ tokens }): Promise<OIDCUser> => {
 			if (!tokens.id_token) {
 				throw new Error('No id_token found');
 			}
@@ -69,10 +70,15 @@ authenticator.use(
 				where: {
 					sub: tokens.claims().sub,
 				},
+				select: {
+					id: true,
+					name: true,
+					avatarUrl: true
+				}
 			});
 
 			if (foundUser)
-				return { ...response, id: foundUser.id, name: foundUser.name };
+				return {...response, ...foundUser};
 
 			const profileResponse = await fetch(env.OIDC_USERINFO_ENDPOINT, {
 				headers: {
@@ -101,10 +107,17 @@ authenticator.use(
 				});
 
 				return {
+					...response,
 					id: user.id,
 					name: user.name,
 					avatarUrl,
 				};
+			}
+
+			return {
+				...response,
+				id: user.id,
+				name: user.name
 			}
 		},
 	),
