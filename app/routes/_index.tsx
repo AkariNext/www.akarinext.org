@@ -41,9 +41,15 @@ export default function Index() {
 							</Button>
 						</Link>
 						<div className="pt-4">
+							<a
+								href='https://discord.gg/CcT997U'
+								target="_blank"
+								rel="noreferrer noopener"
+							>
 							<Button variant={'outline'} size={'lg'} className="rounded-3xl">
 								Join us
 							</Button>
+							</a>
 						</div>
 					</div>
 				</div>
