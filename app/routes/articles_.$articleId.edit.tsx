@@ -241,7 +241,7 @@ export default function EditArticle() {
 				</header>
 				<div className={cn('akari-container py-10')}>
 					<input
-						value={title}
+						defaultValue={title}
 						onChange={(e) => setTitle(e.target.value)}
 						placeholder="Title"
 						className="bg-transparent focus-within:outline-none text-2xl mb-4"
