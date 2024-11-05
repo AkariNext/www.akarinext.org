@@ -80,8 +80,8 @@ export function Layout({ children }: { children: ReactNode }) {
 				<Links />
 			</head>
 			<body className="bg-slate-100 w-full">
-				<div>
-					<main className="mx-auto">{children}</main>
+				<div className="mx-auto">
+					{children}
 				</div>
 				<ScrollRestoration />
 				<Scripts />
