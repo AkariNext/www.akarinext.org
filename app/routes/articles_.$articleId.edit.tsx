@@ -1,4 +1,4 @@
-import { useFetcher, useLoaderData } from '@remix-run/react';
+import { Link, useFetcher, useLoaderData } from '@remix-run/react';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import '~/mdx.css';
 
@@ -207,7 +207,9 @@ export default function EditArticle() {
 					>
 						<div className="flex">
 							<div className="hover:bg-white p-2 rounded-full transition-all cursor-pointer">
+								<Link to="/dashboard/articles">
 								<IconArrowBackUp stroke={2} />
+								</Link>
 							</div>
 						</div>
 						<div className="flex items-center">
