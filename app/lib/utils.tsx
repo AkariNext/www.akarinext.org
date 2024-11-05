@@ -57,3 +57,7 @@ export function arrayBufferToBase64(buffer: ArrayBuffer) {
 	}
 	return btoa(binary);
 }
+
+export function dateToFormatString(date: Date) {
+	return `${date.getFullYear()}/${date.getMonth()}/${date.getDate()}`
+}

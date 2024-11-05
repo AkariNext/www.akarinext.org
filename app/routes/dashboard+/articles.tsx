@@ -2,10 +2,8 @@ import { db } from "~/lib/db.server";
 import { authenticator } from "~/lib/auth.server";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
-import { ArticleCardWithLink } from "~/components/ArticleCard";
-import React from "react";
 import { IconPencil, IconPlayerPlay } from "@tabler/icons-react";
-import { cn } from "~/lib/utils";
+import { cn, dateToFormatString } from "~/lib/utils";
 
 export async function loader({ request }: LoaderFunctionArgs) {
     const user = await authenticator.isAuthenticated(request, {
@@ -57,7 +55,7 @@ export default function ArticlesRoute() {
                                 </div>
                             </div>
                             <div>
-                                <p className="text-sm text-gray-400">{article.createdAt.toLocaleDateString()}</p>
+                                <p className="text-sm text-gray-400">{dateToFormatString(article.createdAt)}</p>
                             </div>
                         </div>
                     </li>)}

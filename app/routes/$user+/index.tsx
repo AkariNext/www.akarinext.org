@@ -4,6 +4,7 @@ import {Suspense} from 'react';
 import {ArticleCardWithLink} from '~/components/ArticleCard';
 import {Avatar} from '~/components/Avatar';
 import {db} from "~/lib/db.server";
+import { dateToFormatString } from '~/lib/utils';
 
 export async function loader({params}: LoaderFunctionArgs) {
     const foundUser = await db.user.findFirst({
@@ -73,7 +74,7 @@ export default function Member() {
                                             title={post.title}
                                             emoji={post.emoji}
                                             classes={{root: 'h-full'}}
-                                            dateDisplay={post.createdAt}
+                                            dateDisplay={dateToFormatString(post.createdAt)}
                                         />
                                     </div>
                                 ))}
