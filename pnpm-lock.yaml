@@ -73,7 +73,7 @@ importers:
         version: 1.1.3(@types/react-dom@18.3.1)(@types/react@18.3.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@reactuses/core':
         specifier: ^5.0.22
-        version: 5.0.22(react@18.3.1)
+        version: 5.0.23(react@18.3.1)
       '@remix-run/node':
         specifier: ^2.13.1
         version: 2.13.1(typescript@5.5.4)
@@ -1379,6 +1379,9 @@ packages:
       '@remix-run/cloudflare-pages':
         optional: true
 
+  '@microsoft/fetch-event-source@2.0.1':
+    resolution: {integrity: sha512-W6CLUJ2eBMw3Rec70qrsEW0jOm/3twwJv21mrmj2yORiaVmVYGS4sSS5yUwvQc1ZlDLYGPnClVWmUUMagKNsfA==}
+
   '@misskey-dev/summaly@5.1.0':
     resolution: {integrity: sha512-WAUrgX3/z4h4aI8Y/WVwmJcJ6Fa1Zf2LJCSS651t9MHoWVGABLsQ2KCXRGmlpk4i+cMDNIwweObUroosE7j8rg==}
 
@@ -1845,8 +1848,8 @@ packages:
       react: '>=17'
       react-dom: '>=17'
 
-  '@reactuses/core@5.0.22':
-    resolution: {integrity: sha512-o3t67GtmEEaVEU7epcUiYFgxoA92g8jiNrJ9OaXwxQuuxalejbqWYnbZZU93e/SVr8g6027dHaZoqiiqvRq59A==}
+  '@reactuses/core@5.0.23':
+    resolution: {integrity: sha512-FsaCxZLjU5LbzNdNJc/l7U45kWwimWwkCGqq2ZKx5m3Yw8S6jdzfhvtcdQPhp6RjNao4o5UrtuF0DxhWTOKGyA==}
     peerDependencies:
       qrcode: ^1.5
       react: ^16.8.0  || ^17.0.0 || ^18.0.0
@@ -7508,6 +7511,8 @@ snapshots:
       - tailwindcss
       - typescript
 
+  '@microsoft/fetch-event-source@2.0.1': {}
+
   '@misskey-dev/summaly@5.1.0':
     dependencies:
       cheerio: 1.0.0-rc.12
@@ -8031,8 +8036,9 @@ snapshots:
       - '@types/react'
       - immer
 
-  '@reactuses/core@5.0.22(react@18.3.1)':
+  '@reactuses/core@5.0.23(react@18.3.1)':
     dependencies:
+      '@microsoft/fetch-event-source': 2.0.1
       js-cookie: 3.0.5
       lodash-es: 4.17.21
       react: 18.3.1
