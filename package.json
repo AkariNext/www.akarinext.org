@@ -65,7 +65,7 @@
 		"remark-gfm": "^4.0.0",
 		"remark-parse": "^11.0.0",
 		"remark-rehype": "^11.1.1",
-		"remix-auth": "^3.7.0",
+		"remix-auth": "^4.0.0",
 		"remix-auth-openid": "^0.2.2",
 		"remix-flat-routes": "^0.6.5",
 		"remix-utils": "^7.7.0",
