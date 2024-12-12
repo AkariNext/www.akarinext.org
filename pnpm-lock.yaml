@@ -37,7 +37,7 @@ importers:
         version: 1.2.2(zod@3.24.0)
       '@iconify/react':
         specifier: ^5.0.2
-        version: 5.0.2(react@18.3.1)
+        version: 5.1.0(react@18.3.1)
       '@lezer/highlight':
         specifier: ^1.2.1
         version: 1.2.1
@@ -1128,8 +1128,8 @@ packages:
   '@floating-ui/utils@0.2.8':
     resolution: {integrity: sha512-kym7SodPp8/wloecOpcmSnWJsK7M0E5Wg8UcFA+uO4B9s5d0ywXOEro/8HM9x0rW+TljRzul/14UYz3TleT3ig==}
 
-  '@iconify/react@5.0.2':
-    resolution: {integrity: sha512-wtmstbYlEbo4NDxFxBJkhkf9gJBDqMGr7FaqLrAUMneRV3Z+fVHLJjOhWbkAF8xDQNFC/wcTYdrWo1lnRhmagQ==}
+  '@iconify/react@5.1.0':
+    resolution: {integrity: sha512-vj2wzalywy23DR37AnsogMPIkDa1nKEqITjxpH4z44tiLV869Mh7VyydD4/t0yJLEs9tsxlrPWtXvMOe1Lcd5g==}
     peerDependencies:
       react: '>=16'
 
@@ -7078,7 +7078,7 @@ snapshots:
 
   '@floating-ui/utils@0.2.8': {}
 
-  '@iconify/react@5.0.2(react@18.3.1)':
+  '@iconify/react@5.1.0(react@18.3.1)':
     dependencies:
       '@iconify/types': 2.0.0
       react: 18.3.1
