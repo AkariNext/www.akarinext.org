@@ -1,1 +1,4 @@
-**/node_modules
+.react-router
+build
+node_modules
+README.md

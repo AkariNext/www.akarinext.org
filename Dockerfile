@@ -1,44 +1,22 @@
-# ベースイメージ
-FROM node:lts-buster-slim as base
+FROM node:20-alpine AS development-dependencies-env
+COPY . /app
+WORKDIR /app
+RUN npm ci
 
-WORKDIR /usr/server
+FROM node:20-alpine AS production-dependencies-env
+COPY ./package.json package-lock.json /app/
+WORKDIR /app
+RUN npm ci --omit=dev
 
-# 依存関係のインストールとキャッシュ
-COPY package.json pnpm-lock.yaml ./
-RUN corepack enable
-RUN pnpm fetch
+FROM node:20-alpine AS build-env
+COPY . /app/
+COPY --from=development-dependencies-env /app/node_modules /app/node_modules
+WORKDIR /app
+RUN npm run build
 
-RUN apt-get update -y && apt-get install -y openssl curl wget git jq
-
-# ビルドステージ
-FROM base as build
-
-WORKDIR /usr/server
-
-# 残りのソースコードをコピー
-COPY ./ ./
-
-# インストールされた依存関係をリンク
-RUN pnpm install --offline
-
-# ビルド
-ENV NODE_ENV=production
-RUN pnpm prisma generate && pnpm build && pnpm prisma migrate deploy
-
-# 最終ステージ
-FROM node:lts-buster-slim as final
-
-WORKDIR /usr/server
-
-# pnpmをインストール
-RUN corepack enable
-
-# opensslをインストール(prismaの依存関係)
-RUN apt-get update -y && apt-get install -y openssl curl wget git jq
-
-
-# ビルド成果物をコピー
-COPY --from=build /usr/server /usr/server
-
-# アプリケーションの起動
-CMD ["pnpm", "start"]
+FROM node:20-alpine
+COPY ./package.json package-lock.json /app/
+COPY --from=production-dependencies-env /app/node_modules /app/node_modules
+COPY --from=build-env /app/build /app/build
+WORKDIR /app
+CMD ["npm", "run", "start"]
