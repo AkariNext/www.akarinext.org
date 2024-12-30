@@ -1,0 +1,12 @@
+.ball::before {
+	background: radial-gradient(#2290ff 1px, transparent 1px);
+	background-size: 10px 10px;
+	animation: right-bottom-to-left-top 30s linear infinite;
+}
+
+.ball::after {
+	background-image: radial-gradient(#f48fb1 1px, transparent 1px);
+	background-size: 10px 10px;
+
+	animation: left-top-to-right-bottom 30s linear infinite;
+}
