@@ -1,10 +1,9 @@
-import type { TMember } from '~/lib/member.server';
-import EasyTooltip from './Tooltip';
-import { getSocialIcon } from '~/lib/utils';
+import { getSocialIcon } from '~/lib/icon';
 import { Badge } from './ui/badge';
+import type { Member } from '~/const';
 
 interface MemberCardProps {
-	member: TMember;
+	member: Member;
 }
 
 export function MemberCard({ member }: MemberCardProps) {
@@ -13,10 +12,8 @@ export function MemberCard({ member }: MemberCardProps) {
 			key={member.name}
 			className="flex justify-center items-center flex-col backdrop-blur-sm bg-white rounded-lg p-6"
 		>
-			<img src={member.avatar} className="h-24 rounded-lg" alt="" />
-			<div className="mt-2 text-slate-700 text-lg font-bold">
-				{member.displayName ? member.displayName : member.name}
-			</div>
+			<img src={member.avatar} className="h-24 w-24 rounded-lg flex-1" alt="" />
+			<div className="mt-2 text-slate-700 text-lg font-bold">{member.name}</div>
 			<div className="flex flex-row gap-2">
 				{member.socials.map((social, index) => (
 					<a
@@ -26,13 +23,7 @@ export function MemberCard({ member }: MemberCardProps) {
 						rel="noreferrer noopener"
 						aria-label={`${social.type}のリンクへ移動する`}
 					>
-						{social.alt ? (
-							<EasyTooltip tooltip={social.alt}>
-								{getSocialIcon(social.type)}
-							</EasyTooltip>
-						) : (
-							getSocialIcon(social.type)
-						)}
+						{getSocialIcon(social.type)}
 					</a>
 				))}
 			</div>

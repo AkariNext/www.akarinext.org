@@ -1,78 +1,32 @@
 import {
+	isRouteErrorResponse,
 	Links,
 	Meta,
 	Outlet,
 	Scripts,
 	ScrollRestoration,
-	useRouteError,
-} from '@remix-run/react';
+} from 'react-router';
 
-import '~/tailwind.css';
-import '~/style.css';
-import {
-	LoaderFunctionArgs,
-	type LinksFunction,
-	type MetaFunction,
-} from '@remix-run/node';
-import { ReactNode } from 'react';
-import { authenticator } from './lib/auth.server';
+import type { Route } from './+types/root';
+import stylesheet from './app.css?url';
 
-export const links: LinksFunction = () => {
-	return [
-		{
-			rel: 'stylesheet',
-			href: 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap',
-		},
-	];
-};
+export const links: Route.LinksFunction = () => [
+	{ rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+	{
+		rel: 'preconnect',
+		href: 'https://fonts.gstatic.com',
+		crossOrigin: 'anonymous',
+	},
+	{
+		rel: 'stylesheet',
+		href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap',
+	},
+	{ rel: 'stylesheet', href: stylesheet },
+];
 
-export const meta: MetaFunction = () => {
-	return [
-		{ title: 'AkariNext' },
-		{
-			name: 'description',
-			content: '開発からゲームまでもっと楽しいネットライフをAkariNextで！',
-		},
-		{ name: 'theme-color', content: '#0F172A' },
-	];
-};
-
-// export function loader() {
-// 	return json(
-// 		{ config: CONFIG },
-// 		{
-// 			headers: {
-// 				'Cache-Control': 'max-age=300',
-// 			},
-// 		},
-// 	);
-// }
-
-export async function loader({ request }: LoaderFunctionArgs) {
-	const user = await authenticator.isAuthenticated(request);
-	return { user };
-}
-
-export function ErrorBoundary() {
-	const error = useRouteError();
-	console.error(error);
+export function Layout({ children }: { children: React.ReactNode }) {
 	return (
-		<html>
-			<head>
-				<title>Oh no!</title>
-				<Meta />
-				<Links />
-			</head>
-			<body>
-				<Scripts />
-			</body>
-		</html>
-	);
-}
-
-export function Layout({ children }: { children: ReactNode }) {
-	return (
-		<html lang="ja">
+		<html lang="en">
 			<head>
 				<meta charSet="utf-8" />
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -80,9 +34,7 @@ export function Layout({ children }: { children: ReactNode }) {
 				<Links />
 			</head>
 			<body className="bg-slate-100 w-full">
-				<div className="mx-auto">
-					{children}
-				</div>
+				<div className="mx-auto">{children}</div>
 				<ScrollRestoration />
 				<Scripts />
 			</body>
@@ -92,4 +44,33 @@ export function Layout({ children }: { children: ReactNode }) {
 
 export default function App() {
 	return <Outlet />;
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+	let message = 'Oops!';
+	let details = 'An unexpected error occurred.';
+	let stack: string | undefined;
+
+	if (isRouteErrorResponse(error)) {
+		message = error.status === 404 ? '404' : 'Error';
+		details =
+			error.status === 404
+				? 'The requested page could not be found.'
+				: error.statusText || details;
+	} else if (import.meta.env.DEV && error && error instanceof Error) {
+		details = error.message;
+		stack = error.stack;
+	}
+
+	return (
+		<main className="pt-16 p-4 container mx-auto">
+			<h1>{message}</h1>
+			<p>{details}</p>
+			{stack && (
+				<pre className="w-full p-4 overflow-x-auto">
+					<code>{stack}</code>
+				</pre>
+			)}
+		</main>
+	);
 }

@@ -1,9 +1,0 @@
-services:
-  app:
-    build: .
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./app:/usr/server/app
-      - ./data/posts:/usr/server/data/posts
-      - ./public:/usr/server/public
