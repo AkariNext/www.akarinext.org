@@ -53,7 +53,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 					</div>
 				</div>
 				<div className="order-1 sm:order-1 w-full h-full">
-					<div className="bg-primary w-[100vw] h-full -skew-x-12 absolute"></div>
+					<div className="bg-primary w-[100vw] h-full -skew-x-12 absolute" />
 					{/* <img src="/img/party.svg" alt="" /> */}
 				</div>
 			</div>
@@ -106,7 +106,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 				<div className="">
 					<div className="mt-28 rounded-lg min-h-[500px] grid grid-cols-1 md:grid-cols-3">
 						<div
-							className="rounded-t-xl md:rounded-l-xl bg-cover bg-center min-h-48"
+							className="rounded-tl-xl md:rounded-l-xl bg-cover bg-center min-h-48"
 							style={{
 								backgroundImage: 'url(/img/hero.webp)',
 							}}
