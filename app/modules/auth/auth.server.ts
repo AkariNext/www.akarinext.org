@@ -3,10 +3,13 @@ import { Authenticator } from 'remix-auth';
 import { OIDCStrategy } from 'remix-auth-openid';
 import { clearSession, getSession, setSession } from './auth-session.server';
 import { env } from '../env.server';
+import { logFactory } from '../logger';
 
 export interface User extends OIDCStrategy.BaseUser {
 	name?: string;
 }
+
+const logger = logFactory('auth');
 
 const authenticator = new Authenticator<User>();
 const strategy = await OIDCStrategy.init<User>(
@@ -23,8 +26,8 @@ const strategy = await OIDCStrategy.init<User>(
 		token_endpoint_auth_method: 'none',
 		post_logout_redirect_uris: [
 			process.env.NODE_ENV === 'development'
-				? 'http://localhost:5173/auth/login'
-				: 'https://www.akarinext.org/auth/login',
+				? 'http://localhost:5173/'
+				: 'https://www.akarinext.org/',
 		],
 		revocation_endpoint: 'https://auth.akarinext.org/oauth/v2/revoke',
 		end_session_endpoint: 'https://auth.akarinext.org/oidc/v1/end_session',
@@ -55,18 +58,17 @@ authenticator.use(strategy, 'zitadel');
 
 async function getUserSession(request: Request): Promise<User | null> {
 	const user = await getSession<User>(request);
-	// console.log("[getUserSession] user is", user);
 	if (!user) {
 		try {
 			const user = await authenticator.authenticate('zitadel', request);
+			logger.info('[getUserSession] User authenticated:', user);
 			const headers = await setSession(request, user);
+			logger.info('[getUserSession] Redirecting to / with headers:', headers);
 			throw redirect('/', { headers: headers });
 		} catch (e) {
 			if (e instanceof Response) {
-				// console.log('[getUserSession] Response error:', e);
-				// throw e;
-			} else {
-				// console.log('[getUserSession] Other error:', e);
+				logger.error('[getUserSession] Response error:', e);
+				throw e;
 			}
 			throw redirect('/');
 		}
@@ -76,13 +78,13 @@ async function getUserSession(request: Request): Promise<User | null> {
 async function logout(request: Request) {
 	const user = await getUserSession(request);
 	if (!user) {
-		return redirect('/login');
+		return redirect('/auth/login');
 	}
 
 	try {
 		await strategy.postLogoutUrl(user.idToken ?? '');
 		const header = await clearSession(request);
-		throw redirect('/auth/login', { headers: header });
+		return redirect('/', { headers: header });
 	} catch (e) {
 		if (e instanceof Response) {
 			return e.url;
