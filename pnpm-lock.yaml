@@ -105,8 +105,8 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0
       file-type:
-        specifier: ^19.6.0
-        version: 19.6.0
+        specifier: ^20.0.0
+        version: 20.0.0
       front-matter:
         specifier: ^4.0.2
         version: 4.0.2
@@ -2262,9 +2262,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@sec-ant/readable-stream@0.4.1':
-    resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
-
   '@shikijs/core@1.22.2':
     resolution: {integrity: sha512-bvIQcd8BEeR1yFvOYv6HDiyta2FFVePbzeowf5pPS1avczrPK+cjmaxxh0nx5QzbON7+Sv0sQfQVciO7bN72sg==}
 
@@ -2563,6 +2560,10 @@ packages:
   '@tensorflow/tfjs@4.22.0':
     resolution: {integrity: sha512-0TrIrXs6/b7FLhLVNmfh8Sah6JgjBPH4mZ8JGb7NU6WW+cx00qK5BcAZxw7NCzxj6N8MRAIfHq+oNbPUNG5VAg==}
     hasBin: true
+
+  '@tokenizer/inflate@0.2.6':
+    resolution: {integrity: sha512-SdR/i05U7Xhnsq36iyIq/ZiGGw4PKzw4ww3bOq80Pjj4wyXpqyTcgrgdDdGlcatnlvzNJx8CQw3hp6QZvkUwhA==}
+    engines: {node: '>=16'}
 
   '@tokenizer/token@0.3.0':
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
@@ -3607,12 +3608,15 @@ packages:
   fflate@0.7.4:
     resolution: {integrity: sha512-5u2V/CDW15QM1XbbgS+0DfPxVB+jUKhWEKuuFuHncbk3tEEqzmoXL+2KyOFuKGqOnmdIy0/davWF1CkuwtibCw==}
 
+  fflate@0.8.2:
+    resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==}
+
   file-type@16.5.4:
     resolution: {integrity: sha512-/yFHK0aGjFEgDJjEKP0pWCplsPFPhwyfwevf/pVxiN0tmE4L9LmwWxWukdJSHdoCli4VgQLehjJtwQBnqmsKcw==}
     engines: {node: '>=10'}
 
-  file-type@19.6.0:
-    resolution: {integrity: sha512-VZR5I7k5wkD0HgFnMsq5hOsSc710MJMu5Nc5QYsbe38NN5iPV/XTObYLc/cpttRTf6lX538+5uO1ZQRhYibiZQ==}
+  file-type@20.0.0:
+    resolution: {integrity: sha512-w8Z+QqWtEPIfyoPx9lDhzR52UjY5PfZunJ6lmH48oCR2gVbV52Aaw2bVtbi7P4EAlSpjn8xmNDiRAieYaabEIQ==}
     engines: {node: '>=18'}
 
   fill-range@7.1.1:
@@ -3741,10 +3745,6 @@ packages:
   get-stream@6.0.1:
     resolution: {integrity: sha512-ts6Wi+2j3jQjqi70w5AlN8DFnkSwC+MqmxEzdEALB2qXZYV3X/b1CTfgPLGJNMeAWxdPfU8FO1ms3NUfaHCPYg==}
     engines: {node: '>=10'}
-
-  get-stream@9.0.1:
-    resolution: {integrity: sha512-kVCxPF3vQM/N0B1PmoqVUqgHP+EeVjmZSQn+1oCRPxd2P21P2F19lIgbR3HBosbB1PUhOAoctJnfEn2GbN2eZA==}
-    engines: {node: '>=18'}
 
   get-tsconfig@4.8.1:
     resolution: {integrity: sha512-k9PN+cFBmaLWtVz29SkUoqU5O0slLuHJXt/2P+tMVFT+phsSGXGkp9t3rQIqdz0e+06EHNGs3oM6ZX1s2zHxRg==}
@@ -4043,10 +4043,6 @@ packages:
   is-stream@2.0.1:
     resolution: {integrity: sha512-hFoiJiTl63nn+kstHGBtewWSKnQLpyb155KHheA1l39uvtO9nWIop1p3udqPcUd/xbF1VLMO4n7OI6p7RbngDg==}
     engines: {node: '>=8'}
-
-  is-stream@4.0.1:
-    resolution: {integrity: sha512-Dnz92NInDqYckGEUJv689RbRiTSEHCQ7wOVeALbkOz999YpqT46yMRIGtSNl2iCL1waAZSx40+h59NV/EwzV/A==}
-    engines: {node: '>=18'}
 
   is-typed-array@1.1.13:
     resolution: {integrity: sha512-uZ25/bUAlUY5fR4OKT4rZQEBrzQWYV9ZJYGGsUmEJ6thodVJ1HX64ePQ6Z0qPWP+m+Uq6e9UugrE38jeYsDSMw==}
@@ -5641,13 +5637,13 @@ packages:
   strnum@1.0.5:
     resolution: {integrity: sha512-J8bbNyKKXl5qYcR36TIO8W3mVGVHrmmxsd5PAItGkmyzwJvybiw2IVq5nqd0i4LSNSkB/sx9VHllbfFdr9k1JA==}
 
+  strtok3@10.0.1:
+    resolution: {integrity: sha512-7OOJepVlvlcgjW/fLNCsIqpNleAoi1y0LTRWGnOpABOSpRmw+65HvnruoOCnjpaQ1efnlYpQ/JwHKuaombnuXQ==}
+    engines: {node: '>=16'}
+
   strtok3@6.3.0:
     resolution: {integrity: sha512-fZtbhtvI9I48xDSywd/somNqgUHl2L2cstmXCCif0itOf96jeW18MBSyrLuNicYQVkvpOxkZtkzujiTJ9LW5Jw==}
     engines: {node: '>=10'}
-
-  strtok3@9.0.1:
-    resolution: {integrity: sha512-ERPW+XkvX9W2A+ov07iy+ZFJpVdik04GhDA4eVogiG9hpC97Kem2iucyzhFxbFRvQ5o2UckFtKZdp1hkGvnrEw==}
-    engines: {node: '>=16'}
 
   style-mod@4.1.2:
     resolution: {integrity: sha512-wnD1HyVqpJUI2+eKZ+eo1UwghftP6yuFheBqqe+bWCotBjC2K1YnteJILRMs3SM4V/0dLEW1SC27MWP5y+mwmw==}
@@ -8585,8 +8581,6 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.24.3':
     optional: true
 
-  '@sec-ant/readable-stream@0.4.1': {}
-
   '@shikijs/core@1.22.2':
     dependencies:
       '@shikijs/engine-javascript': 1.22.2
@@ -9067,6 +9061,14 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - seedrandom
+
+  '@tokenizer/inflate@0.2.6':
+    dependencies:
+      debug: 4.3.7
+      fflate: 0.8.2
+      token-types: 6.0.0
+    transitivePeerDependencies:
+      - supports-color
 
   '@tokenizer/token@0.3.0': {}
 
@@ -10269,18 +10271,22 @@ snapshots:
 
   fflate@0.7.4: {}
 
+  fflate@0.8.2: {}
+
   file-type@16.5.4:
     dependencies:
       readable-web-to-node-stream: 3.0.2
       strtok3: 6.3.0
       token-types: 4.2.1
 
-  file-type@19.6.0:
+  file-type@20.0.0:
     dependencies:
-      get-stream: 9.0.1
-      strtok3: 9.0.1
+      '@tokenizer/inflate': 0.2.6
+      strtok3: 10.0.1
       token-types: 6.0.0
       uint8array-extras: 1.4.0
+    transitivePeerDependencies:
+      - supports-color
 
   fill-range@7.1.1:
     dependencies:
@@ -10410,11 +10416,6 @@ snapshots:
   get-port@5.1.1: {}
 
   get-stream@6.0.1: {}
-
-  get-stream@9.0.1:
-    dependencies:
-      '@sec-ant/readable-stream': 0.4.1
-      is-stream: 4.0.1
 
   get-tsconfig@4.8.1:
     dependencies:
@@ -10779,8 +10780,6 @@ snapshots:
       '@types/estree': 1.0.6
 
   is-stream@2.0.1: {}
-
-  is-stream@4.0.1: {}
 
   is-typed-array@1.1.13:
     dependencies:
@@ -12892,15 +12891,15 @@ snapshots:
 
   strnum@1.0.5: {}
 
+  strtok3@10.0.1:
+    dependencies:
+      '@tokenizer/token': 0.3.0
+      peek-readable: 5.3.1
+
   strtok3@6.3.0:
     dependencies:
       '@tokenizer/token': 0.3.0
       peek-readable: 4.1.0
-
-  strtok3@9.0.1:
-    dependencies:
-      '@tokenizer/token': 0.3.0
-      peek-readable: 5.3.1
 
   style-mod@4.1.2: {}
 
