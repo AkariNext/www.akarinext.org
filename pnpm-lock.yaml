@@ -73,7 +73,7 @@ importers:
         version: 1.1.3(@types/react-dom@18.3.1)(@types/react@18.3.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@reactuses/core':
         specifier: ^5.0.22
-        version: 5.0.22(react@18.3.1)
+        version: 5.0.23(react@18.3.1)
       '@remix-run/node':
         specifier: ^2.13.1
         version: 2.13.1(typescript@5.5.4)
@@ -1453,6 +1453,10 @@ packages:
     resolution: {integrity: sha512-IzL8ZoEDIBRWEzlCcRhOaCupYyN5gdIK+Q6fbFdPDg6HqX6jpkItn7DFIpW9LQzXG6Df9sA7+OKnq0qlz/GaQg==}
     engines: {node: '>=6.0.0'}
 
+  '@jridgewell/gen-mapping@0.3.8':
+    resolution: {integrity: sha512-imAbBGkb+ebQyxKgzv5Hu2nmROxoDOXHh80evxdoXNOrvAnVx7zimzc1Oo5h9RlfV4vPXaE2iM5pOFbvOCClWA==}
+    engines: {node: '>=6.0.0'}
+
   '@jridgewell/resolve-uri@3.1.2':
     resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
     engines: {node: '>=6.0.0'}
@@ -1522,6 +1526,9 @@ packages:
     peerDependenciesMeta:
       '@remix-run/cloudflare-pages':
         optional: true
+
+  '@microsoft/fetch-event-source@2.0.1':
+    resolution: {integrity: sha512-W6CLUJ2eBMw3Rec70qrsEW0jOm/3twwJv21mrmj2yORiaVmVYGS4sSS5yUwvQc1ZlDLYGPnClVWmUUMagKNsfA==}
 
   '@misskey-dev/summaly@5.1.0':
     resolution: {integrity: sha512-WAUrgX3/z4h4aI8Y/WVwmJcJ6Fa1Zf2LJCSS651t9MHoWVGABLsQ2KCXRGmlpk4i+cMDNIwweObUroosE7j8rg==}
@@ -1989,8 +1996,8 @@ packages:
       react: '>=17'
       react-dom: '>=17'
 
-  '@reactuses/core@5.0.22':
-    resolution: {integrity: sha512-o3t67GtmEEaVEU7epcUiYFgxoA92g8jiNrJ9OaXwxQuuxalejbqWYnbZZU93e/SVr8g6027dHaZoqiiqvRq59A==}
+  '@reactuses/core@5.0.23':
+    resolution: {integrity: sha512-FsaCxZLjU5LbzNdNJc/l7U45kWwimWwkCGqq2ZKx5m3Yw8S6jdzfhvtcdQPhp6RjNao4o5UrtuF0DxhWTOKGyA==}
     peerDependencies:
       qrcode: ^1.5
       react: ^16.8.0  || ^17.0.0 || ^18.0.0
@@ -2803,6 +2810,11 @@ packages:
 
   acorn@8.14.0:
     resolution: {integrity: sha512-cl669nCJTZBsL97OF4kUQm5g5hC2uihk0NxY3WENAC0TYdILVkAyHymAntgxGkl7K+t0cXIrH5siy5S4XkFycA==}
+    engines: {node: '>=0.4.0'}
+    hasBin: true
+
+  acorn@8.14.1:
+    resolution: {integrity: sha512-OvQ/2pUDKmgfCg++xsTX1wGxfTaszcHVcTctW4UJB4hibJx2HXxxO5UmVgyjMa+ZDsiaf5wWLXYpRWMmBI0QHg==}
     engines: {node: '>=0.4.0'}
     hasBin: true
 
@@ -3660,6 +3672,7 @@ packages:
 
   formidable@2.1.2:
     resolution: {integrity: sha512-CM3GuJ57US06mlpQ47YcunuUZ9jpm8Vx+P2CGt2j7HpgkKZO/DJYQ0Bobim8G6PFQmK5lOqOOdUXboU+h73A4g==}
+    deprecated: 'ACTION REQUIRED: SWITCH TO v3 - v1 and v2 are VULNERABLE! v1 is DEPRECATED FOR OVER 2 YEARS! Use formidable@latest or try formidable-mini for fresh projects'
 
   forwarded@0.2.0:
     resolution: {integrity: sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==}
@@ -5925,6 +5938,11 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
 
+  use-sync-external-store@1.5.0:
+    resolution: {integrity: sha512-Rb46I4cGGVBmjamjphe8L/UnvJD+uPPtTkNvX5mZgqdbavhI4EbgIWJiIHXJ8bc/i9EQGPRh4DwEURJ552Do0A==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   utif@2.0.1:
     resolution: {integrity: sha512-Z/S1fNKCicQTf375lIP9G8Sa1H/phcysstNrrSdZKj1f9g58J4NMgb5IgiEZN9/nLMPDwF0W7hdOe9Qq2IYoLg==}
 
@@ -7614,13 +7632,20 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.0
       '@jridgewell/trace-mapping': 0.3.25
 
+  '@jridgewell/gen-mapping@0.3.8':
+    dependencies:
+      '@jridgewell/set-array': 1.2.1
+      '@jridgewell/sourcemap-codec': 1.5.0
+      '@jridgewell/trace-mapping': 0.3.25
+    optional: true
+
   '@jridgewell/resolve-uri@3.1.2': {}
 
   '@jridgewell/set-array@1.2.1': {}
 
   '@jridgewell/source-map@0.3.6':
     dependencies:
-      '@jridgewell/gen-mapping': 0.3.5
+      '@jridgewell/gen-mapping': 0.3.8
       '@jridgewell/trace-mapping': 0.3.25
     optional: true
 
@@ -7772,6 +7797,8 @@ snapshots:
       - supports-color
       - tailwindcss
       - typescript
+
+  '@microsoft/fetch-event-source@2.0.1': {}
 
   '@misskey-dev/summaly@5.1.0':
     dependencies:
@@ -8296,13 +8323,14 @@ snapshots:
       - '@types/react'
       - immer
 
-  '@reactuses/core@5.0.22(react@18.3.1)':
+  '@reactuses/core@5.0.23(react@18.3.1)':
     dependencies:
+      '@microsoft/fetch-event-source': 2.0.1
       js-cookie: 3.0.5
       lodash-es: 4.17.21
       react: 18.3.1
       screenfull: 5.2.0
-      use-sync-external-store: 1.2.2(react@18.3.1)
+      use-sync-external-store: 1.5.0(react@18.3.1)
 
   '@remix-run/dev@2.13.1(@remix-run/react@2.13.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4))(@remix-run/serve@2.13.1(typescript@5.5.4))(@types/node@20.17.5)(terser@5.31.6)(typescript@5.5.4)(vite@6.0.3(@types/node@20.17.5)(jiti@1.21.6)(terser@5.31.6)(tsx@4.19.2)(yaml@2.6.0))':
     dependencies:
@@ -9367,6 +9395,9 @@ snapshots:
       acorn: 8.14.0
 
   acorn@8.14.0: {}
+
+  acorn@8.14.1:
+    optional: true
 
   adm-zip@0.5.16:
     optional: true
@@ -13012,7 +13043,7 @@ snapshots:
   terser@5.31.6:
     dependencies:
       '@jridgewell/source-map': 0.3.6
-      acorn: 8.14.0
+      acorn: 8.14.1
       commander: 2.20.3
       source-map-support: 0.5.21
     optional: true
@@ -13230,6 +13261,10 @@ snapshots:
       '@types/react': 18.3.12
 
   use-sync-external-store@1.2.2(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+
+  use-sync-external-store@1.5.0(react@18.3.1):
     dependencies:
       react: 18.3.1
 
