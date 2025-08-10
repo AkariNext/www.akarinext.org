@@ -22,7 +22,7 @@
 		"@codemirror/view": "^6.34.1",
 		"@conform-to/react": "^1.2.2",
 		"@conform-to/zod": "^1.2.2",
-		"@iconify/react": "^5.0.2",
+		"@iconify/react": "^6.0.0",
 		"@lezer/highlight": "^1.2.1",
 		"@misskey-dev/summaly": "^5.1.0",
 		"@nasa-gcn/remix-seo": "^2.0.1",
