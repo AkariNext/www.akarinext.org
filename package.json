@@ -72,7 +72,7 @@
 		"satori": "^0.11.0",
 		"shiki": "^1.22.2",
 		"svg2img": "1.0.0-beta.2",
-		"tailwind-merge": "^2.5.4",
+		"tailwind-merge": "^3.0.0",
 		"tailwindcss-animate": "^1.0.7",
 		"tiny-invariant": "^1.3.3",
 		"unified": "^11.0.5",
