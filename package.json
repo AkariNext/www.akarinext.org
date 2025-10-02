@@ -51,7 +51,7 @@
 		"lru-cache": "^11.0.2",
 		"lucide-react": "^0.468.0",
 		"luxon": "^3.5.0",
-		"magika": "^0.2.13",
+		"magika": "^0.4.0",
 		"mime-types": "^2.1.35",
 		"node-mcstatus": "^1.2.1",
 		"pg": "^8.13.1",
