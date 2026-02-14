@@ -3,3 +3,7 @@
 - Directusに関する操作を行った場合は docsフォルダ内のドキュメントを都度整備すること。
 - Directusのモデルを操作した場合は scriptsフォルダ内のスクリプトを更新すること。
 
+## 使用技術
+
+- Astro
+- Directus
