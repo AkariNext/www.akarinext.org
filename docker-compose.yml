@@ -33,30 +33,7 @@ services:
     volumes:
       - influxdb_data:/var/lib/influxdb2
 
-    networks:
-      - akarinext_network
-
-  monitor:
-    image: node:20-alpine
-    working_dir: /app
-    volumes:
-      - ./:/app
-    command: sh -c "npm install -g pnpm && pnpm install && pnpm monitor"
-    environment:
-      - INFLUX_URL=http://influxdb:8086
-      - PUBLIC_DIRECTUS_URL=http://directus:8055
-      # Add other necessary env vars from .env manually or via env_file
-    networks:
-      - akarinext_network
-    depends_on:
-      - directus
-
 volumes:
   directus_data:
   directus_uploads:
   influxdb_data:
-
-networks:
-  akarinext_network:
-    external: true
-    name: akarinext_shared_network
