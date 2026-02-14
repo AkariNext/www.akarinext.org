@@ -1,0 +1,211 @@
+---
+import "../styles/global.css";
+import { MessageSquare, LayoutGrid, Gamepad2, Megaphone, Home } from "lucide-astro";
+import { directus, readSingleton, skipDirectusFetch } from "../lib/directus";
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+}
+
+// Fetch Global Settings for Logo and Title
+let globalSettings = {
+    site_title: "AkariNext",
+    site_logo: null as string | null
+};
+
+if (!skipDirectusFetch) {
+    try {
+        const settings = await directus.request(readSingleton("global", {
+            fields: ["site_title", "site_logo"]
+        }));
+        if (settings) {
+             if (settings.site_title) globalSettings.site_title = settings.site_title;
+             if (settings.site_logo) globalSettings.site_logo = settings.site_logo;
+        }
+    } catch (e) {
+        // silent fail
+    }
+}
+
+const { title, description = "コミュニティサイト", image = "/og-image.png" } = Astro.props;
+// If a specific page title is provided, append the site title. Otherwise just use site title.
+const siteTitle = title ? `${title} | ${globalSettings.site_title}` : globalSettings.site_title;
+
+// Construct Logo URL
+const logoUrl = globalSettings.site_logo 
+    ? `${import.meta.env.PUBLIC_DIRECTUS_URL}/assets/${globalSettings.site_logo}` 
+    : null;
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={siteTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={image} />
+    <title>{siteTitle}</title>
+  </head>
+  <body>
+    <!-- Glass Header -->
+    <header class="site-header">
+      <nav class="container nav-container">
+        <a href="/" class="brand-logo">
+          {logoUrl ? (
+              <img src={logoUrl} alt={globalSettings.site_title} class="logo-img" />
+          ) : (
+              <Gamepad2 class="logo-icon" />
+          )}
+          <span class="logo-text">{globalSettings.site_title}</span>
+        </a>
+        <div class="nav-links">
+          <a href="/" class="nav-link"><Home class="nav-icon" /> <span class="nav-label">Home</span></a>
+          <a href="/posts" class="nav-link"><MessageSquare class="nav-icon" /> <span class="nav-label">Stories</span></a>
+          <a href="/games" class="nav-link"><LayoutGrid class="nav-icon" /> <span class="nav-label">Library</span></a>
+          <a href="/announcements" class="nav-link"><Megaphone class="nav-icon" /> <span class="nav-label">Feeds</span></a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="site-main">
+      <slot />
+    </main>
+
+    <!-- Simple Footer -->
+    <footer class="site-footer">
+      <div class="container footer-content">
+        <p class="copyright">&copy; {new Date().getFullYear()} {globalSettings.site_title}.</p>
+        <div class="footer-links">
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+        </div>
+      </div>
+    </footer>
+
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        padding: 0.75rem 0;
+        
+        /* Glass Effect */
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+      }
+
+      .nav-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .brand-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: var(--accent-primary);
+        letter-spacing: -0.02em;
+        text-decoration: none;
+      }
+      
+      .logo-icon {
+        width: 1.75rem;
+        height: 1.75rem;
+        color: var(--accent-secondary);
+      }
+      
+      .logo-img {
+          height: 2rem;
+          width: auto;
+          object-fit: contain;
+      }
+      
+      .logo-text {
+        color: var(--text-main);
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 1.5rem;
+      }
+
+      .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: var(--text-muted);
+        font-weight: 500;
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--radius-sm);
+        transition: all 0.2s;
+      }
+
+      .nav-link:hover {
+        color: var(--accent-primary);
+        background: rgba(14, 165, 233, 0.08); /* Soft blue hover */
+      }
+      
+      .nav-icon {
+        width: 1rem;
+        height: 1rem;
+      }
+      
+      .site-main {
+        flex: 1;
+        width: 100%;
+        padding-top: 2rem;
+      }
+
+      .site-footer {
+        padding: 2.5rem 0;
+        border-top: 1px solid var(--border-subtle);
+        background: rgba(255, 255, 255, 0.6);
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-top: 4rem;
+      }
+
+      .footer-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 2rem;
+      }
+      
+      @media (max-width: 768px) {
+        .nav-label {
+          display: none;
+        }
+        .nav-links {
+          gap: 0.5rem;
+        }
+        .nav-link {
+            padding: 0.5rem;
+        }
+      }
+    </style>
+  </body>
+</html>

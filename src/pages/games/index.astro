@@ -1,0 +1,326 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { directus, readItems, skipDirectusFetch } from "../../lib/directus";
+import { User, Gamepad2, Play, Users, Image as ImageIcon } from "lucide-astro";
+
+// Types
+interface Game {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  cover_image?: string | { id: string };
+}
+interface GamePlayer {
+  id: number;
+  user: { name: string };
+  game: { id: number; name: string; slug: string };
+  started_at: string;
+  status: string;
+}
+
+// Data Handling
+let games: Game[] = [];
+let gamePlayers: GamePlayer[] = [];
+
+if (!skipDirectusFetch) {
+  try {
+    games = (await directus.request(
+      readItems("games", {
+        fields: ["id", "name", "slug", "description", "cover_image"],
+        sort: ["name"],
+      })
+    )) ?? [];
+
+    gamePlayers = (await directus.request(
+      readItems("game_players", {
+        fields: [
+          "id",
+          "started_at",
+          "status",
+          { user: ["name"] },
+          { game: ["id", "name", "slug"] },
+        ],
+        filter: { status: { _eq: "playing" } },
+        sort: ["-started_at"],
+      })
+    )) ?? [];
+  } catch (e) {
+    // Silent fail
+  }
+}
+
+// Group players
+const playersByGame = new Map<number, GamePlayer[]>();
+gamePlayers.forEach((gp) => {
+    if(gp.game?.id) {
+        const list = playersByGame.get(gp.game.id) || [];
+        list.push(gp);
+        playersByGame.set(gp.game.id, list);
+    }
+});
+
+const directusUrl = import.meta.env.PUBLIC_DIRECTUS_URL || "http://localhost:8055";
+
+const getCoverUrl = (cover: Game['cover_image']) => {
+    if (!cover) return null;
+    const id = typeof cover === 'string' ? cover : cover.id;
+    return `${directusUrl}/assets/${id}`;
+}
+---
+
+<Layout title="Game Library" description="Current games being played by the community.">
+    <div class="page-header">
+        <div class="container text-center">
+            <h1 class="page-title"><Gamepad2 class="icon icon-lg" /> Game Library</h1>
+            <p class="page-desc">
+                Explore the collection of games our community is currently enjoying.
+            </p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Active Players -->
+        {gamePlayers.length > 0 && (
+            <section class="active-section glass-card">
+                <h2 class="section-title"><Users class="icon icon-blue" /> Now Playing</h2>
+                <div class="player-chips">
+                    {gamePlayers.map((gp) => (
+                        <div class="player-chip">
+                             <div class="status-dot tooltip" title="Playing Now"></div>
+                             <span class="chip-user">{gp.user?.name || "Unknown"}</span>
+                             <Play class="icon icon-xs text-muted" />
+                             <span class="chip-game">{gp.game?.name || "Unknown"}</span>
+                        </div>
+                    ))}
+                </div>
+            </section>
+        )}
+
+        <!-- Games Grid -->
+        {games.length > 0 ? (
+            <div class="games-grid">
+                {games.map((game) => {
+                    const players = playersByGame.get(game.id) || [];
+                    const coverUrl = getCoverUrl(game.cover_image);
+                    return (
+                        <div class="game-card">
+                            <div class="game-cover-wrapper">
+                                {coverUrl ? (
+                                    <img src={coverUrl} alt={game.name} class="game-cover" loading="lazy" />
+                                ) : (
+                                    <div class="game-cover-placeholder">
+                                        <ImageIcon class="icon text-muted" />
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div class="game-info">
+                                <h3 class="game-name">{game.name}</h3>
+                                {game.description && (
+                                    <p class="game-desc">{game.description}</p>
+                                )}
+                                
+                                {players.length > 0 && (
+                                    <div class="active-players-list">
+                                        <span class="active-label"><Users class="icon icon-xs" /> Playing:</span>
+                                        {players.map(p => (
+                                            <span class="mini-badge">{p.user?.name}</span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        ) : (
+            <div class="glass-card empty-state">
+                <p>The library is currently empty.</p>
+            </div>
+        )}
+    </div>
+</Layout>
+
+<style>
+    .page-header {
+      text-align: center;
+      padding: 4rem 0;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.5), transparent);
+    }
+  
+    .page-title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: var(--text-main);
+    }
+    
+    .page-desc {
+        color: var(--text-muted);
+        max-width: 600px;
+        margin: 0 auto;
+        font-size: 1.1rem;
+    }
+    
+    .icon-lg { width: 2.5rem; height: 2.5rem; color: var(--accent-primary); }
+    .icon-xs { width: 0.8em; height: 0.8em; vertical-align: middle; }
+    .icon-blue { color: var(--accent-primary); width: 1.5rem; height: 1.5rem; margin-right: 0.5rem; vertical-align: middle; }
+    .text-muted { color: var(--text-muted); opacity: 0.7; }
+
+    .active-section {
+        margin-bottom: 3rem;
+        padding: 2rem;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-main);
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+    }
+    
+    .player-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    
+    .player-chip {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--bg-surface-hover);
+        border: 1px solid var(--border-subtle);
+        padding: 0.5rem 1rem;
+        border-radius: 99px;
+        font-size: 0.85rem;
+        color: var(--text-main);
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.2s;
+    }
+    
+    .player-chip:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent-soft);
+    }
+    
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        background: #10b981; /* Green-500 */
+        border-radius: 50%;
+        box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+    }
+    
+    .chip-game {
+        color: var(--accent-primary);
+        font-weight: 600;
+    }
+
+    .games-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 2rem;
+        padding-bottom: 4rem;
+    }
+    
+    .game-card {
+        /* Global class + specifics */
+        padding: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    .game-cover-wrapper {
+        position: relative;
+        height: 180px;
+        background: var(--bg-surface-hover);
+        overflow: hidden;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    .game-cover {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    
+    .game-card:hover .game-cover {
+        transform: scale(1.05);
+    }
+    
+    .game-cover-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(14, 165, 233, 0.05);
+    }
+    
+    .game-info {
+        padding: 1.5rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .game-name {
+        font-size: 1.25rem;
+        color: var(--text-main);
+        margin-bottom: 0.75rem;
+        font-weight: 700;
+    }
+    
+    .game-desc {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+        flex: 1;
+    }
+    
+    .active-players-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        margin-top: auto;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+    
+    .active-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .mini-badge {
+        font-size: 0.75rem;
+        background: var(--accent-soft);
+        color: var(--accent-secondary);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem;
+        color: var(--text-muted);
+    }
+</style>

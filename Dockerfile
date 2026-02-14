@@ -1,44 +1,49 @@
-# ベースイメージ
-FROM node:lts-buster-slim as base
+# Build stage
+FROM node:22-alpine AS builder
 
-WORKDIR /usr/server
+WORKDIR /app
 
-# 依存関係のインストールとキャッシュ
-COPY package.json pnpm-lock.yaml ./
-RUN corepack enable
-RUN pnpm fetch
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-RUN apt-get update -y && apt-get install -y openssl curl wget git jq
+# Copy package files
+COPY package.json pnpm-lock.yaml* ./
 
-# ビルドステージ
-FROM base as build
+# Install dependencies
+RUN pnpm install --frozen-lockfile
 
-WORKDIR /usr/server
+# Copy source
+COPY . .
 
-# 残りのソースコードをコピー
-COPY ./ ./
+# Build-time env (override with Dokploy env vars)
+# 403 が出る場合: PUBLIC_SKIP_DIRECTUS_BUILD=true で Directus fetch をスキップ
+ARG PUBLIC_DIRECTUS_URL
+ARG PUBLIC_SKIP_DIRECTUS_BUILD
+ENV PUBLIC_DIRECTUS_URL=${PUBLIC_DIRECTUS_URL}
+ENV PUBLIC_SKIP_DIRECTUS_BUILD=${PUBLIC_SKIP_DIRECTUS_BUILD}
 
-# インストールされた依存関係をリンク
-RUN pnpm install --offline
+RUN pnpm run build
 
-# ビルド
-ENV NODE_ENV=production
-RUN pnpm prisma generate && pnpm build && pnpm prisma migrate deploy
+# Production stage
+FROM nginx:alpine
 
-# 最終ステージ
-FROM node:lts-buster-slim as final
+# Copy built assets from Astro
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-WORKDIR /usr/server
+# Nginx config for SPA-style routing (optional, for client-side routing)
+RUN echo 'server { \
+    listen 80; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+    } \
+    location /assets/ { \
+        expires 1y; \
+        add_header Cache-Control "public, immutable"; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
 
-# pnpmをインストール
-RUN corepack enable
+EXPOSE 80
 
-# opensslをインストール(prismaの依存関係)
-RUN apt-get update -y && apt-get install -y openssl curl wget git jq
-
-
-# ビルド成果物をコピー
-COPY --from=build /usr/server /usr/server
-
-# アプリケーションの起動
-CMD ["pnpm", "start"]
+CMD ["nginx", "-g", "daemon off;"]

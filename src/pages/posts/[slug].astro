@@ -1,0 +1,306 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { directus, readItems, skipDirectusFetch } from "../../lib/directus";
+import { Calendar, User, ArrowLeft, Image as ImageIcon, Gamepad2, Code2, MessageCircle } from "lucide-astro";
+
+export async function getStaticPaths() {
+	if (skipDirectusFetch) return [];
+	try {
+		const posts =
+			(await directus.request(
+				readItems("posts", {
+					fields: ["slug"],
+					filter: { status: { _eq: "published" } },
+				}),
+			)) ?? [];
+		return posts.map((post: { slug: string }) => ({
+			params: { slug: post.slug },
+		}));
+	} catch {
+		return [];
+	}
+}
+
+const { slug } = Astro.params;
+let post = null;
+
+if (!skipDirectusFetch) {
+	try {
+        const result = await directus.request(
+            readItems("posts", {
+                fields: [
+                    "title",
+                    "content",
+                    "published_date",
+                    "category",
+                    "tags",
+                    { author: ["name", "avatar"] },
+                    "image",
+                ],
+                filter: { slug: { _eq: slug } },
+                limit: 1,
+            })
+        );
+        post = result?.[0] || null;
+	} catch (e) {
+		// Silent error
+	}
+}
+
+if (!post) {
+	return Astro.redirect("/posts");
+}
+
+const directusUrl =
+	import.meta.env.PUBLIC_DIRECTUS_URL || "http://localhost:8055";
+
+const getImageUrl = (imageVal: any) => {
+    if (!imageVal) return null;
+    const id = typeof imageVal === 'string' ? imageVal : imageVal.id;
+    return `${directusUrl}/assets/${id}`;
+}
+
+const imageUrl = getImageUrl(post.image);
+const avatarUrl = getImageUrl(post.author?.avatar);
+
+const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('ja-JP', {
+       year: 'numeric',
+       month: 'long',
+       day: 'numeric' 
+    });
+};
+
+const getCategoryIcon = (cat: string) => {
+    switch(cat) {
+        case 'tech': return Code2;
+        case 'game': return Gamepad2;
+        case 'misc': return MessageCircle;
+        default: return MessageCircle;
+    }
+}
+const CategoryIcon = getCategoryIcon(post.category);
+---
+
+<Layout title={post.title} description={post.content?.replace(/<[^>]*>/g, '').substring(0, 160) || ''} image={imageUrl || undefined}>
+    
+    <article class="post-detail">
+        <header class="post-header-block">
+            <div class="container container-medium text-center">
+                <div class="header-meta">
+                    <span class="meta-item category-badge">
+                        <CategoryIcon class="icon icon-xs" /> {post.category.toUpperCase()}
+                    </span>
+                    <span class="meta-item"><Calendar class="icon icon-sm" /> {formatDate(post.published_date)}</span>
+                </div>
+                
+                <h1 class="post-title">{post.title}</h1>
+                
+                {post.author && (
+                    <div class="author-block">
+                        {avatarUrl ? (
+                            <img src={`${avatarUrl}?width=64&height=64&fit=cover`} alt={post.author.name} class="author-avatar" />
+                        ) : (
+                            <div class="author-avatar placeholder"><User class="icon" /></div>
+                        )}
+                        <span class="author-name">By {post.author.name}</span>
+                    </div>
+                )}
+            </div>
+            
+            {imageUrl ? (
+                <div class="hero-image-wrapper container">
+                    <img src={imageUrl} alt={post.title} class="hero-image" />
+                </div>
+            ) : (
+                <div class="hero-image-placeholder container">
+                </div>
+            )}
+        </header>
+
+        <div class="container container-medium content-container">
+            <div class="glass-card content-card">
+                <div class="prose" set:html={post.content} />
+                
+                {post.tags && post.tags.length > 0 && (
+                    <div class="tags-section">
+                        <div class="tags-list">
+                            {post.tags.map((tag: string) => (
+                                <span class="tag">#{tag}</span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+            
+            <div class="post-footer">
+                <a href="/posts" class="btn"><ArrowLeft class="icon icon-sm" /> Back to Stories</a>
+            </div>
+        </div>
+    </article>
+</Layout>
+
+<style>
+    .post-detail {
+        padding-bottom: 5rem;
+    }
+    
+    .container-medium {
+        max-width: 800px;
+    }
+    
+    .text-center { text-align: center; }
+    
+    .post-header-block {
+        margin-bottom: 2rem; 
+        padding-top: 4rem;
+        background: radial-gradient(circle at 50% 0%, rgba(224, 242, 254, 0.5), transparent 70%);
+        padding-bottom: 6rem;
+    }
+    
+    .header-meta {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1.5rem;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-bottom: 1.5rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    
+    .category-badge {
+        color: var(--accent-primary);
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.5);
+        padding: 0.25rem 0.75rem;
+        border-radius: 99px;
+        border: 1px solid var(--border-subtle);
+    }
+    
+    .author-block {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+    
+    .author-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .author-avatar.placeholder {
+        background: var(--bg-surface-hover);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+    }
+    
+    .author-name {
+        font-weight: 600;
+        color: var(--text-main);
+    }
+    
+    .icon-sm { width: 1em; height: 1em; }
+    
+    .post-title {
+        font-size: 3rem;
+        line-height: 1.15;
+        margin-bottom: 1rem;
+        color: var(--text-main);
+        letter-spacing: -0.02em;
+    }
+    
+    .hero-image-wrapper {
+        margin-top: 3rem;
+        margin-bottom: -5rem;
+        position: relative;
+        z-index: 10;
+        text-align: center;
+    }
+    
+    .hero-image {
+        max-width: 1000px;
+        width: 100%;
+        height: auto;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-hover);
+        border: 1px solid var(--border-glass);
+    }
+    
+    .hero-image-placeholder {
+        height: 50px;
+    }
+    
+    .content-container {
+        position: relative;
+        z-index: 5;
+        margin-top: 0; 
+    }
+    
+    .content-card {
+        padding: 4rem;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.05);
+    }
+    
+    .tags-section {
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+    
+    .tags-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    
+    .tag {
+        font-size: 0.85rem;
+        color: var(--accent-primary);
+        background: rgba(14, 165, 233, 0.08);
+        padding: 0.35rem 0.85rem;
+        border-radius: 99px;
+        transition: all 0.2s;
+    }
+    
+    .tag:hover {
+        background: rgba(14, 165, 233, 0.15);
+        transform: translateY(-1px);
+    }
+    
+    .post-footer {
+        margin-top: 4rem;
+        padding-top: 2rem;
+        text-align: center;
+    }
+    
+    @media (max-width: 768px) {
+        .post-title {
+            font-size: 2.25rem;
+        }
+        .post-header-block {
+            padding-top: 2rem;
+            padding-bottom: 4rem;
+        }
+        .content-card {
+            padding: 1.5rem;
+        }
+    }
+</style>

@@ -1,0 +1,24 @@
+# ローカル開発用
+# Directus を起動: docker compose up -d directus
+# Astro は pnpm dev で別途起動
+
+services:
+  directus:
+    image: directus/directus:latest
+    ports:
+      - "8055:8055"
+    environment:
+      KEY: "replace-with-random-key"
+      SECRET: "replace-with-random-secret"
+      ADMIN_EMAIL: "admin@example.com"
+      ADMIN_PASSWORD: "admin"
+      DB_CLIENT: "sqlite3"
+      DB_FILENAME: "/directus/database/database.sqlite"
+      WEBSOCKETS_ENABLED: "true"
+    volumes:
+      - directus_data:/directus/database
+      - directus_uploads:/directus/uploads
+
+volumes:
+  directus_data:
+  directus_uploads:
