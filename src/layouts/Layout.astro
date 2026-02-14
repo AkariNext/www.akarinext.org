@@ -37,13 +37,26 @@ const siteTitle = title ? `${title} | ${globalSettings.site_title}` : globalSett
 const logoUrl = globalSettings.site_logo 
     ? `${import.meta.env.PUBLIC_DIRECTUS_URL}/assets/${globalSettings.site_logo}` 
     : null;
+
+const currentPath = Astro.url.pathname;
+const isActive = (path: string) => {
+    if (path === '/') return currentPath === '/';
+    return currentPath === path || currentPath.startsWith(path + '/');
+};
+
+const navItems = [
+    { label: 'ホーム', path: '/', icon: Home },
+    { label: 'ストーリー', path: '/posts', icon: MessageSquare },
+    { label: 'ライブラリ', path: '/games', icon: LayoutGrid },
+    { label: 'フィード', path: '/announcements', icon: Megaphone },
+];
 ---
 
 <!doctype html>
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
@@ -85,11 +98,13 @@ const logoUrl = globalSettings.site_logo
           <span class="logo-text">{globalSettings.site_title}</span>
         </a>
         <div class="nav-wrapper">
-          <div class="nav-links">
-            <a href="/" class="nav-link"><Home class="nav-icon" /> <span class="nav-label">ホーム</span></a>
-            <a href="/posts" class="nav-link"><MessageSquare class="nav-icon" /> <span class="nav-label">ストーリー</span></a>
-            <a href="/games" class="nav-link"><LayoutGrid class="nav-icon" /> <span class="nav-label">ライブラリ</span></a>
-            <a href="/announcements" class="nav-link"><Megaphone class="nav-icon" /> <span class="nav-label">フィード</span></a>
+          <div class="nav-links desktop-only">
+            {navItems.map(item => (
+                <a href={item.path} class={`nav-link ${isActive(item.path) ? 'active' : ''}`}>
+                    <item.icon class="nav-icon" /> 
+                    <span class="nav-label">{item.label}</span>
+                </a>
+            ))}
           </div>
           <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Theme">
               <Sun class="icon sun-icon" />
@@ -113,6 +128,18 @@ const logoUrl = globalSettings.site_logo
         </div>
       </div>
     </footer>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav">
+        {navItems.map(item => (
+            <a href={item.path} class={`mobile-nav-link ${isActive(item.path) ? 'active' : ''}`}>
+                <div class="icon-wrapper">
+                    <item.icon class="mobile-nav-icon" />
+                </div>
+                <span class="mobile-nav-label">{item.label}</span>
+            </a>
+        ))}
+    </nav>
 
     <style>
       body {
@@ -196,6 +223,12 @@ const logoUrl = globalSettings.site_logo
         background: rgba(14, 165, 233, 0.08); /* Soft blue hover */
       }
       
+      .nav-link.active {
+          color: var(--accent-primary);
+          background: rgba(14, 165, 233, 0.1);
+          font-weight: 600;
+      }
+
       .nav-icon {
         width: 1rem;
         height: 1rem;
@@ -268,19 +301,86 @@ const logoUrl = globalSettings.site_logo
         display: flex;
         gap: 2rem;
       }
+
+      /* Mobile Navigation Styles */
+      .mobile-bottom-nav {
+          display: none;
+      }
       
       @media (max-width: 768px) {
-        .nav-label {
-          display: none;
+        .desktop-only {
+          display: none !important;
         }
-        .nav-links {
-          gap: 0.5rem;
+
+        .site-header {
+            padding: 0.75rem 0;
         }
-        .nav-link {
-            padding: 0.5rem;
+
+        .site-main {
+            padding-bottom: 5rem; /* Space for bottom nav */
         }
-        .nav-wrapper {
-            gap: 0.5rem;
+
+        .site-footer {
+            padding-bottom: 6rem; /* Space for bottom nav */
+        }
+        
+        .mobile-bottom-nav {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid var(--border-glass);
+            padding: 0.75rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px)) 1rem;
+            z-index: 1000;
+            box-shadow: 0 -4px 30px rgba(0,0,0,0.05);
+        }
+
+        .mobile-nav-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            width: 100%;
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .mobile-nav-link:active {
+            transform: scale(0.95);
+        }
+
+        .mobile-nav-link.active {
+            color: var(--accent-primary);
+        }
+
+        .icon-wrapper {
+            position: relative;
+            padding: 0.25rem 1.25rem;
+            border-radius: 99px;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-nav-link.active .icon-wrapper {
+            background: rgba(14, 165, 233, 0.15); /* Soft accent bg */
+        }
+        
+        .mobile-nav-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            stroke-width: 2px;
+        }
+
+        .mobile-nav-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
         }
       }
     </style>
