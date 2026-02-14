@@ -6,6 +6,8 @@ const token = import.meta.env.INFLUX_TOKEN;
 const org = import.meta.env.INFLUX_ORG || 'akarinext';
 const bucket = import.meta.env.INFLUX_BUCKET || 'server_metrics';
 
+console.log(`[InfluxDB Lib] Init: URL=${url}, Org=${org}, Bucket=${bucket}, TokenDefined=${!!token}`);
+
 let queryApi: any = null;
 
 if (token) {

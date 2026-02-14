@@ -98,6 +98,10 @@ async function monitorServers() {
                 }
             }
 
+            // Ensure no NaNs
+            if (isNaN(avg)) avg = 0;
+            if (isNaN(loss)) loss = 0;
+
             const point = new Point('ping')
                 .tag('url', host)
                 .tag('name', server.name || host)
