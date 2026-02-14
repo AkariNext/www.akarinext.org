@@ -1,0 +1,408 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { directus, readItem, readItems, skipDirectusFetch, type Author, type GamePlayer } from "../../lib/directus";
+import { Twitter, Github, Globe, Twitch, Youtube, Gamepad2, Play, CheckCircle, MessageSquare } from "lucide-astro";
+
+const { id } = Astro.params;
+
+if (!id) {
+    return Astro.redirect('/404');
+}
+
+let user: Author | null = null;
+let playingGames: GamePlayer[] = [];
+let finishedGames: GamePlayer[] = [];
+
+if (!skipDirectusFetch) {
+    try {
+        const userId = parseInt(id);
+        if (Number.isNaN(userId)) {
+             return Astro.redirect('/404');
+        }
+
+        user = await directus.request(readItem('authors', userId));
+
+        const players = await directus.request(readItems('game_players', {
+            filter: {
+                user: { _eq: userId }
+            },
+            fields: ['status', { game: ['id', 'name', 'slug', 'cover_image'] }],
+            sort: ['-started_at']
+        })) as unknown as GamePlayer[];
+
+        if (players) {
+            playingGames = players.filter((p: GamePlayer) => p.status === 'playing');
+            finishedGames = players.filter((p: GamePlayer) => p.status === 'finished');
+        }
+
+    } catch (e) {
+        console.error("Error fetching user profile:", e);
+        // If fetch fails (e.g. 403 Forbidden on id lookup), we might want to just show 404
+    }
+}
+
+if (!user) {
+    return Astro.redirect('/404');
+}
+
+const directusUrl = import.meta.env.PUBLIC_DIRECTUS_URL || "http://localhost:8055";
+const avatarUrl = user.avatar ? `${directusUrl}/assets/${user.avatar}` : null;
+
+const getSocialIcon = (platform: string) => {
+    switch (platform?.toLowerCase()) {
+        case 'twitter': return Twitter;
+        case 'x': return Twitter;
+        case 'x (twitter)': return Twitter;
+        case 'github': return Github;
+        case 'twitch': return Twitch;
+        case 'youtube': return Youtube;
+        case 'discord': return MessageSquare;
+        default: return Globe;
+    }
+};
+
+const getCoverUrl = (cover: any) => {
+    if (!cover) return null;
+    const id = typeof cover === 'string' ? cover : cover.id;
+    return `${directusUrl}/assets/${id}`;
+}
+---
+
+<Layout title={user.name} description={`${user.name}'s profile and game library.`}>
+    <div class="profile-header">
+        <div class="container profile-container">
+            <div class="profile-avatar-wrapper">
+                {avatarUrl ? (
+                    <img src={avatarUrl} alt={user.name} class="profile-avatar" />
+                ) : (
+                    <div class="profile-avatar-placeholder">
+                        <span class="avatar-initial">{user.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                )}
+            </div>
+            
+            <div class="profile-info">
+                <h1 class="profile-name">{user.name}</h1>
+                {user.bio && <p class="profile-bio">{user.bio}</p>}
+                
+                {user.social_links && user.social_links.length > 0 && (
+                    <div class="social-links">
+                        {user.social_links.map((link: { platform: string; url: string }) => {
+                            const Icon = getSocialIcon(link.platform);
+                            return (
+                                <a href={link.url} target="_blank" rel="noopener noreferrer" class="social-link" title={link.platform}>
+                                    <Icon class="social-icon" />
+                                </a>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+        </div>
+    </div>
+
+    <div class="container content-container">
+        <!-- Playing Now -->
+        {playingGames.length > 0 && (
+            <section class="game-section">
+                <h2 class="section-title"><Play class="icon icon-blue" /> Playing Now</h2>
+                <div class="games-grid">
+                    {playingGames.map((p) => {
+                        const coverUrl = getCoverUrl(p.game.cover_image);
+                        return (
+                            <div class="game-card">
+                                <div class="game-cover-wrapper">
+                                    {coverUrl ? (
+                                        <img src={coverUrl} alt={p.game.name} class="game-cover" loading="lazy" />
+                                    ) : (
+                                        <div class="game-cover-placeholder">
+                                            <Gamepad2 class="placeholder-icon" />
+                                        </div>
+                                    )}
+                                    <div class="status-badge playing">Playing</div>
+                                </div>
+                                <div class="game-info">
+                                    <h3 class="game-name">{p.game.name}</h3>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </section>
+        )}
+
+        <!-- Finished Games -->
+        {finishedGames.length > 0 && (
+            <section class="game-section">
+                <h2 class="section-title"><CheckCircle class="icon icon-green" /> Finished Games</h2>
+                <div class="games-grid">
+                     {finishedGames.map((p) => {
+                        const coverUrl = getCoverUrl(p.game.cover_image);
+                        return (
+                            <div class="game-card opacity-card">
+                                <div class="game-cover-wrapper">
+                                    {coverUrl ? (
+                                        <img src={coverUrl} alt={p.game.name} class="game-cover" loading="lazy" />
+                                    ) : (
+                                        <div class="game-cover-placeholder">
+                                            <Gamepad2 class="placeholder-icon" />
+                                        </div>
+                                    )}
+                                    <div class="status-badge finished">Finished</div>
+                                </div>
+                                <div class="game-info">
+                                    <h3 class="game-name">{p.game.name}</h3>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </section>
+        )}
+        
+        {playingGames.length === 0 && finishedGames.length === 0 && (
+            <div class="empty-state">
+                <p>No games recorded yet.</p>
+            </div>
+        )}
+    </div>
+</Layout>
+
+<style>
+    .profile-header {
+        background: linear-gradient(to bottom, rgba(255,255,255,0.8), rgba(255,255,255,0.4));
+        padding: 4rem 0 3rem;
+        border-bottom: 1px solid var(--border-subtle);
+        margin-bottom: 3rem;
+    }
+    
+    :global([data-theme="dark"]) .profile-header {
+        background: linear-gradient(to bottom, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.4));
+    }
+
+    .profile-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 2rem;
+    }
+    
+    @media (min-width: 768px) {
+        .profile-container {
+            flex-direction: row;
+            text-align: left;
+            align-items: flex-start;
+        }
+    }
+
+    .profile-avatar-wrapper {
+        position: relative;
+        flex-shrink: 0;
+    }
+    
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--bg-surface);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .profile-avatar-placeholder {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: var(--accent-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 4px solid var(--bg-surface);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .avatar-initial {
+        font-size: 3rem;
+        color: white;
+        font-weight: 700;
+    }
+
+    .profile-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .profile-name {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1.1;
+    }
+
+    .profile-bio {
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        max-width: 600px;
+        line-height: 1.6;
+    }
+
+    .social-links {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+    
+    .social-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-light);
+        color: var(--text-muted);
+        transition: all 0.2s;
+    }
+    
+    .social-link:hover {
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .social-icon {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+
+    .content-container {
+        padding-bottom: 4rem;
+    }
+
+    .game-section {
+        margin-bottom: 4rem;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--text-main);
+        border-bottom: 1px solid var(--border-subtle);
+        padding-bottom: 0.75rem;
+    }
+    
+    .icon-blue { color: #0ea5e9; }
+    .icon-green { color: #10b981; }
+    .icon { width: 1.75rem; height: 1.75rem; }
+
+    .games-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .game-card {
+        background: var(--bg-surface);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        transition: transform 0.2s;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .game-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .opacity-card {
+        opacity: 0.85;
+    }
+    .opacity-card:hover {
+        opacity: 1;
+    }
+
+    .game-cover-wrapper {
+        position: relative;
+        aspect-ratio: 16/9;
+        background: var(--bg-surface-hover);
+        overflow: hidden;
+    }
+    
+    .game-cover {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .game-cover-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(14, 165, 233, 0.05);
+    }
+    
+    .placeholder-icon {
+        width: 3rem;
+        height: 3rem;
+        color: var(--text-muted);
+        opacity: 0.3;
+    }
+    
+    .status-badge {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .status-badge.playing {
+        background: rgba(16, 185, 129, 0.9);
+        color: white;
+        backdrop-filter: blur(4px);
+    }
+    
+    .status-badge.finished {
+        background: rgba(100, 116, 139, 0.9);
+        color: white;
+        backdrop-filter: blur(4px);
+    }
+
+    .game-info {
+        padding: 1rem;
+    }
+    
+    .game-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin: 0;
+        line-height: 1.3;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem;
+        color: var(--text-muted);
+        background: var(--bg-surface-hover);
+        border-radius: var(--radius-md);
+    }
+</style>

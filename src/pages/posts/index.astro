@@ -9,7 +9,7 @@ let posts: Array<{
   slug: string;
   content: string;
   published_date: string;
-  author?: { name: string; avatar?: string };
+  author?: { id: number; name: string; avatar?: string };
   image?: string;
 }> = [];
 
@@ -25,7 +25,7 @@ if (!skipDirectusFetch) {
             "slug",
             "content",
             "published_date",
-            { author: ["name", "avatar"] },
+            { author: ["id", "name", "avatar"] },
             "image",
           ],
           filter: { status: { _eq: "published" } },
@@ -60,23 +60,27 @@ const formatDate = (dateStr: string) => {
     {posts.length > 0 ? (
       <div class="clean-grid">
         {posts.map((post) => (
-          <a href={`/posts/${post.slug}`} class="clean-card post-card">
-            {post.image ? (
-                <div class="image-frame">
-                    <img src={`${import.meta.env.PUBLIC_DIRECTUS_URL}/assets/${post.image}?key=card-thumb`} alt={post.title} class="post-image" loading="lazy" />
-                </div>
-            ) : (
-                <div class="image-frame placeholder-frame">
-                    <Image class="placeholder-icon" />
-                </div>
-            )}
+          <article class="clean-card post-card">
+            <a href={`/posts/${post.slug}`} class="card-link-wrapper" aria-label={post.title}>
+                {post.image ? (
+                    <div class="image-frame">
+                        <img src={`${import.meta.env.PUBLIC_DIRECTUS_URL}/assets/${post.image}?key=card-thumb`} alt={post.title} class="post-image" loading="lazy" />
+                    </div>
+                ) : (
+                    <div class="image-frame placeholder-frame">
+                        <Image class="placeholder-icon" />
+                    </div>
+                )}
+            </a>
             <div class="card-body">
               <div class="meta-row">
                  <span class="date-badge"><Calendar class="icon icon-xs" /> {formatDate(post.published_date)}</span>
               </div>
               
               <h2 class="post-item-title">
-                {post.title}
+                <a href={`/posts/${post.slug}`} class="title-link">
+                    {post.title}
+                </a>
               </h2>
               
               {post.content && (
@@ -86,11 +90,17 @@ const formatDate = (dateStr: string) => {
               )}
               
               <div class="card-footer">
-                  {post.author?.name && <span class="author-text"><User class="icon icon-xs" /> {post.author.name}</span>}
-                  <span class="read-link">Read <ArrowRight class="icon icon-xs" /></span>
+                  {post.author?.name && (
+                      <a href={`/users/${post.author.id}`} class="author-link" title="View Profile">
+                          <User class="icon icon-xs" /> {post.author.name}
+                      </a>
+                  )}
+                  {!post.author?.name && <span></span>}
+                  
+                  <a href={`/posts/${post.slug}`} class="read-link">Read <ArrowRight class="icon icon-xs" /></a>
               </div>
             </div>
-          </a>
+          </article>
         ))}
       </div>
     ) : (
@@ -142,7 +152,6 @@ const formatDate = (dateStr: string) => {
     display: flex;
     flex-direction: column;
     height: 100%;
-    text-decoration: none;
     color: inherit;
     transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease;
     border: 1px solid var(--border-glass);
@@ -233,8 +242,18 @@ const formatDate = (dateStr: string) => {
     transition: color 0.2s;
   }
   
-  .clean-card:hover .post-item-title {
+  .clean-card:hover .post-item-title .title-link {
       color: var(--accent-primary);
+  }
+
+  .title-link {
+      text-decoration: none;
+      color: inherit;
+      transition: color 0.2s;
+  }
+  
+  .title-link:hover {
+      text-decoration: underline;
   }
 
   .post-excerpt {
@@ -273,6 +292,27 @@ const formatDate = (dateStr: string) => {
   
   .clean-card:hover .read-link {
       transform: translateX(4px);
+  }
+  
+  .read-link {
+      text-decoration: none;
+  }
+  
+  .author-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 0.2s;
+      z-index: 2;
+      position: relative;
+  }
+  
+  .author-link:hover {
+      color: var(--accent-primary);
+      text-decoration: underline;
   }
   
   .empty-state {

@@ -34,7 +34,7 @@ if (!skipDirectusFetch) {
                     "published_date",
                     "category",
                     "tags",
-                    { author: ["name", "avatar"] },
+                    { author: ["id", "name", "avatar", "bio"] },
                     "image",
                 ],
                 filter: { slug: { _eq: slug } },
@@ -97,14 +97,17 @@ const CategoryIcon = getCategoryIcon(post.category);
                 <h1 class="post-title">{post.title}</h1>
                 
                 {post.author && (
-                    <div class="author-block">
+                    <a href={`/users/${post.author.id}`} class="author-block">
                         {avatarUrl ? (
                             <img src={`${avatarUrl}?width=64&height=64&fit=cover`} alt={post.author.name} class="author-avatar" />
                         ) : (
                             <div class="author-avatar placeholder"><User class="icon" /></div>
                         )}
-                        <span class="author-name">By {post.author.name}</span>
-                    </div>
+                        <div class="author-info-mini">
+                            <span class="author-label">Written by</span>
+                            <span class="author-name">{post.author.name}</span>
+                        </div>
+                    </a>
                 )}
             </div>
             
@@ -132,6 +135,25 @@ const CategoryIcon = getCategoryIcon(post.category);
                     </div>
                 )}
             </div>
+
+            {post.author && (
+                <div class="author-bio-card glass-card">
+                    <div class="bio-avatar-wrapper">
+                        {avatarUrl ? (
+                            <img src={`${avatarUrl}?width=120&height=120&fit=cover`} alt={post.author.name} class="bio-avatar" />
+                        ) : (
+                            <div class="bio-avatar placeholder"><User class="icon icon-lg" /></div>
+                        )}
+                    </div>
+                    <div class="bio-content">
+                        <div class="bio-header">
+                            <h3 class="bio-name">{post.author.name}</h3>
+                            <a href={`/users/${post.author.id}`} class="bio-link">View Profile <ArrowLeft class="icon icon-xs rotate-180" /></a>
+                        </div>
+                        {post.author.bio && <p class="bio-text">{post.author.bio}</p>}
+                    </div>
+                </div>
+            )}
             
             <div class="post-footer">
                 <a href="/posts" class="btn"><ArrowLeft class="icon icon-sm" /> Back to Stories</a>
@@ -187,20 +209,31 @@ const CategoryIcon = getCategoryIcon(post.category);
     }
     
     .author-block {
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0.75rem;
-        margin-top: 1.5rem;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding: 0.5rem 1.25rem 0.5rem 0.5rem;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 99px;
+        text-decoration: none;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .author-block:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+        border-color: var(--accent-soft);
     }
     
     .author-avatar {
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
         object-fit: cover;
-        border: 2px solid var(--bg-surface);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border: 2px solid var(--bg-surface-solid);
     }
     
     .author-avatar.placeholder {
@@ -210,10 +243,113 @@ const CategoryIcon = getCategoryIcon(post.category);
         justify-content: center;
         color: var(--text-muted);
     }
+
+    .author-info-mini {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        line-height: 1.1;
+    }
+
+    .author-label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+    }
     
     .author-name {
-        font-weight: 600;
+        font-weight: 700;
         color: var(--text-main);
+        font-size: 0.95rem;
+    }
+    
+    .author-bio-card {
+        margin-top: 3rem;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+        text-align: center;
+    }
+    
+    @media (min-width: 640px) {
+        .author-bio-card {
+            flex-direction: row;
+            text-align: left;
+            align-items: flex-start;
+        }
+    }
+    
+    .bio-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--bg-surface);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .bio-avatar.placeholder {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: var(--bg-surface-hover);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+    }
+    
+    .bio-content {
+        flex: 1;
+    }
+    
+    .bio-header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        align-items: center;
+    }
+    
+    @media (min-width: 640px) {
+        .bio-header {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+    }
+    
+    .bio-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0;
+        color: var(--text-main);
+    }
+    
+    .bio-link {
+        font-size: 0.85rem;
+        color: var(--accent-primary);
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .bio-link:hover {
+        text-decoration: underline;
+    }
+
+    .rotate-180 { transform: rotate(180deg); }
+    
+    .bio-text {
+        font-size: 0.95rem;
+        color: var(--text-muted);
+        line-height: 1.6;
     }
     
     .icon-sm { width: 1em; height: 1em; }

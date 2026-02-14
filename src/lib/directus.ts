@@ -1,9 +1,12 @@
-import { createDirectus, readItems, readSingleton, rest } from "@directus/sdk";
+import { createDirectus, readItem, readItems, readSingleton, rest } from "@directus/sdk";
+
 
 export type Author = {
 	id: number;
 	name: string;
 	avatar?: string;
+	bio?: string;
+	social_links?: { platform: string; url: string }[];
 };
 
 export type Post = {
@@ -68,4 +71,4 @@ export const skipDirectusFetch =
 
 export const directus = createDirectus<Schema>(directusUrl).with(rest());
 
-export { readItems, readSingleton };
+export { readItem, readItems, readSingleton };

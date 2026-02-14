@@ -8,9 +8,7 @@ import {
 	authentication,
 	createDirectus,
 	createItem,
-	login,
 	readCollections,
-	readFields,
 	readSingleton,
 	rest,
 } from "@directus/sdk";
@@ -47,52 +45,84 @@ async function hasCollection(name) {
 	return cols.some((c) => c.collection === name);
 }
 
+// 共通: 不足フィールドを確認・追加する関数
+async function ensureFields(collection, fields) {
+	console.log(`${collection} のフィールドを確認中...`);
+	const existingFieldsStr = await request("GET", `/fields/${collection}`);
+	const existingFields = existingFieldsStr?.data?.map((f) => f.field) || [];
+
+	for (const fieldDef of fields) {
+		if (!existingFields.includes(fieldDef.field)) {
+			console.log(`  + ${fieldDef.field} を追加中...`);
+			try {
+				await request("POST", `/fields/${collection}`, fieldDef);
+				console.log(`    ✓ ${fieldDef.field} 追加成功`);
+			} catch (e) {
+				console.warn(`    ! ${fieldDef.field} 追加失敗:`, e.message);
+			}
+		}
+	}
+}
+
 async function main() {
 	console.log("Directus にログイン中...", DIRECTUS_URL);
 	await client.login({ email: DIRECTUS_EMAIL, password: DIRECTUS_PASSWORD });
 	console.log("ログイン成功\n");
 
-	// 1. authors
-	if (!(await hasCollection("authors"))) {
-		console.log("authors を作成中...");
-		await request("POST", "/collections", {
-			collection: "authors",
-			schema: { name: "authors" },
-			meta: { icon: "person", singleton: false },
-			fields: [
-				{ field: "name", type: "string", meta: { interface: "input" } },
-				{ field: "avatar", type: "uuid", meta: { interface: "file-image" } },
-			],
-		});
-		console.log("  ✓ authors 作成完了");
-	} else {
-		console.log("authors は既に存在します");
-	}
+	// --- 定義: 各コレクションのフィールド ---
 
-	// 2. global (singleton)
-	if (!(await hasCollection("global"))) {
-		console.log("global を作成中...");
-		await request("POST", "/collections", {
-			collection: "global",
-			schema: { name: "global" },
-			meta: { icon: "settings", singleton: true },
-			fields: [
-				{ field: "site_title", type: "string", meta: { interface: "input" } },
-				{
-					field: "site_description",
-					type: "text",
-					meta: { interface: "input-multiline" },
+	const authorsFields = [
+		{ field: "name", type: "string", meta: { interface: "input" } },
+		{ field: "avatar", type: "uuid", meta: { interface: "file-image" } },
+		{ field: "bio", type: "text", meta: { interface: "input-multiline" } },
+		{
+			field: "social_links",
+			type: "json",
+			meta: {
+				interface: "list",
+				options: {
+					template: "{{platform}}: {{url}}",
+					fields: [
+						{
+							field: "platform",
+							name: "Platform",
+							type: "string",
+							meta: {
+								interface: "select-dropdown",
+								options: {
+									choices: [
+										{ text: "X (Twitter)", value: "twitter" },
+										{ text: "GitHub", value: "github" },
+										{ text: "Discord", value: "discord" },
+										{ text: "Website", value: "website" },
+										{ text: "Twitch", value: "twitch" },
+										{ text: "YouTube", value: "youtube" },
+									],
+								},
+							},
+						},
+						{
+							field: "url",
+							name: "URL",
+							type: "string",
+							meta: { interface: "input" },
+						},
+					],
 				},
-				{ field: "site_logo", type: "uuid", meta: { interface: "file-image" } },
+			},
+		},
+	];
 
-			],
-		});
-		console.log("  ✓ global 作成完了");
-	} else {
-		console.log("global は既に存在します");
-	}
+	const globalFields = [
+		{ field: "site_title", type: "string", meta: { interface: "input" } },
+		{
+			field: "site_description",
+			type: "text",
+			meta: { interface: "input-multiline" },
+		},
+		{ field: "site_logo", type: "uuid", meta: { interface: "file-image" } },
+	];
 
-	// 3. posts
 	const postsFields = [
 		{
 			field: "title",
@@ -163,6 +193,122 @@ async function main() {
 		},
 	];
 
+	const announcementsFields = [
+		{
+			field: "title",
+			type: "string",
+			meta: { interface: "input", required: true },
+		},
+		{
+			field: "content",
+			type: "text",
+			meta: { interface: "input-rich-text-html" },
+		},
+		{
+			field: "published_date",
+			type: "date",
+			meta: { interface: "datetime" },
+		},
+		{
+			field: "status",
+			type: "string",
+			meta: {
+				interface: "select-dropdown",
+				options: {
+					choices: [
+						{ text: "下書き", value: "draft" },
+						{ text: "公開", value: "published" },
+					],
+				},
+			},
+		},
+	];
+
+	const gamesFields = [
+		{
+			field: "name",
+			type: "string",
+			meta: { interface: "input", required: true },
+		},
+		{
+			field: "slug",
+			type: "string",
+			meta: { interface: "input", required: true },
+		},
+		{
+			field: "description",
+			type: "text",
+			meta: { interface: "input-multiline" },
+		},
+		{
+			field: "cover_image",
+			type: "uuid",
+			meta: { interface: "file-image" },
+		},
+	];
+
+	const gamePlayersFields = [
+		{
+			field: "user",
+			type: "integer",
+			meta: { interface: "select-dropdown-m2o" },
+		},
+		{
+			field: "game",
+			type: "integer",
+			meta: { interface: "select-dropdown-m2o" },
+		},
+		{
+			field: "started_at",
+			type: "timestamp",
+			meta: { interface: "datetime" },
+		},
+		{
+			field: "status",
+			type: "string",
+			meta: {
+				interface: "select-dropdown",
+				options: {
+					choices: [
+						{ text: "プレイ中", value: "playing" },
+						{ text: "終了", value: "finished" },
+					],
+				},
+			},
+		},
+	];
+
+	// --- 1. authors ---
+	if (!(await hasCollection("authors"))) {
+		console.log("authors を作成中...");
+		await request("POST", "/collections", {
+			collection: "authors",
+			schema: { name: "authors" },
+			meta: { icon: "person", singleton: false },
+			fields: authorsFields,
+		});
+		console.log("  ✓ authors 作成完了");
+	} else {
+		console.log("authors は既に存在します");
+		await ensureFields("authors", authorsFields);
+	}
+
+	// --- 2. global (singleton) ---
+	if (!(await hasCollection("global"))) {
+		console.log("global を作成中...");
+		await request("POST", "/collections", {
+			collection: "global",
+			schema: { name: "global" },
+			meta: { icon: "settings", singleton: true },
+			fields: globalFields,
+		});
+		console.log("  ✓ global 作成完了");
+	} else {
+		console.log("global は既に存在します");
+		await ensureFields("global", globalFields);
+	}
+
+	// --- 3. posts ---
 	if (!(await hasCollection("posts"))) {
 		console.log("posts を作成中...");
 		await request("POST", "/collections", {
@@ -185,24 +331,10 @@ async function main() {
 		});
 		console.log("  ✓ posts 作成完了");
 	} else {
-		console.log("posts は既に存在します。不足フィールドを確認中...");
-		// 既存フィールドの確認と追加
-		const existingFieldsStr = await request("GET", "/fields/posts");
-		const existingFields = existingFieldsStr?.data?.map((f) => f.field) || [];
+		console.log("posts は既に存在します");
+		await ensureFields("posts", postsFields);
 
-		for (const fieldDef of postsFields) {
-			if (!existingFields.includes(fieldDef.field)) {
-				console.log(`  + ${fieldDef.field} を追加中...`);
-				try {
-					await request("POST", "/fields/posts", fieldDef);
-					console.log(`    ✓ ${fieldDef.field} 追加成功`);
-				} catch (e) {
-					console.warn(`    ! ${fieldDef.field} 追加失敗:`, e.message);
-				}
-			}
-		}
-
-		// posts.author のリレーションが切れている場合があるので再設定（エラー無視）
+		// posts.author のリレーション確認・修復
 		try {
 			await request("POST", "/relations", {
 				collection: "posts",
@@ -222,121 +354,44 @@ async function main() {
 		}
 	}
 
-	// 4. announcements
+	// --- 4. announcements ---
 	if (!(await hasCollection("announcements"))) {
 		console.log("announcements を作成中...");
 		await request("POST", "/collections", {
 			collection: "announcements",
 			schema: { name: "announcements" },
 			meta: { icon: "campaign", singleton: false },
-			fields: [
-				{
-					field: "title",
-					type: "string",
-					meta: { interface: "input", required: true },
-				},
-				{
-					field: "content",
-					type: "text",
-					meta: { interface: "input-rich-text-html" },
-				},
-				{
-					field: "published_date",
-					type: "date",
-					meta: { interface: "datetime" },
-				},
-				{
-					field: "status",
-					type: "string",
-					meta: {
-						interface: "select-dropdown",
-						options: {
-							choices: [
-								{ text: "下書き", value: "draft" },
-								{ text: "公開", value: "published" },
-							],
-						},
-					},
-				},
-			],
+			fields: announcementsFields,
 		});
 		console.log("  ✓ announcements 作成完了");
 	} else {
 		console.log("announcements は既に存在します");
+		await ensureFields("announcements", announcementsFields);
 	}
 
-	// 5. games
+	// --- 5. games ---
 	if (!(await hasCollection("games"))) {
 		console.log("games を作成中...");
 		await request("POST", "/collections", {
 			collection: "games",
 			schema: { name: "games" },
 			meta: { icon: "sports_esports", singleton: false },
-			fields: [
-				{
-					field: "name",
-					type: "string",
-					meta: { interface: "input", required: true },
-				},
-				{
-					field: "slug",
-					type: "string",
-					meta: { interface: "input", required: true },
-				},
-				{
-					field: "description",
-					type: "text",
-					meta: { interface: "input-multiline" },
-				},
-				{
-					field: "cover_image",
-					type: "uuid",
-					meta: { interface: "file-image" },
-				},
-			],
+			fields: gamesFields,
 		});
 		console.log("  ✓ games 作成完了");
 	} else {
 		console.log("games は既に存在します");
+		await ensureFields("games", gamesFields);
 	}
 
-	// 6. game_players
+	// --- 6. game_players ---
 	if (!(await hasCollection("game_players"))) {
 		console.log("game_players を作成中...");
 		await request("POST", "/collections", {
 			collection: "game_players",
 			schema: { name: "game_players" },
 			meta: { icon: "groups", singleton: false },
-			fields: [
-				{
-					field: "user",
-					type: "integer",
-					meta: { interface: "select-dropdown-m2o" },
-				},
-				{
-					field: "game",
-					type: "integer",
-					meta: { interface: "select-dropdown-m2o" },
-				},
-				{
-					field: "started_at",
-					type: "timestamp",
-					meta: { interface: "datetime" },
-				},
-				{
-					field: "status",
-					type: "string",
-					meta: {
-						interface: "select-dropdown",
-						options: {
-							choices: [
-								{ text: "プレイ中", value: "playing" },
-								{ text: "終了", value: "finished" },
-							],
-						},
-					},
-				},
-			],
+			fields: gamePlayersFields,
 		});
 		await request("POST", "/relations", {
 			collection: "game_players",
@@ -365,7 +420,10 @@ async function main() {
 		console.log("  ✓ game_players 作成完了");
 	} else {
 		console.log("game_players は既に存在します");
+		await ensureFields("game_players", gamePlayersFields);
 	}
+
+	// --- リレーション・権限設定 ---
 
 	// 画像プリセットの作成
 	console.log("\n画像プリセットを確認中...");
@@ -404,7 +462,6 @@ async function main() {
 			console.log(`  ✓ ${collection}.${field} -> directus_files 紐付け成功`);
 		} catch (e) {
 			// 既に存在する場合はエラーになるので無視
-			// console.log(`  - ${collection}.${field}: 設定済み`);
 		}
 	}
 
@@ -413,39 +470,6 @@ async function main() {
 	console.log("Directus の Settings -> Access Policies & Permissions にて");
 	console.log("Public ロールに対して、以下のコレクションの Read 権限を手動で許可してください:");
 	console.log(" - global, posts, announcements, games, game_players, authors, directus_files, directus_presets");
-	/*
-	// 自動設定はDirectusのバージョン差異により失敗するため無効化
-	const collectionsForPublic = [
-		"global",
-		"posts",
-		"announcements",
-		"games",
-		"game_players",
-		"authors",
-		"directus_files",
-	];
-
-	for (const collection of collectionsForPublic) {
-		try {
-			await request("POST", "/permissions", {
-				collection,
-				action: "read",
-				fields: ["*"],
-				// policy: null で Public
-			});
-			console.log(`  ✓ ${collection}: Read 権限を付与`);
-		} catch (e) {
-			if (
-				String(e?.message || e).includes("already") ||
-				String(e?.message || e).includes("duplicate")
-			) {
-				console.log(`  - ${collection}: 既に権限あり`);
-			} else {
-				console.warn(`  ! ${collection}:`, e?.message || e);
-			}
-		}
-	}
-    */
 
 	// global に初期データ（singleton は items で作成可能）
 	try {

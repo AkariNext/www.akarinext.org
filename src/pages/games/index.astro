@@ -13,7 +13,7 @@ interface Game {
 }
 interface GamePlayer {
   id: number;
-  user: { name: string };
+  user: { id: number; name: string };
   game: { id: number; name: string; slug: string };
   started_at: string;
   status: string;
@@ -38,7 +38,7 @@ if (!skipDirectusFetch) {
           "id",
           "started_at",
           "status",
-          { user: ["name"] },
+          { user: ["id", "name"] },
           { game: ["id", "name", "slug"] },
         ],
         filter: { status: { _eq: "playing" } },
@@ -88,7 +88,9 @@ const getCoverUrl = (cover: Game['cover_image']) => {
                     {gamePlayers.map((gp) => (
                         <div class="player-chip">
                              <div class="status-dot tooltip" title="Playing Now"></div>
-                             <span class="chip-user">{gp.user?.name || "Unknown"}</span>
+                             <a href={`/users/${gp.user?.id}`} class="chip-user-link">
+                                {gp.user?.name || "Unknown"}
+                             </a>
                              <Play class="icon icon-xs text-muted" />
                              <span class="chip-game">{gp.game?.name || "Unknown"}</span>
                         </div>
@@ -125,7 +127,9 @@ const getCoverUrl = (cover: Game['cover_image']) => {
                                     <div class="active-players-list">
                                         <span class="active-label"><Users class="icon icon-xs" /> Playing:</span>
                                         {players.map(p => (
-                                            <span class="mini-badge">{p.user?.name}</span>
+                                            <a href={`/users/${p.user?.id}`} class="mini-badge" style="text-decoration:none;">
+                                                {p.user?.name}
+                                            </a>
                                         ))}
                                     </div>
                                 )}
@@ -221,6 +225,18 @@ const getCoverUrl = (cover: Game['cover_image']) => {
     .chip-game {
         color: var(--accent-primary);
         font-weight: 600;
+    }
+
+    .chip-user-link {
+        color: var(--text-main);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+    
+    .chip-user-link:hover {
+        color: var(--accent-primary);
+        text-decoration: underline;
     }
 
     .games-grid {
