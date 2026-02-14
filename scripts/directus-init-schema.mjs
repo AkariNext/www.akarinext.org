@@ -74,6 +74,17 @@ async function main() {
 	const authorsFields = [
 		{ field: "name", type: "string", meta: { interface: "input" } },
 		{ field: "avatar", type: "uuid", meta: { interface: "file-image" } },
+		{
+			field: "is_staff",
+			type: "boolean",
+			meta: { interface: "boolean", note: "運営メンバーとして表示するか" },
+			schema: { default_value: false },
+		},
+		{
+			field: "staff_title",
+			type: "string",
+			meta: { interface: "input", note: "役職（例: Administrator）" },
+		},
 		{ field: "bio", type: "text", meta: { interface: "input-multiline" } },
 		{
 			field: "social_links",

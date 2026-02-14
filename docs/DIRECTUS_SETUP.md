@@ -37,6 +37,9 @@ DIRECTUS_URL=http://localhost:8055 DIRECTUS_EMAIL=admin@example.com DIRECTUS_PAS
 |-----------|-----|------|
 | name | Input | name |
 | avatar | Image | avatar |
+| is_staff | Toggle (Boolean) | is_staff |
+| staff_title | Input | staff_title |
+| bio | Textarea | bio |
 
 ### 3. posts（遊んだ記録）
 
@@ -79,6 +82,18 @@ DIRECTUS_URL=http://localhost:8055 DIRECTUS_EMAIL=admin@example.com DIRECTUS_PAS
 | started_at | DateTime | started_at |
 | status | Dropdown (playing, finished) | status |
 
+### 7. game_servers
+
+| フィールド | 型 | キー |
+|-----------|-----|------|
+| name | Input | name |
+| type | Dropdown (minecraft, other) | type |
+| ip | Input | ip |
+| port | Number | port |
+| protocol | Input | protocol |
+| description | Textarea | description |
+| status | Dropdown (published, draft) | status |
+
 ## アクセス権限
 
 **Settings → Access Policies & Permissions → Public** をクリックし、以下のコレクションに **Read** 権限（目のアイコン）を許可してください:
@@ -88,6 +103,7 @@ DIRECTUS_URL=http://localhost:8055 DIRECTUS_EMAIL=admin@example.com DIRECTUS_PAS
 - `announcements`
 - `games`
 - `game_players`
+- `game_servers`
 - `authors`
 - `directus_files`
 - `directus_presets`（画像変換プリセットの適用に必要）

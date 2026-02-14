@@ -1,5 +1,10 @@
-import { createDirectus, readItem, readItems, readSingleton, rest } from "@directus/sdk";
-
+import {
+	createDirectus,
+	readItem,
+	readItems,
+	readSingleton,
+	rest,
+} from "@directus/sdk";
 
 export type Author = {
 	id: number;
@@ -7,6 +12,8 @@ export type Author = {
 	avatar?: string;
 	bio?: string;
 	social_links?: { platform: string; url: string }[];
+	is_staff?: boolean;
+	staff_title?: string;
 };
 
 export type Post = {

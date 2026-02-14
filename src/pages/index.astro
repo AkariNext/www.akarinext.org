@@ -1,6 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { Gamepad2, Code2, MessageCircle, ArrowRight, Zap, Trophy, Users } from "lucide-astro";
+import { Gamepad2, Code2, MessageCircle, ArrowRight, Zap, Trophy, Users, Shield } from "lucide-astro";
 import {
   directus,
   readItems,
@@ -9,7 +9,8 @@ import {
   type Post,
   type Game,
   type GameServer,
-  type GlobalSettings
+  type GlobalSettings,
+  type Author
 } from "../lib/directus";
 import ServerCard from "../components/ServerCard.astro";
 import PostCard from "../components/PostCard.astro";
@@ -23,10 +24,11 @@ let globalSettings: GlobalSettings = {
 let recentPosts: Post[] = [];
 let recentGames: Game[] = [];
 let gameServers: GameServer[] = [];
+let staffMembers: Author[] = [];
 
 if (!skipDirectusFetch) {
   try {
-    const [settingsData, postsData, gamesData, serversData] = await Promise.all([
+    const [settingsData, postsData, gamesData, serversData, staffData] = await Promise.all([
       directus.request(readSingleton("global")).catch(() => null),
       directus.request(
         readItems("posts", {
@@ -48,6 +50,12 @@ if (!skipDirectusFetch) {
           filter: { status: { _eq: "published" } },
           fields: ["id", "name", "type", "ip", "port", "protocol", "description"]
         })
+      ).catch(() => []),
+      directus.request(
+        readItems("authors", {
+          filter: { is_staff: { _eq: true } },
+          fields: ["id", "name", "avatar", "staff_title", "bio"]
+        })
       ).catch(() => [])
     ]);
 
@@ -55,6 +63,7 @@ if (!skipDirectusFetch) {
     if (postsData) recentPosts = postsData as Post[];
     if (gamesData) recentGames = gamesData as Game[];
     if (serversData) gameServers = serversData as GameServer[];
+    if (staffData) staffMembers = staffData as Author[];
 
   } catch (error) {
     // Silent
@@ -221,6 +230,46 @@ const formatDate = (dateStr: string) => {
             </div>
         </div>
     </section>
+  )}
+
+  <!-- Staff Section -->
+  {staffMembers.length > 0 && (
+      <section class="staff-section container">
+          <div class="section-header">
+              <h2 class="section-title">Community Staff</h2>
+              <span class="view-all">運営メンバー</span>
+          </div>
+          <div class="staff-grid">
+              {staffMembers.map(staff => (
+                  <a href={`/users/${staff.id}`} class="staff-card glass-card">
+                      <div class="staff-header-bg">
+                          <div class="staff-header-pattern"></div>
+                      </div>
+                      <div class="staff-avatar-wrapper">
+                          {staff.avatar ? (
+                              <img 
+                                  src={`${import.meta.env.PUBLIC_DIRECTUS_URL}/assets/${staff.avatar}?width=220&height=220&fit=cover`} 
+                                  alt={staff.name} 
+                                  class="staff-avatar"
+                              />
+                          ) : (
+                              <div class="staff-avatar-placeholder">
+                                  {staff.name.charAt(0)}
+                              </div>
+                          )}
+                          <div class="staff-badge">
+                              <Shield class="icon-xxs" />
+                          </div>
+                      </div>
+                      <div class="staff-info">
+                          <h3 class="staff-name">{staff.name}</h3>
+                          <p class="staff-role">{staff.staff_title || "Staff"}</p>
+                          {staff.bio && <p class="staff-bio">{staff.bio}</p>}
+                      </div>
+                  </a>
+              ))}
+          </div>
+      </section>
   )}
 
 </Layout>
@@ -678,4 +727,152 @@ const formatDate = (dateStr: string) => {
       color: var(--text-muted);
       max-width: 500px;
   }
+
+  /* Staff Section Styles */
+  .staff-section {
+      margin-bottom: 8rem;
+  }
+
+  .staff-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 2.5rem;
+  }
+
+  .staff-card {
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
+      overflow: visible;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glass);
+      border-radius: 24px;
+      position: relative;
+      text-decoration: none;
+  }
+
+  .staff-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15);
+      border-color: var(--accent-primary);
+  }
+
+  .staff-header-bg {
+      width: 100%;
+      height: 100px;
+      background: linear-gradient(135deg, var(--accent-soft), var(--bg-surface-hover));
+      border-radius: 24px 24px 0 0;
+      margin-bottom: -50px;
+      border-bottom: 1px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+  }
+  
+  .staff-header-pattern {
+      position: absolute;
+      inset: 0;
+      opacity: 0.1;
+      background-image: radial-gradient(circle at 2px 2px, var(--accent-primary) 1px, transparent 0);
+      background-size: 16px 16px;
+  }
+
+  .staff-avatar-wrapper {
+      position: relative;
+      margin-bottom: 1rem;
+      z-index: 2;
+  }
+
+  .staff-avatar {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid var(--bg-surface);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      background: var(--bg-surface);
+      transition: transform 0.4s cubic-bezier(0.2, 1, 0.2, 1);
+  }
+
+  .staff-card:hover .staff-avatar {
+      transform: scale(1.05);
+      box-shadow: 0 12px 24px rgba(14, 165, 233, 0.2);
+      border-color: var(--bg-surface);
+  }
+
+  .staff-avatar-placeholder {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      font-weight: 800;
+      border: 4px solid var(--bg-surface);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  }
+
+  .staff-badge {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      background: var(--bg-surface);
+      color: var(--accent-primary);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--border-subtle);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+
+  .staff-info {
+      width: 100%;
+      padding: 0 1.5rem 2rem;
+      z-index: 1;
+  }
+
+  .staff-name {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin: 0.5rem 0 0.5rem 0;
+      color: var(--text-main);
+      background: linear-gradient(90deg, var(--text-main), var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+  }
+
+  .staff-role {
+      display: inline-block;
+      font-size: 0.75rem;
+      color: var(--accent-primary);
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.35rem 0.85rem;
+      background: var(--accent-soft);
+      border-radius: 99px;
+      border: 1px solid rgba(14, 165, 233, 0.1);
+  }
+
+  .staff-bio {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+  }
+
+  .icon-xxs { width: 0.8rem; height: 0.8rem; }
 </style>
