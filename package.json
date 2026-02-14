@@ -22,12 +22,12 @@
 		"@influxdata/influxdb-client": "^1.35.0",
 		"astro": "^5.17.1",
 		"concurrently": "^9.2.1",
-		"lucide-astro": "^0.556.0"
+		"lucide-astro": "^0.556.0",
+		"@directus/sdk": "^21.1.0"
 	},
 	"devDependencies": {
 		"@astrojs/check": "^0.9.6",
 		"@biomejs/biome": "^2.3.15",
-		"@directus/sdk": "^21.1.0",
 		"@types/dotenv": "^8.2.3",
 		"@types/ping": "^0.4.4",
 		"@types/tcp-ping": "^0.1.6",
