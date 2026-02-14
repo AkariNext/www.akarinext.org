@@ -239,6 +239,10 @@ const formatDate = (dateStr: string) => {
       gap: 3rem;
       align-items: center;
   }
+
+  .hero-content {
+      min-width: 0;
+  }
   
   .hero-badge {
       display: inline-flex;
@@ -284,6 +288,7 @@ const formatDate = (dateStr: string) => {
       line-height: 1.6;
       max-width: 500px;
       margin-bottom: 2.5rem;
+      width: 100%;
   }
   
   .hero-stats {
@@ -559,6 +564,8 @@ const formatDate = (dateStr: string) => {
   .banner-images {
       display: flex;
       gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
   }
   
   .mini-game-cover {
@@ -570,6 +577,7 @@ const formatDate = (dateStr: string) => {
       transform: rotate(3deg);
       border: 2px solid var(--border-light);
       background: var(--bg-surface-solid); /* Fallback background */
+      flex-shrink: 0;
   }
   
   .mini-game-cover:nth-child(2) { transform: rotate(-2deg) translateY(-10px); }
@@ -586,10 +594,31 @@ const formatDate = (dateStr: string) => {
   @media (max-width: 900px) {
       .hero-container { grid-template-columns: 1fr; text-align: center; }
       .hero-title { font-size: 3rem; align-items: center; }
-      .hero-stats { justify-content: center; }
-      .hero-actions { justify-content: center; }
+      .hero-stats { justify-content: center; flex-wrap: wrap; gap: 1rem; }
+      .hero-stats .stat-divider { display: none; }
+      .hero-actions { justify-content: center; flex-wrap: wrap; }
       .hero-visual { display: none; }
       .games-banner { flex-direction: column; text-align: center; }
+  }
+
+  @media (max-width: 480px) {
+      .hero-title { font-size: 2.25rem; }
+      .hero-stats { gap: 0.75rem; }
+      .hero-actions { flex-direction: column; width: 100%; }
+      .hero-actions a { width: 100%; justify-content: center; }
+  }
+
+  /* スマホ: 注目のゲーム画像の横ずれ防止 */
+  @media (max-width: 640px) {
+      .games-banner { padding: 2rem 1rem; }
+      .banner-images { gap: 0.5rem; }
+      .mini-game-cover {
+          width: 56px;
+          height: 75px;
+          transform: none;
+      }
+      .mini-game-cover:nth-child(2) { transform: translateY(-6px); }
+      .mini-game-cover:nth-child(3) { transform: none; }
   }
 
   /* Server Section Styles */
