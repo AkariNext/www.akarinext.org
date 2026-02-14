@@ -118,7 +118,7 @@ async function monitorServers() {
 }
 
 // Start only if configured
-console.log("Starting server monitor agent...");
+console.log("Starting server monitor agent...", process.env.INFLUX_URL, process.env.PUBLIC_DIRECTUS_URL);
 if (writeApi) {
     monitorServers();
     setInterval(monitorServers, 10000);
