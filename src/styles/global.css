@@ -1,36 +1,79 @@
 /* Clean Sky Design System (Light & Glass) */
 
 :root {
-  /* Core Palette */
-  --bg-main: #f0f4f8; /* Softer Cloud White */
-  --bg-surface: rgba(255, 255, 255, 0.75); /* Glass Base */
+  /* Common Defaults (Light) */
+  --bg-main: #f0f4f8;
+  --bg-surface: rgba(255, 255, 255, 0.75);
   --bg-surface-solid: #ffffff;
   --bg-surface-hover: rgba(255, 255, 255, 0.9);
   
-  /* Accents */
-  --accent-primary: #0ea5e9; /* Sky-500 */
-  --accent-secondary: #0284c7; /* Sky-600 */
-  --accent-soft: rgba(14, 165, 233, 0.1); /* Sky-500 at 10% */
+  --accent-primary: #0ea5e9;
+  --accent-secondary: #0284c7;
+  --accent-soft: rgba(14, 165, 233, 0.1);
   
-  /* Text */
-  --text-main: #1e293b; /* Slate-800 */
-  --text-muted: #64748b; /* Slate-500 */
+  --text-main: #1e293b;
+  --text-muted: #64748b;
   --text-on-accent: #ffffff;
   
-  /* Borders */
   --border-light: rgba(255, 255, 255, 0.6);
   --border-glass: rgba(255, 255, 255, 0.8);
   --border-subtle: rgba(148, 163, 184, 0.2);
   
-  /* Spacing & Radius */
   --radius-sm: 8px;
   --radius-md: 16px;
   --radius-lg: 24px;
   
-  /* Shadows */
   --shadow-sm: 0 2px 4px rgba(148, 163, 184, 0.1);
   --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
   --shadow-hover: 0 12px 40px 0 rgba(31, 38, 135, 0.12);
+}
+
+[data-theme='dark'] {
+  --bg-main: #0f172a;
+  --bg-surface: rgba(30, 41, 59, 0.7);
+  --bg-surface-solid: #1e293b;
+  --bg-surface-hover: rgba(51, 65, 85, 0.8);
+  
+  --accent-primary: #38bdf8;
+  --accent-secondary: #7dd3fc;
+  --accent-soft: rgba(56, 189, 248, 0.15);
+  
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-on-accent: #0f172a;
+  
+  --border-light: rgba(255, 255, 255, 0.05);
+  --border-glass: rgba(255, 255, 255, 0.1);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg-main: #0f172a;
+    --bg-surface: rgba(30, 41, 59, 0.7);
+    --bg-surface-solid: #1e293b;
+    --bg-surface-hover: rgba(51, 65, 85, 0.8);
+    
+    --accent-primary: #38bdf8;
+    --accent-secondary: #7dd3fc;
+    --accent-soft: rgba(56, 189, 248, 0.15);
+    
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-on-accent: #0f172a;
+    
+    --border-light: rgba(255, 255, 255, 0.05);
+    --border-glass: rgba(255, 255, 255, 0.1);
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
+  }
 }
 
 /* Reset & Base */
@@ -44,8 +87,8 @@ html {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-main);
   background-image: 
-    radial-gradient(circle at 10% 20%, rgba(224, 242, 254, 0.6) 0%, transparent 20%),
-    radial-gradient(circle at 90% 80%, rgba(224, 242, 254, 0.6) 0%, transparent 20%);
+    radial-gradient(circle at 10% 20%, var(--accent-soft) 0%, transparent 20%),
+    radial-gradient(circle at 90% 80%, var(--accent-soft) 0%, transparent 20%);
   color: var(--text-main);
   scroll-behavior: smooth;
   overflow-x: hidden;
@@ -55,6 +98,7 @@ body {
   min-height: 100vh;
   line-height: 1.6;
 }
+
 
 /* Layout */
 .container {
@@ -199,12 +243,12 @@ a {
 
 .prose blockquote {
   border-left: 4px solid var(--accent-primary);
-  padding-left: 1rem;
+  /* Use shorthand or specific properties, but avoid mixing shorthand AFTER specific */
+  padding: 1.5rem 1rem 1.5rem 1.5rem; 
   margin: 2rem 0;
   color: var(--text-muted);
   font-style: italic;
   background: var(--accent-soft);
-  padding: 1.5rem;
   border-radius: var(--radius-sm);
 }
 

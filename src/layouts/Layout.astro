@@ -1,6 +1,6 @@
 ---
 import "../styles/global.css";
-import { MessageSquare, LayoutGrid, Gamepad2, Megaphone, Home } from "lucide-astro";
+import { MessageSquare, LayoutGrid, Gamepad2, Megaphone, Home, Sun, Moon } from "lucide-astro";
 import { directus, readSingleton, skipDirectusFetch } from "../lib/directus";
 
 interface Props {
@@ -51,6 +51,20 @@ const logoUrl = globalSettings.site_logo
     <meta property="og:description" content={description} />
     <meta property="og:image" content={image} />
     <title>{siteTitle}</title>
+    <script is:inline>
+      const getTheme = () => {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+          return localStorage.getItem('theme');
+        }
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          return 'dark';
+        }
+        return 'light';
+      };
+      
+      const theme = getTheme();
+      document.documentElement.setAttribute('data-theme', theme);
+    </script>
   </head>
   <body>
     <!-- Glass Header -->
@@ -64,11 +78,17 @@ const logoUrl = globalSettings.site_logo
           )}
           <span class="logo-text">{globalSettings.site_title}</span>
         </a>
-        <div class="nav-links">
-          <a href="/" class="nav-link"><Home class="nav-icon" /> <span class="nav-label">Home</span></a>
-          <a href="/posts" class="nav-link"><MessageSquare class="nav-icon" /> <span class="nav-label">Stories</span></a>
-          <a href="/games" class="nav-link"><LayoutGrid class="nav-icon" /> <span class="nav-label">Library</span></a>
-          <a href="/announcements" class="nav-link"><Megaphone class="nav-icon" /> <span class="nav-label">Feeds</span></a>
+        <div class="nav-wrapper">
+          <div class="nav-links">
+            <a href="/" class="nav-link"><Home class="nav-icon" /> <span class="nav-label">Home</span></a>
+            <a href="/posts" class="nav-link"><MessageSquare class="nav-icon" /> <span class="nav-label">Stories</span></a>
+            <a href="/games" class="nav-link"><LayoutGrid class="nav-icon" /> <span class="nav-label">Library</span></a>
+            <a href="/announcements" class="nav-link"><Megaphone class="nav-icon" /> <span class="nav-label">Feeds</span></a>
+          </div>
+          <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Theme">
+              <Sun class="icon sun-icon" />
+              <Moon class="icon moon-icon" />
+          </button>
         </div>
       </nav>
     </header>
@@ -102,10 +122,10 @@ const logoUrl = globalSettings.site_logo
         padding: 0.75rem 0;
         
         /* Glass Effect */
-        background: rgba(255, 255, 255, 0.8);
+        background: var(--bg-surface);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        border-bottom: 1px solid var(--border-light);
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
       }
 
@@ -113,6 +133,12 @@ const logoUrl = globalSettings.site_logo
         display: flex;
         align-items: center;
         justify-content: space-between;
+      }
+      
+      .nav-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
       }
 
       .brand-logo {
@@ -144,7 +170,7 @@ const logoUrl = globalSettings.site_logo
 
       .nav-links {
         display: flex;
-        gap: 1.5rem;
+        gap: 1rem;
       }
 
       .nav-link {
@@ -169,6 +195,48 @@ const logoUrl = globalSettings.site_logo
         height: 1rem;
       }
       
+      /* Theme Toggle */
+      .theme-toggle {
+          appearance: none;
+          background: transparent;
+          border: 1px solid var(--border-light);
+          color: var(--text-muted);
+          width: 2.25rem;
+          height: 2.25rem;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+          position: relative;
+          overflow: hidden;
+          padding: 0;
+          margin: 0;
+      }
+      
+      .theme-toggle:hover {
+          background: var(--bg-surface-hover);
+          color: var(--accent-primary);
+          border-color: var(--accent-soft);
+      }
+      
+      .theme-toggle .icon {
+          position: absolute;
+          transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s;
+          width: 1.25rem;
+          height: 1.25rem;
+          pointer-events: none;
+      }
+      
+      /* Default state (Light mode) */
+      .sun-icon { opacity: 0; transform: rotate(90deg) scale(0.5); }
+      .moon-icon { opacity: 1; transform: rotate(0) scale(1); }
+      
+      /* Dark mode state */
+      :global([data-theme="dark"]) .sun-icon { opacity: 1; transform: rotate(0) scale(1); }
+      :global([data-theme="dark"]) .moon-icon { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+      
       .site-main {
         flex: 1;
         width: 100%;
@@ -178,7 +246,7 @@ const logoUrl = globalSettings.site_logo
       .site-footer {
         padding: 2.5rem 0;
         border-top: 1px solid var(--border-subtle);
-        background: rgba(255, 255, 255, 0.6);
+        background: var(--bg-surface);
         color: var(--text-muted);
         font-size: 0.875rem;
         margin-top: 4rem;
@@ -205,7 +273,24 @@ const logoUrl = globalSettings.site_logo
         .nav-link {
             padding: 0.5rem;
         }
+        .nav-wrapper {
+            gap: 0.5rem;
+        }
       }
     </style>
+    
+    <script>
+        const handleToggleClick = () => {
+          const element = document.documentElement;
+          const current = element.getAttribute("data-theme");
+          const isDark = current === "dark";
+          const next = isDark ? "light" : "dark";
+          
+          element.setAttribute("data-theme", next);
+          localStorage.setItem("theme", next);
+        };
+      
+        document.getElementById("theme-toggle")?.addEventListener("click", handleToggleClick);
+    </script>
   </body>
 </html>

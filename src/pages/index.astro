@@ -377,11 +377,12 @@ const getCategoryColor = (cat: string) => {
       gap: 0.75rem;
       font-weight: 600;
       font-size: 1rem;
-      background: rgba(255, 255, 255, 0.9);
+      background: var(--bg-surface-hover);
       backdrop-filter: blur(20px);
       box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-      border: 1px solid rgba(255,255,255,0.8);
+      border: 1px solid var(--border-glass);
       animation: float 6s ease-in-out infinite;
+      color: var(--text-main);
   }
   
   .card-1 { top: 20%; left: 10%; transform: rotate(-5deg); animation-delay: 0s; }
@@ -460,7 +461,7 @@ const getCategoryColor = (cat: string) => {
       gap: 2rem;
       align-items: stretch;
       max-width: 100%;
-  }
+   }
   
   .activity-card {
       max-width: 100%; 
@@ -568,12 +569,13 @@ const getCategoryColor = (cat: string) => {
       align-items: center;
       justify-content: space-between;
       padding: 3rem;
-      background: radial-gradient(circle at right, rgba(255,255,255,0.8), transparent 50%), var(--bg-surface);
+      background: radial-gradient(circle at right, var(--accent-soft), transparent 50%), var(--bg-surface);
       gap: 2rem;
       flex-wrap: wrap;
+      border: 1px solid var(--border-glass);
   }
   
-  .banner-content h2 { font-size: 1.75rem; display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+  .banner-content h2 { font-size: 1.75rem; display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; color: var(--text-main); }
   .banner-content p { color: var(--text-muted); margin-bottom: 1.5rem; }
   
   .banner-images {
@@ -588,7 +590,7 @@ const getCategoryColor = (cat: string) => {
       overflow: hidden;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       transform: rotate(3deg);
-      border: 2px solid white;
+      border: 2px solid var(--border-light);
   }
   
   .mini-game-cover:nth-child(2) { transform: rotate(-2deg) translateY(-10px); }
