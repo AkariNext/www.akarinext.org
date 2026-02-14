@@ -145,7 +145,7 @@ const CategoryIcon = getCategoryIcon(post.category);
 
         <div class="container container-medium content-container">
             <div class="glass-card content-card">
-                <div class="prose" set:html={post.content} />
+                <div class="prose" set:html={post.content?.replace(/`([^`]+)`/g, '<code>$1</code>')} />
                 
                 {post.tags && post.tags.length > 0 && (
                     <div class="tags-section reveal-fade">
