@@ -12,18 +12,31 @@
 		"format": "biome format . --write",
 		"directus:init": "node scripts/directus-init-schema.mjs",
 		"check": "astro check",
-		"astro": "astro"
+		"astro": "astro",
+		"monitor": "ts-node scripts/monitor.ts",
+		"build:monitor": "esbuild scripts/monitor.ts --bundle --platform=node --target=node22 --outfile=dist/monitor.cjs",
+		"start:all": "concurrently \"node ./dist/server/entry.mjs\" \"node ./dist/monitor.cjs\""
 	},
 	"dependencies": {
 		"@astrojs/node": "^9.5.3",
-		"@directus/sdk": "^21.1.0",
+		"@influxdata/influxdb-client": "^1.35.0",
 		"astro": "^5.17.1",
+		"concurrently": "^9.2.1",
 		"lucide-astro": "^0.556.0"
 	},
 	"devDependencies": {
 		"@astrojs/check": "^0.9.6",
 		"@biomejs/biome": "^2.3.15",
+		"@directus/sdk": "^21.1.0",
+		"@types/dotenv": "^8.2.3",
+		"@types/ping": "^0.4.4",
+		"@types/tcp-ping": "^0.1.6",
+		"dotenv": "^17.3.1",
+		"esbuild": "^0.27.3",
+		"ping": "^1.0.0",
 		"serve": "^14.2.5",
+		"tcp-ping": "^0.1.1",
+		"ts-node": "^10.9.2",
 		"typescript": "^5.9.3"
 	}
 }

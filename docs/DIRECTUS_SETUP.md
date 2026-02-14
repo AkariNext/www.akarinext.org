@@ -95,10 +95,34 @@ DIRECTUS_URL=http://localhost:8055 DIRECTUS_EMAIL=admin@example.com DIRECTUS_PAS
 ## 画像の表示について
 
 現在、高解像度の画像（数GB〜数十MB）を扱う場合、Directus側でのリアルタイム変換が失敗する可能性があるため、コード上では直接リサイズパラメータを指定しています。
-必要に応じて、Directusサーバーの `TRANSFORM_IMAGE_MAX_SIZE` 設定を確認してください。
+必要に応じて、Directusサーバーの `ASSETS_TRANSFORM_IMAGE_MAX_DIMENSION` 設定を確認してください。
+
+## サーバー監視 (InfluxDB + Telegraf)
+
+サーバーの Ping や可用性を可視化するために InfluxDB と Telegraf を使用します。
+
+### 1. 起動
+```bash
+docker compose up -d influxdb telegraf
+```
+
+### 2. InfluxDB の初期設定
+1. `http://localhost:8086` にアクセスします。
+2. Setup を完了させ（ユーザー: `admin`など）、管理画面に入ります。
+3. **Load Data -> API Tokens** から「All Access Token」を発行または確認します。
+
+### 3. Telegraf の設定
+1. プロジェクトルートにある `telegraf.conf` を開きます。
+2. `[[outputs.influxdb_v2]]` セクションの `token` を、先ほど取得したトークンに置き換えます。
+3. `[[inputs.ping]]` の `urls` に監視したいサーバーを追加します。
+4. 設定変更後、`docker compose restart telegraf` を実行します。
 
 ## 環境変数
 
-Astro のビルド時に `PUBLIC_DIRECTUS_URL` を設定してください。
+Astro のビルド時に以下の環境変数を設定してください。
 
-例: `https://cms.example.com` または `http://localhost:8055`
+- `PUBLIC_DIRECTUS_URL`: `https://cms.example.com` など
+- `INFLUX_TOKEN`: InfluxDB の API トークン
+- `INFLUX_ORG`: `akarinext`
+- `INFLUX_BUCKET`: `server_metrics`
+- `INFLUX_URL`: `http://localhost:8086`

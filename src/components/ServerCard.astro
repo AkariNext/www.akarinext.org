@@ -35,11 +35,56 @@ interface MinecraftStatus {
   ip?: string;
 }
 
+import { getServerPingHistory, type PingData } from "../lib/influxdb";
+
+// ... (existing code) ...
+
 let statusData: MinecraftStatus | null = null;
 let isOnline = false;
 const isBedrock = server.type === 'minecraft' && (server.protocol?.toLowerCase().includes('bedrock') || port === 19132);
 
+// Ping History Data
+let pingHistory: PingData[] = [];
+let avgPing = 0;
+let sparklinePath = "";
+
+try {
+    // Determine the host to query in InfluxDB. Telegraf usually uses the hostname or IP.
+    // If you configured Telegraf to ping `google.com`, it will be stored under url="google.com".
+    // Adjust this logic to match how you added URLs to telegraf.conf
+    const targetHost = server.ip.trim(); 
+    
+    pingHistory = await getServerPingHistory(targetHost);
+    
+    if (pingHistory.length > 0) {
+        const total = pingHistory.reduce((acc, curr) => acc + curr.avg, 0);
+        avgPing = Math.round(total / pingHistory.length);
+
+        // Generate SVG Path for Sparkline
+        const width = 100;
+        const height = 30;
+        const maxPing = Math.max(...pingHistory.map(p => p.avg), 1);
+        const minPing = Math.min(...pingHistory.map(p => p.avg));
+        
+        // Normalize points
+        const points = pingHistory.map((p, i) => {
+            const x = (i / (pingHistory.length - 1)) * width;
+            // Invert Y so lower ping is higher up (or standard: higher value = higher y? SVG y grows downwards)
+            // Let's make higher ping = lower in graph (higher y value) logically? 
+            // Usually graphs: bottom is 0. SVG 0 is top.
+            // So: y = height - (value / max * height)
+            const normalizedY = height - ((p.avg / (maxPing * 1.2)) * height); // 1.2 for some headroom
+            return `${x},${normalizedY}`;
+        });
+
+        sparklinePath = `M ${points.join(" L ")}`;
+    }
+} catch (e) {
+    // Influx fetch failed, ignore
+}
+
 if (server.type === 'minecraft') {
+    // ... (existing Minecraft logic) ...
   try {
     const apiEndpoint = isBedrock ? 'bedrock/3' : '3';
     // BungeeCord/Velocity can be picky. We fetch from the v3 API. 
@@ -51,7 +96,7 @@ if (server.type === 'minecraft') {
         statusData = await response.json();
         // BungeeCord sometimes returns online but with empty metadata if query is disabled.
         // We trust the 'online' field primarily.
-        isOnline = !!(statusData && statusData.online);
+        isOnline = !!statusData?.online;
     }
     
     // Fallback: If still offline and it's a Java server, try without the v3 subpath just in case
@@ -59,7 +104,7 @@ if (server.type === 'minecraft') {
         const fallbackRes = await fetch(`https://api.mcsrvstat.us/2/${fetchAddress}`);
         if (fallbackRes.ok) {
             const fallbackData = await fallbackRes.json();
-            if (fallbackData && fallbackData.online) {
+            if (fallbackData?.online) {
                 statusData = fallbackData;
                 isOnline = true;
             }
@@ -82,13 +127,17 @@ if (server.type === 'minecraft') {
             </div>
             <h3 class="server-title">{server.name}</h3>
         </div>
-        <div class="server-type-pill">{isBedrock ? 'Minecraft (BE)' : 'Minecraft'}</div>
+        <div class="server-type-pill">
+            {server.type === 'minecraft' 
+                ? (isBedrock ? 'Minecraft (BE)' : 'Minecraft') 
+                : (server.protocol || 'Service')}
+        </div>
     </div>
 
     <div class="server-body">
-        {server.type === 'minecraft' && isOnline && statusData ? (
+        {isOnline ? (
             <>
-                {statusData.motd?.clean && statusData.motd.clean.length > 0 && (
+                {server.type === 'minecraft' && statusData?.motd?.clean && statusData.motd.clean.length > 0 && (
                     <div class="motd-container">
                         {statusData.motd.clean.map((line: string) => (
                             <p class="motd-line">{line}</p>
@@ -97,25 +146,39 @@ if (server.type === 'minecraft') {
                 )}
                 
                 <div class="server-stats-grid">
-                    <div class="server-stat">
-                        <Users class="stat-icon" />
-                        <div class="stat-info">
-                            <span class="stat-label">プレイヤー数</span>
-                            <span class="stat-value">
-                                {statusData.players?.online ?? 0} <span class="stat-divider">/</span> {statusData.players?.max ?? 0}
-                            </span>
+                    {server.type === 'minecraft' && (
+                        <div class="server-stat">
+                            <Users class="stat-icon" />
+                            <div class="stat-info">
+                                <span class="stat-label">プレイヤー数</span>
+                                <span class="stat-value">
+                                    {statusData?.players?.online ?? 0} <span class="stat-divider">/</span> {statusData?.players?.max ?? 0}
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="server-stat">
+                    )}
+                    
+                    <div class="server-stat" style={server.type !== 'minecraft' ? "grid-column: span 2" : ""}>
                         <Activity class="stat-icon" />
                         <div class="stat-info">
-                            <span class="stat-label">バージョン</span>
-                            <span class="stat-value">{statusData.version || '不明'}</span>
+                            <span class="stat-label">パフォーマンス</span>
+                            {pingHistory.length > 0 ? (
+                                <div class="ping-meta">
+                                    <span class="stat-value">{avgPing}ms</span>
+                                    <svg class="sparkline" width="70" height="20" viewBox="0 0 100 30" preserveAspectRatio="none">
+                                        <path d={sparklinePath} fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </div>
+                            ) : (
+                                <span class="stat-value">
+                                    {server.type === 'minecraft' ? (statusData?.version || '準備中') : '稼働中'}
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                {statusData.players?.list && statusData.players.list.length > 0 && (
+                {server.type === 'minecraft' && statusData?.players?.list && statusData.players.list.length > 0 && (
                     <div class="player-list-section">
                         <span class="mini-label">現在のプレイヤー</span>
                         <div class="player-avatars">
@@ -393,6 +456,17 @@ if (server.type === 'minecraft') {
     }
 
     .icon-xs { width: 1rem; height: 1rem; }
+
+    .ping-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .sparkline {
+        color: #10b981;
+        opacity: 0.8;
+    }
 </style>
 
 <script>

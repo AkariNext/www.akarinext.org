@@ -23,6 +23,7 @@ ENV PUBLIC_DIRECTUS_URL=${PUBLIC_DIRECTUS_URL}
 ENV PUBLIC_SKIP_DIRECTUS_BUILD=${PUBLIC_SKIP_DIRECTUS_BUILD}
 
 RUN pnpm run build
+RUN pnpm run build:monitor
 
 # Production stage
 FROM node:22-alpine AS runner
@@ -43,5 +44,5 @@ ENV HOST=0.0.0.0
 ENV PORT=4321
 EXPOSE 4321
 
-# Start the SSR server
-CMD ["node", "./dist/server/entry.mjs"]
+# Start SSR server and monitor concurrently
+CMD ["pnpm", "run", "start:all"]
