@@ -13,14 +13,15 @@ const INFLUX_ORG = process.env.INFLUX_ORG || 'akarinext';
 const INFLUX_BUCKET = process.env.INFLUX_BUCKET || 'server_metrics';
 const DIRECTUS_URL = process.env.PUBLIC_DIRECTUS_URL || 'http://localhost:8055';
 
-if (!INFLUX_TOKEN) {
-    console.error('Error: INFLUX_TOKEN is not defined in .env');
-    process.exit(1);
-}
+let writeApi: any;
 
-// InfluxDB Setup
-const influxDB = new InfluxDB({ url: INFLUX_URL, token: INFLUX_TOKEN });
-const writeApi = influxDB.getWriteApi(INFLUX_ORG, INFLUX_BUCKET);
+if (!INFLUX_TOKEN) {
+    console.error('Error: INFLUX_TOKEN is not defined in .env. Helper will stand by without monitoring.');
+} else {
+    // InfluxDB Setup
+    const influxDB = new InfluxDB({ url: INFLUX_URL, token: INFLUX_TOKEN });
+    writeApi = influxDB.getWriteApi(INFLUX_ORG, INFLUX_BUCKET);
+}
 
 // Directus Setup
 const directus = createDirectus(DIRECTUS_URL).with(rest());
@@ -52,6 +53,8 @@ const probeTcp = (host: string, port: number): Promise<{ alive: boolean, avg: nu
 
 // Monitoring Loop
 async function monitorServers() {
+    if (!writeApi) return; // Skip if no write API
+
     try {
         const servers = await directus.request(readItems('game_servers', {
             fields: ['name', 'ip', 'port', 'type'],
@@ -114,7 +117,13 @@ async function monitorServers() {
     }
 }
 
-// Start
+// Start only if configured
 console.log("Starting server monitor agent...");
-monitorServers();
-setInterval(monitorServers, 10000);
+if (writeApi) {
+    monitorServers();
+    setInterval(monitorServers, 10000);
+} else {
+    console.log("Monitoring disabled due to missing configuration.");
+    // Keep process alive but idle (for container health check/concurrently stability)
+    setInterval(() => {}, 60000); 
+}
