@@ -64,6 +64,14 @@ const getCoverUrl = (cover: string | { id: string } | null | undefined) => {
     const id = typeof cover === 'string' ? cover : cover.id;
     return `${directusUrl}/assets/${id}?width=360&height=480&fit=cover`;
 }
+
+const getStatusLabel = (status: string) => {
+    switch (status) {
+        case 'playing': return 'プレイ中';
+        case 'finished': return 'プレイ終了';
+        default: return status;
+    }
+}
 ---
 
 <Layout title={user.name} description={`${user.name}さんのプロフィールとゲームコレクション。`}>
@@ -100,26 +108,43 @@ const getCoverUrl = (cover: string | { id: string } | null | undefined) => {
     </div>
 
     <div class="container content-container">
-        <!-- Game Library -->
+        <!-- Game Collection Gallery -->
         {allGames.length > 0 ? (
             <section class="game-section">
-                <h2 class="section-title"><Gamepad2 class="icon icon-blue" /> ゲームコレクション</h2>
-                <div class="games-grid">
+                <div class="section-header-row">
+                    <h2 class="section-title-premium">
+                        <Gamepad2 class="title-icon" /> 
+                        ゲームコレクション
+                    </h2>
+                    <span class="collection-count">{allGames.length} タイトル</span>
+                </div>
+
+                <div class="games-gallery-grid">
                     {allGames.map((p) => {
                         const coverUrl = getCoverUrl(p.game.cover_image);
                         return (
-                            <div class="game-card">
-                                <div class="game-cover-wrapper">
-                                    {coverUrl ? (
-                                        <img src={coverUrl} alt={p.game.name} class="game-cover" loading="lazy" />
-                                    ) : (
-                                        <div class="game-cover-placeholder">
-                                            <Gamepad2 class="placeholder-icon" />
-                                        </div>
-                                    )}
-                                </div>
-                                <div class="game-info">
-                                    <h3 class="game-name">{p.game.name}</h3>
+                            <div class="game-poster-item">
+                                <div class="poster-card-premium">
+                                    <div class="poster-image-box">
+                                        {coverUrl ? (
+                                            <img src={coverUrl} alt={p.game.name} class="poster-img-fluid" loading="lazy" />
+                                        ) : (
+                                            <div class="poster-placeholder-premium">
+                                                <Gamepad2 class="placeholder-icon-lg" />
+                                            </div>
+                                        )}
+                                        <div class="poster-hover-glow"></div>
+                                    </div>
+                                    
+                                    <div class="info-glass-panel">
+                                        <h3 class="game-name-display">{p.game.name}</h3>
+                                        {p.status && (
+                                            <div class={`status-indicator ${p.status}`}>
+                                                <div class="status-dot"></div>
+                                                <span>{getStatusLabel(p.status)}</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -127,7 +152,8 @@ const getCoverUrl = (cover: string | { id: string } | null | undefined) => {
                 </div>
             </section>
         ) : (
-            <div class="empty-state">
+            <div class="profile-empty-state glass-card">
+                <Gamepad2 class="empty-icon-fancy" />
                 <p>登録されているゲームはまだありません。</p>
             </div>
         )}
@@ -136,14 +162,12 @@ const getCoverUrl = (cover: string | { id: string } | null | undefined) => {
 
 <style>
     .profile-header {
-        background: linear-gradient(to bottom, rgba(255,255,255,0.8), rgba(255,255,255,0.4));
-        padding: 4rem 0 3rem;
-        border-bottom: 1px solid var(--border-subtle);
-        margin-bottom: 3rem;
-    }
-    
-    :global([data-theme="dark"]) .profile-header {
-        background: linear-gradient(to bottom, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.4));
+        background: radial-gradient(circle at top right, var(--accent-soft), transparent 60%), var(--bg-surface);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 5rem 0 4rem;
+        border-bottom: 1px solid var(--border-glass);
+        margin-bottom: 4rem;
     }
 
     .profile-container {
@@ -151,73 +175,73 @@ const getCoverUrl = (cover: string | { id: string } | null | undefined) => {
         flex-direction: column;
         align-items: center;
         text-align: center;
-        gap: 2rem;
+        gap: 2.5rem;
     }
     
     @media (min-width: 768px) {
         .profile-container {
             flex-direction: row;
             text-align: left;
-            align-items: flex-start;
+            align-items: center;
         }
     }
 
     .profile-avatar-wrapper {
         position: relative;
-        flex-shrink: 0;
     }
     
     .profile-avatar {
-        width: 120px;
-        height: 120px;
+        width: 140px;
+        height: 140px;
         border-radius: 50%;
         object-fit: cover;
-        border: 4px solid var(--bg-surface);
-        box-shadow: var(--shadow-md);
+        border: 5px solid var(--bg-surface-solid);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
     }
     
     .profile-avatar-placeholder {
-        width: 120px;
-        height: 120px;
+        width: 140px;
+        height: 140px;
         border-radius: 50%;
         background: var(--accent-primary);
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 4px solid var(--bg-surface);
-        box-shadow: var(--shadow-md);
+        border: 5px solid var(--bg-surface-solid);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
     }
     
     .avatar-initial {
-        font-size: 3rem;
+        font-size: 3.5rem;
         color: white;
-        font-weight: 700;
+        font-weight: 800;
     }
 
     .profile-info {
         flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: 1.25rem;
     }
 
     .profile-name {
-        font-size: 2.5rem;
-        font-weight: 800;
+        font-size: 3rem;
+        font-weight: 900;
         color: var(--text-main);
         line-height: 1.1;
+        letter-spacing: -0.02em;
     }
 
     .profile-bio {
-        font-size: 1.1rem;
+        font-size: 1.15rem;
         color: var(--text-muted);
         max-width: 600px;
-        line-height: 1.6;
+        line-height: 1.7;
     }
 
     .social-links {
         display: flex;
-        gap: 1rem;
+        gap: 1.25rem;
         margin-top: 0.5rem;
     }
     
@@ -225,127 +249,241 @@ const getCoverUrl = (cover: string | { id: string } | null | undefined) => {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 2.5rem;
-        height: 2.5rem;
-        border-radius: 50%;
-        background: var(--bg-surface);
-        border: 1px solid var(--border-light);
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 12px;
+        background: var(--bg-surface-solid);
+        border: 1px solid var(--border-subtle);
         color: var(--text-muted);
-        transition: all 0.2s;
+        transition: all 0.3s cubic-bezier(0.2, 1, 0.2, 1);
     }
     
     .social-link:hover {
         color: var(--accent-primary);
         border-color: var(--accent-primary);
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-sm);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(14, 165, 233, 0.2);
     }
     
     .social-icon {
-        width: 1.25rem;
-        height: 1.25rem;
+        width: 1.4rem;
+        height: 1.4rem;
     }
 
-    .content-container {
-        padding-bottom: 4rem;
-    }
-
+    /* Game Collection Improvements */
     .game-section {
-        margin-bottom: 4rem;
+        margin-bottom: 5rem;
     }
 
-    .section-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 1.5rem;
+    .section-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .section-title-premium {
+        font-size: 1.75rem;
+        font-weight: 800;
         display: flex;
         align-items: center;
         gap: 0.75rem;
         color: var(--text-main);
-        border-bottom: 1px solid var(--border-subtle);
-        padding-bottom: 0.75rem;
+        margin: 0;
     }
-    
-    .icon-blue { color: #0ea5e9; }
-    .icon-green { color: #10b981; }
-    .icon { width: 1.75rem; height: 1.75rem; }
 
-    .games-grid {
+    .title-icon {
+        color: var(--accent-primary);
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .collection-count {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .games-gallery-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 2.5rem;
     }
 
-    .game-card {
-        background: var(--bg-surface);
-        border-radius: var(--radius-md);
+    .game-poster-item {
+        transition: transform 0.4s cubic-bezier(0.2, 1, 0.2, 1);
+    }
+
+    .poster-card-premium {
+        position: relative;
+        border-radius: 20px;
         overflow: hidden;
+        background: var(--bg-surface-solid);
         border: 1px solid var(--border-subtle);
-        transition: transform 0.2s;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
         display: flex;
         flex-direction: column;
     }
-    
-    .game-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-md);
-    }
-    
-    .opacity-card {
-        opacity: 0.85;
-    }
-    .opacity-card:hover {
-        opacity: 1;
+
+    .game-poster-item:hover .poster-card-premium {
+        transform: translateY(-10px);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+        border-color: var(--accent-primary);
     }
 
-    .game-cover-wrapper {
+    .poster-image-box {
         position: relative;
         aspect-ratio: 3 / 4;
-        background: var(--bg-surface-hover);
         overflow: hidden;
+        background: #000;
     }
-    
-    .game-cover {
+
+    .poster-img-fluid {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        transition: transform 0.7s cubic-bezier(0.2, 1, 0.2, 1);
     }
-    
-    .game-cover-placeholder {
+
+    .game-poster-item:hover .poster-img-fluid {
+        transform: scale(1.1);
+        opacity: 0.85;
+    }
+
+    .poster-hover-glow {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at center, var(--accent-primary) 0%, transparent 75%);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        mix-blend-mode: soft-light;
+    }
+
+    .game-poster-item:hover .poster-hover-glow {
+        opacity: 0.4;
+    }
+
+    .info-glass-panel {
+        position: absolute;
+        bottom: 12px;
+        left: 12px;
+        right: 12px;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        z-index: 5;
+        transition: all 0.3s;
+    }
+
+    :global([data-theme="dark"]) .info-glass-panel {
+        background: rgba(30, 41, 59, 0.8);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .game-poster-item:hover .info-glass-panel {
+        background: rgba(255, 255, 255, 0.9);
+        bottom: 16px;
+    }
+
+    :global([data-theme="dark"]) .game-poster-item:hover .info-glass-panel {
+        background: rgba(15, 23, 42, 0.95);
+    }
+
+    .game-name-display {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin: 0;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent-primary);
+        box-shadow: 0 0 8px var(--accent-primary);
+    }
+
+    /* Status Color Variations */
+    .status-indicator.finished {
+        color: var(--text-muted);
+        opacity: 0.7;
+    }
+    .status-indicator.finished .status-dot {
+        background: var(--text-muted);
+        box-shadow: none;
+    }
+
+    .status-indicator.playing .status-dot {
+        background: #10b981; /* Green for playing */
+        box-shadow: 0 0 8px #10b981;
+    }
+
+    .poster-placeholder-premium {
         width: 100%;
         height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(14, 165, 233, 0.05);
-    }
-    
-    .placeholder-icon {
-        width: 3rem;
-        height: 3rem;
-        color: var(--text-muted);
-        opacity: 0.3;
-    }
-    
-
-
-    .game-info {
-        padding: 1rem;
-    }
-    
-    .game-name {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--text-main);
-        margin: 0;
-        line-height: 1.3;
-    }
-    
-    .empty-state {
-        text-align: center;
-        padding: 4rem;
-        color: var(--text-muted);
         background: var(--bg-surface-hover);
-        border-radius: var(--radius-md);
+        color: var(--text-muted);
+    }
+
+    .placeholder-icon-lg {
+        width: 3.5rem;
+        height: 3.5rem;
+        opacity: 0.2;
+    }
+
+    .profile-empty-state {
+        text-align: center;
+        padding: 6rem 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .empty-icon-fancy {
+        width: 4rem;
+        height: 4rem;
+        color: var(--accent-primary);
+        opacity: 0.2;
+    }
+
+    @media (max-width: 640px) {
+        .games-gallery-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1.5rem;
+        }
+        .profile-name { font-size: 2.25rem; }
+        .info-glass-panel { padding: 0.75rem; bottom: 8px; left: 8px; right: 8px; }
+        .game-name-display { font-size: 0.9rem; }
     }
 </style>
