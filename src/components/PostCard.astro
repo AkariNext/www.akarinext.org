@@ -53,7 +53,7 @@ const excerpt = post.content ? post.content.replace(/<[^>]*>?/gm, "").substring(
             <a href={`/posts/${post.slug}`} class="image-wrapper">
                 {post.image ? (
                     <img 
-                        src={`${directusUrl}/assets/${post.image}?key=card-thumb`} 
+                        src={`${directusUrl}/assets/${post.image}?width=600&height=400&fit=cover`} 
                         alt={post.title} 
                         class="card-img"
                         loading="lazy"
@@ -81,7 +81,7 @@ const excerpt = post.content ? post.content.replace(/<[^>]*>?/gm, "").substring(
                         <a href={`/users/${post.author.id}`} class="meta-item author-link">
                             {post.author.avatar ? (
                                 <img 
-                                    src={`${directusUrl}/assets/${post.author.avatar}?key=avatar-thumb`} 
+                                    src={`${directusUrl}/assets/${post.author.avatar}?width=48&height=48&fit=cover`} 
                                     alt={post.author.name} 
                                     class="author-avatar"
                                 />

@@ -15,6 +15,7 @@ services:
       DB_CLIENT: "sqlite3"
       DB_FILENAME: "/directus/database/database.sqlite"
       WEBSOCKETS_ENABLED: "true"
+      ASSETS_TRANSFORM_IMAGE_MAX_DIMENSION: 12000
     volumes:
       - directus_data:/directus/database
       - directus_uploads:/directus/uploads

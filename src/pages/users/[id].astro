@@ -24,7 +24,7 @@ if (!skipDirectusFetch) {
         const players = await directus.request(readItems('game_players', {
             filter: {
                 user: { _eq: userId }
-            },
+            } as any,
             fields: ['status', { game: ['id', 'name', 'slug', 'cover_image'] }],
             sort: ['-started_at']
         })) as unknown as GamePlayer[];

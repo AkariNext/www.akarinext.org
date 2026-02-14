@@ -92,23 +92,10 @@ DIRECTUS_URL=http://localhost:8055 DIRECTUS_EMAIL=admin@example.com DIRECTUS_PAS
 - `directus_files`
 - `directus_presets`（画像変換プリセットの適用に必要）
 
-## 画像プリセット（必須）
+## 画像の表示について
 
-最適化された画像を表示するために、**Settings → Files & Thumbnails → Presets** で以下のプリセットを作成してください。
-
-### 1. card-thumb (記事・ゲームカード用)
-- **Key**: `card-thumb`
-- **Width**: `600`
-- **Height**: `400`
-- **Fit**: `Cover`
-- **Quality**: `80`
-
-### 2. avatar-thumb (著者アイコン用)
-- **Key**: `avatar-thumb`
-- **Width**: `48` (Retina対応)
-- **Height**: `48`
-- **Fit**: `Cover`
-- **Quality**: `80`
+現在、高解像度の画像（数GB〜数十MB）を扱う場合、Directus側でのリアルタイム変換が失敗する可能性があるため、コード上では直接リサイズパラメータを指定しています。
+必要に応じて、Directusサーバーの `TRANSFORM_IMAGE_MAX_SIZE` 設定を確認してください。
 
 ## 環境変数
 
