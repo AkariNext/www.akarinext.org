@@ -63,6 +63,8 @@ const getImageUrl = (imageVal: string | { id: string } | null | undefined) => {
 const imageUrl = getImageUrl(post.image);
 const avatarUrl = getImageUrl(post.author?.avatar);
 
+const displayDate = post.published_date || new Date().toISOString();
+
 const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('ja-JP', {
        year: 'numeric',
@@ -99,7 +101,7 @@ const CategoryIcon = getCategoryIcon(post.category);
                         </div>
                         <div class="date-indicator">
                             <Calendar class="icon icon-xs" />
-                            <span>{formatDate(post.published_date)}</span>
+                            <span>{formatDate(displayDate)}</span>
                         </div>
                     </div>
                     <div class="meta-right">
@@ -179,7 +181,7 @@ const CategoryIcon = getCategoryIcon(post.category);
                     <div class="back-icon-circle">
                         <ArrowLeft class="icon" />
                     </div>
-                    <span>ストーリー一覧に戻る</span>
+                    <span>記事一覧に戻る</span>
                 </a>
             </div>
         </div>
@@ -240,13 +242,19 @@ const CategoryIcon = getCategoryIcon(post.category);
     .post-detail-premium {
         padding-bottom: 8rem;
     }
+
+    .post-navigation {
+        margin-top: 8rem;
+        display: flex;
+        justify-content: center;
+    }
     
     .post-header-block {
-        padding-top: 8rem;
+        padding-top: 6rem;
         background: 
             radial-gradient(circle at 10% 0%, var(--accent-soft), transparent 40%),
             radial-gradient(circle at 90% 10%, rgba(14, 165, 233, 0.08), transparent 40%);
-        padding-bottom: 10rem;
+        padding-bottom: 8rem;
     }
     
     .header-meta-group {
@@ -299,12 +307,12 @@ const CategoryIcon = getCategoryIcon(post.category);
     }
     
     .post-title-giant {
-        font-size: 4.5rem;
-        line-height: 1.05;
+        font-size: 3.75rem;
+        line-height: 1.1;
         font-weight: 900;
         color: var(--text-main);
-        letter-spacing: -0.05em;
-        margin-bottom: 3rem;
+        letter-spacing: -0.04em;
+        margin-bottom: 2.5rem;
         filter: drop-shadow(0 10px 20px rgba(0,0,0,0.05));
     }
 
@@ -377,14 +385,14 @@ const CategoryIcon = getCategoryIcon(post.category);
         height: 60vh;
         object-fit: cover;
         border-radius: 32px;
-        box-shadow: 0 40px 80px -15px rgba(0,0,0,0.3);
+        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
         border: 1px solid var(--border-glass);
     }
     
     .content-card {
-        padding: 6rem 5rem;
+        padding: 4rem 3.5rem;
         background: var(--bg-surface-solid);
-        border-radius: 32px;
+        border-radius: 24px;
         box-shadow: 0 20px 60px rgba(0,0,0,0.05);
     }
 
@@ -514,10 +522,11 @@ const CategoryIcon = getCategoryIcon(post.category);
 
     @media (max-width: 768px) {
         .post-header-block { padding-top: 4rem; padding-bottom: 6rem; }
-        .post-title-giant { font-size: 2.75rem; letter-spacing: -0.03em; }
-        .content-card { padding: 3rem 1.5rem; }
-        .hero-image { border-radius: 20px; }
-        .author-bio-section { padding: 2.5rem 1.5rem; }
+        .post-title-giant { font-size: 2.5rem; letter-spacing: -0.03em; margin-bottom: 2rem; }
+        .content-card { padding: 2.5rem 1.5rem; border-radius: 20px; }
+        .hero-image-wrapper { margin-top: 3rem; margin-bottom: -4rem; }
+        .hero-image { border-radius: 16px; height: 35vh; }
+        .author-bio-section { padding: 2rem 1.5rem; margin-top: 4rem; }
     }
 </style>
 

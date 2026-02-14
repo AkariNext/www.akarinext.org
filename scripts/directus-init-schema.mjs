@@ -45,20 +45,34 @@ async function hasCollection(name) {
 	return cols.some((c) => c.collection === name);
 }
 
-// 共通: 不足フィールドを確認・追加する関数
+// 共通: 不足フィールドを確認・追加、または既存フィールドを更新する関数
 async function ensureFields(collection, fields) {
 	console.log(`${collection} のフィールドを確認中...`);
-	const existingFieldsStr = await request("GET", `/fields/${collection}`);
-	const existingFields = existingFieldsStr?.data?.map((f) => f.field) || [];
+	const res = await request("GET", `/fields/${collection}`);
+	const existingFieldsData = res?.data || [];
+	const existingFieldNames = existingFieldsData.map((f) => f.field);
 
 	for (const fieldDef of fields) {
-		if (!existingFields.includes(fieldDef.field)) {
+		if (!existingFieldNames.includes(fieldDef.field)) {
 			console.log(`  + ${fieldDef.field} を追加中...`);
 			try {
 				await request("POST", `/fields/${collection}`, fieldDef);
 				console.log(`    ✓ ${fieldDef.field} 追加成功`);
 			} catch (e) {
 				console.warn(`    ! ${fieldDef.field} 追加失敗:`, e.message);
+			}
+		} else {
+			// 既存フィールドの更新を試みる (メタデータの同期)
+			console.log(`  ~ ${fieldDef.field} の更新を確認中...`);
+			try {
+				// メタデータやオプションをマージして更新
+				await request("PATCH", `/fields/${collection}/${fieldDef.field}`, {
+					meta: fieldDef.meta,
+					schema: fieldDef.schema
+				});
+				console.log(`    ✓ ${fieldDef.field} 更新/確認完了`);
+			} catch (e) {
+				console.warn(`    ! ${fieldDef.field} 更新失敗:`, e.message);
 			}
 		}
 	}
@@ -157,7 +171,7 @@ async function main() {
 		},
 		{
 			field: "published_date",
-			type: "date",
+			type: "timestamp",
 			meta: { interface: "datetime" },
 		},
 		{
@@ -273,6 +287,7 @@ async function main() {
 				options: {
 					choices: [
 						{ text: "Minecraft", value: "minecraft" },
+						{ text: "Web Service", value: "web" },
 						{ text: "Other", value: "other" },
 					],
 				},

@@ -7,18 +7,27 @@ let announcements: Array<{
   id: number;
   title: string;
   content: string;
-  published_date: string;
+  published_date?: string;
 }> = [];
 
 if (!skipDirectusFetch) {
   try {
-    announcements = (await directus.request(
+    const raw = (await directus.request(
       readItems("announcements", {
         fields: ["id", "title", "content", "published_date"],
         filter: { status: { _eq: "published" } },
-        sort: ["-published_date"],
+        sort: ["-published_date", "-id"],
       })
     )) ?? [];
+    const toTime = (d: string | null | undefined) => {
+      if (!d) return 0;
+      const t = new Date(d).getTime();
+      return Number.isNaN(t) ? 0 : t;
+    };
+    announcements = raw.sort((a: { published_date?: string; id?: number }, b: { published_date?: string; id?: number }) => {
+      const diff = toTime(b.published_date) - toTime(a.published_date);
+      return diff !== 0 ? diff : ((b.id ?? 0) - (a.id ?? 0));
+    });
   } catch (e) {
     // Silent fail
   }
@@ -59,25 +68,28 @@ const formatDate = (date: string) => {
     <div class="container container-narrow content-wrapper">
         {announcements.length > 0 ? (
             <div class="timeline-container">
-                {announcements.map((ann) => (
+                {announcements.map((ann) => {
+                    const annDate = ann.published_date || new Date().toISOString();
+                    return (
                     <article id={`ann-${ann.id}`} class="timeline-item">
                         <div class="timeline-date-col">
                             <span class="date-badge">
-                                <span class="date-month">{new Date(ann.published_date).toLocaleDateString('en-US', {month:'short'})}</span>
-                                <span class="date-day">{new Date(ann.published_date).getDate()}</span>
+                                <span class="date-month">{new Date(annDate).toLocaleDateString('en-US', {month:'short'})}</span>
+                                <span class="date-day">{new Date(annDate).getDate()}</span>
                             </span>
                         </div>
                         <div class="timeline-content glass-card">
                             <div class="card-header">
                                 <h2 class="ann-title">{ann.title}</h2>
                                 <div class="meta-inline">
-                                    <Clock class="icon-xs" /> {formatDate(ann.published_date)}
+                                    <Clock class="icon-xs" /> {formatDate(annDate)}
                                 </div>
                             </div>
                             <div class="prose" set:html={ann.content} />
                         </div>
                     </article>
-                ))}
+                );
+                })}
             </div>
         ) : (
             <div class="glass-card empty-state">

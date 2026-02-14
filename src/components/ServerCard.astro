@@ -5,7 +5,8 @@ interface Props {
   server: {
     id: number;
     name: string;
-    type: "minecraft" | "other";
+    status: "published" | "draft";
+    type: "minecraft" | "other" | "web";
     ip: string;
     port: number;
     protocol: string;
@@ -35,17 +36,19 @@ interface MinecraftStatus {
   ip?: string;
 }
 
-import { getServerPingHistory, type PingData } from "../lib/influxdb";
+import { getServerPingHistory, getServerAvailability, type PingData } from "../lib/influxdb";
 
 // ... (existing code) ...
 
 let statusData: MinecraftStatus | null = null;
 let isOnline = false;
 const isBedrock = server.type === 'minecraft' && (server.protocol?.toLowerCase().includes('bedrock') || port === 19132);
+const isWeb = server.type === 'web';
 
 // Ping History Data
 let pingHistory: PingData[] = [];
 let avgPing = 0;
+let availability = 100;
 let sparklinePath = "";
 
 try {
@@ -64,21 +67,24 @@ try {
         const width = 100;
         const height = 30;
         const maxPing = Math.max(...pingHistory.map(p => p.avg), 1);
-        const minPing = Math.min(...pingHistory.map(p => p.avg));
         
-        // Normalize points
-        const points = pingHistory.map((p, i) => {
-            const x = (i / (pingHistory.length - 1)) * width;
-            // Invert Y so lower ping is higher up (or standard: higher value = higher y? SVG y grows downwards)
-            // Let's make higher ping = lower in graph (higher y value) logically? 
-            // Usually graphs: bottom is 0. SVG 0 is top.
-            // So: y = height - (value / max * height)
-            const normalizedY = height - ((p.avg / (maxPing * 1.2)) * height); // 1.2 for some headroom
-            return `${x},${normalizedY}`;
-        });
-
-        sparklinePath = `M ${points.join(" L ")}`;
+        if (pingHistory.length > 1) {
+            // Normalize points
+            const points = pingHistory.map((p, i) => {
+                const x = (i / (pingHistory.length - 1)) * width;
+                const normalizedY = height - ((p.avg / (maxPing * 1.2)) * height); 
+                return `${x},${normalizedY}`;
+            });
+            sparklinePath = `M ${points.join(" L ")}`;
+        } else if (pingHistory.length === 1) {
+            // Simple horizontal line or dot
+            const normalizedY = height - ((pingHistory[0].avg / (maxPing * 1.2)) * height);
+            sparklinePath = `M 0,${normalizedY} L 100,${normalizedY}`;
+        }
     }
+
+    // Availability (24h)
+    availability = await getServerAvailability(targetHost);
 } catch (e) {
     // Influx fetch failed, ignore
 }
@@ -113,6 +119,8 @@ if (server.type === 'minecraft') {
   } catch (e) {
     console.error(`[ServerCard] Failed to fetch Minecraft status for ${server.name} (${fetchAddress}):`, e);
   }
+} else if (server.type === 'web') {
+    isOnline = true; // Assume web is online or handled by link availability
 } else {
     isOnline = true;
 }
@@ -130,7 +138,7 @@ if (server.type === 'minecraft') {
         <div class="server-type-pill">
             {server.type === 'minecraft' 
                 ? (isBedrock ? 'Minecraft (BE)' : 'Minecraft') 
-                : (server.protocol || 'Service')}
+                : (server.type === 'web' ? 'Web Service' : (server.protocol || 'Service'))}
         </div>
     </div>
 
@@ -158,20 +166,28 @@ if (server.type === 'minecraft') {
                         </div>
                     )}
                     
-                    <div class="server-stat" style={server.type !== 'minecraft' ? "grid-column: span 2" : ""}>
+                    <div class="server-stat">
                         <Activity class="stat-icon" />
                         <div class="stat-info">
-                            <span class="stat-label">パフォーマンス</span>
+                            <span class="stat-label">稼働率(24h)</span>
+                            <span class="stat-value">{availability}%</span>
+                        </div>
+                    </div>
+
+                    <div class="server-stat">
+                        <Activity class="stat-icon" />
+                        <div class="stat-info">
+                            <span class="stat-label">ステータス</span>
                             {pingHistory.length > 0 ? (
                                 <div class="ping-meta">
                                     <span class="stat-value">{avgPing}ms</span>
-                                    <svg class="sparkline" width="70" height="20" viewBox="0 0 100 30" preserveAspectRatio="none">
-                                        <path d={sparklinePath} fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                                    <svg class="sparkline" width="70" height="20" viewBox="0 0 100 30" preserveAspectRatio="none" style="overflow: visible;">
+                                        <path d={sparklinePath} fill="none" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
                                     </svg>
                                 </div>
                             ) : (
                                 <span class="stat-value">
-                                    {server.type === 'minecraft' ? (statusData?.version || '準備中') : '稼働中'}
+                                    {isOnline ? (server.type === 'minecraft' ? (statusData?.version || '準備中') : '低遅延') : 'オフライン'}
                                 </span>
                             )}
                         </div>
@@ -213,10 +229,16 @@ if (server.type === 'minecraft') {
     </div>
 
     <div class="server-footer">
-        <div class="copy-ip" data-ip={`${server.ip}:${server.port}`}>
-            <span class="ip-text">{server.ip}:{server.port}</span>
-            <button class="copy-btn">コピー</button>
-        </div>
+        {isWeb ? (
+            <a href={server.ip.startsWith('http') ? server.ip : `https://${server.ip}`} target="_blank" rel="noopener noreferrer" class="visit-btn">
+                <Globe class="icon-xs" /> サイトを開く
+            </a>
+        ) : (
+            <div class="copy-ip" data-ip={`${server.ip}:${server.port}`}>
+                <span class="ip-text">{server.ip}:{server.port}</span>
+                <button class="copy-btn">コピー</button>
+            </div>
+        )}
     </div>
 </div>
 
@@ -453,6 +475,28 @@ if (server.type === 'minecraft') {
 
     .copy-btn:hover {
         opacity: 0.8;
+    }
+
+    .visit-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background: var(--accent-primary);
+        color: white;
+        text-decoration: none;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        width: 100%;
+        transition: all 0.2s;
+    }
+
+    .visit-btn:hover {
+        background: var(--accent-secondary);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
     }
 
     .icon-xs { width: 1rem; height: 1rem; }

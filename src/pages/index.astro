@@ -1,6 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { Gamepad2, Code2, MessageCircle, ArrowRight, Zap, Trophy, Users, Shield } from "lucide-astro";
+import { Gamepad2, Code2, MessageCircle, ArrowRight, Zap, Trophy, Users, Shield, Megaphone } from "lucide-astro";
 import {
   directus,
   readItems,
@@ -25,16 +25,17 @@ let recentPosts: Post[] = [];
 let recentGames: Game[] = [];
 let gameServers: GameServer[] = [];
 let staffMembers: Author[] = [];
+let latestAnnouncement: { id: number; title: string } | null = null;
 
 if (!skipDirectusFetch) {
   try {
-    const [settingsData, postsData, gamesData, serversData, staffData] = await Promise.all([
+    const [settingsData, postsData, gamesData, serversData, staffData, announcementData] = await Promise.all([
       directus.request(readSingleton("global")).catch(() => null),
       directus.request(
         readItems("posts", {
-          fields: ["id", "title", "slug", "published_date", "category", "image", { author: ["name", "avatar"] }],
+          fields: ["id", "title", "slug", "published_date", "category", "image", { author: ["id", "name", "avatar"] }],
           filter: { status: { _eq: "published" } },
-          sort: ["-published_date"],
+          sort: ["-published_date", "-id"],
           limit: 6,
         })
       ).catch(() => []),
@@ -56,14 +57,33 @@ if (!skipDirectusFetch) {
           filter: { is_staff: { _eq: true } },
           fields: ["id", "name", "avatar", "staff_title", "bio"]
         })
+      ).catch(() => []),
+      directus.request(
+        readItems("announcements", {
+          fields: ["id", "title"],
+          filter: { status: { _eq: "published" } },
+          sort: ["-published_date", "-id"],
+          limit: 1,
+        })
       ).catch(() => [])
     ]);
 
     if (settingsData) globalSettings = settingsData as GlobalSettings;
-    if (postsData) recentPosts = postsData as Post[];
+    if (postsData) {
+        const toTime = (d: string | null | undefined) => {
+            if (!d) return 0;
+            const t = new Date(d).getTime();
+            return Number.isNaN(t) ? 0 : t;
+        };
+        recentPosts = (postsData as Post[]).sort((a, b) => {
+            const diff = toTime(b.published_date) - toTime(a.published_date);
+            return diff !== 0 ? diff : (b.id - a.id);
+        });
+    }
     if (gamesData) recentGames = gamesData as Game[];
     if (serversData) gameServers = serversData as GameServer[];
     if (staffData) staffMembers = staffData as Author[];
+    if (announcementData && announcementData.length > 0) latestAnnouncement = announcementData[0] as { id: number; title: string };
 
   } catch (error) {
     // Silent
@@ -84,7 +104,17 @@ const formatDate = (dateStr: string) => {
   <section class="hero-section">
       <div class="container hero-container">
           <div class="hero-content">
-              <span class="hero-badge"><Zap class="icon icon-xs" /> Official Community</span>
+              {latestAnnouncement ? (
+                  <a href={`/announcements#ann-${latestAnnouncement.id}`} class="hero-badge announcement-badge">
+                      <Megaphone class="icon icon-xs" />
+                      <span class="badge-label">NEWS</span>
+                      <span class="badge-divider">|</span>
+                      <span class="announcement-title">{latestAnnouncement.title}</span>
+                      <ArrowRight class="icon icon-xs arrow-icon" />
+                  </a>
+              ) : (
+                  <span class="hero-badge"><Zap class="icon icon-xs" /> Official Community</span>
+              )}
               <h1 class="hero-title">
                   <span class="gradient-text">創る。</span>
                   <span class="gradient-text delay-1">遊ぶ。</span>
@@ -306,6 +336,61 @@ const formatDate = (dateStr: string) => {
       color: var(--accent-primary);
       margin-bottom: 1.5rem;
       box-shadow: var(--shadow-sm);
+  }
+
+  .announcement-badge {
+      text-decoration: none;
+      transition: all 0.3s ease;
+      max-width: 100%;
+      overflow: hidden;
+  }
+  
+  .announcement-badge:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--accent-primary);
+  }
+
+  .badge-label {
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: var(--accent-primary);
+  }
+
+  .badge-divider {
+      color: var(--border-subtle);
+      margin: 0 0.1rem;
+  }
+
+  .announcement-title {
+      color: var(--text-main);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 300px;
+  }
+
+  .arrow-icon {
+      margin-left: 0.25rem;
+      opacity: 0.5;
+      transition: transform 0.3s ease;
+  }
+
+  .announcement-badge:hover .arrow-icon {
+      transform: translateX(3px);
+      opacity: 1;
+  }
+
+  @media (max-width: 640px) {
+      .announcement-title {
+          max-width: 180px;
+      }
+  }
+  
+  @media (max-width: 480px) {
+      .announcement-title {
+          max-width: 140px;
+      }
   }
   
   .hero-title {

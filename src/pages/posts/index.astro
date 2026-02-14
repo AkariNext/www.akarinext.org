@@ -36,11 +36,21 @@ if (!skipDirectusFetch) {
             "tags",
           ],
           filter: { status: { _eq: "published" } },
-          sort: ["-published_date"],
+          sort: ["-published_date", "-id"],
         })
       );
     
-    let allPosts = fetchedPosts ?? [];
+    let allPosts = (fetchedPosts ?? []) as typeof posts;
+    // 公開日でソート（新しい順）
+    const toTime = (d: string | null | undefined) => {
+        if (!d) return 0;
+        const t = new Date(d).getTime();
+        return Number.isNaN(t) ? 0 : t;
+    };
+    allPosts.sort((a, b) => {
+        const diff = toTime(b.published_date) - toTime(a.published_date);
+        return diff !== 0 ? diff : (b.id - a.id);
+    });
     
     // Filter by tag in memory if needed
     if (tag) {

@@ -56,7 +56,7 @@ export type GamePlayer = {
 export type GameServer = {
 	id: number;
 	name: string;
-	type: "minecraft" | "other";
+	type: "minecraft" | "other" | "web";
 	ip: string;
 	port: number;
 	protocol: string;

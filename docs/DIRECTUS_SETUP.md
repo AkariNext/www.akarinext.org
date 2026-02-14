@@ -87,7 +87,7 @@ DIRECTUS_URL=http://localhost:8055 DIRECTUS_EMAIL=admin@example.com DIRECTUS_PAS
 | フィールド | 型 | キー |
 |-----------|-----|------|
 | name | Input | name |
-| type | Dropdown (minecraft, other) | type |
+| type | Dropdown (minecraft, other, web) | type |
 | ip | Input | ip |
 | port | Number | port |
 | protocol | Input | protocol |

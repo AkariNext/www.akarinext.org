@@ -7,7 +7,7 @@ interface Props {
 		title: string;
 		slug: string;
 		content?: string;
-		published_date: string;
+		published_date?: string;
 		category: "tech" | "game" | "misc" | string;
 		image?: string;
 		author?: {
@@ -35,6 +35,8 @@ const getCategoryInfo = (cat: string) => {
 };
 
 const { icon: Icon, color, label } = getCategoryInfo(post.category);
+
+const displayDate = post.published_date || new Date().toISOString();
 
 const formatDate = (dateStr: string) => {
 	return new Date(dateStr).toLocaleDateString("ja-JP", {
@@ -76,7 +78,7 @@ const excerpt = post.content ? post.content.replace(/<[^>]*>?/gm, "").substring(
         <div class="card-content">
             <header class="content-header">
                 <div class="meta-row">
-                    <span class="meta-item"><Calendar class="icon-mini" /> {formatDate(post.published_date)}</span>
+                    <span class="meta-item"><Calendar class="icon-mini" /> {formatDate(displayDate)}</span>
                     {post.author && (
                         <a href={`/users/${post.author.id}`} class="meta-item author-link">
                             {post.author.avatar ? (
