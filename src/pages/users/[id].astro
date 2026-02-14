@@ -59,14 +59,14 @@ const getSocialIcon = (platform: string) => {
     }
 };
 
-const getCoverUrl = (cover: any) => {
+const getCoverUrl = (cover: string | { id: string } | null | undefined) => {
     if (!cover) return null;
     const id = typeof cover === 'string' ? cover : cover.id;
     return `${directusUrl}/assets/${id}?width=360&height=480&fit=cover`;
 }
 ---
 
-<Layout title={user.name} description={`${user.name}'s profile and game library.`}>
+<Layout title={user.name} description={`${user.name}さんのプロフィールとゲームコレクション。`}>
     <div class="profile-header">
         <div class="container profile-container">
             <div class="profile-avatar-wrapper">
@@ -103,7 +103,7 @@ const getCoverUrl = (cover: any) => {
         <!-- Game Library -->
         {allGames.length > 0 ? (
             <section class="game-section">
-                <h2 class="section-title"><Gamepad2 class="icon icon-blue" /> Game Collection</h2>
+                <h2 class="section-title"><Gamepad2 class="icon icon-blue" /> ゲームコレクション</h2>
                 <div class="games-grid">
                     {allGames.map((p) => {
                         const coverUrl = getCoverUrl(p.game.cover_image);
@@ -128,7 +128,7 @@ const getCoverUrl = (cover: any) => {
             </section>
         ) : (
             <div class="empty-state">
-                <p>No games recorded yet.</p>
+                <p>登録されているゲームはまだありません。</p>
             </div>
         )}
     </div>

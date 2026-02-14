@@ -51,6 +51,12 @@ const logoUrl = globalSettings.site_logo
     <meta property="og:description" content={description} />
     <meta property="og:image" content={image} />
     <title>{siteTitle}</title>
+    
+    <!-- Premium Japanese Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <script is:inline>
       const getTheme = () => {
         if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
@@ -80,10 +86,10 @@ const logoUrl = globalSettings.site_logo
         </a>
         <div class="nav-wrapper">
           <div class="nav-links">
-            <a href="/" class="nav-link"><Home class="nav-icon" /> <span class="nav-label">Home</span></a>
-            <a href="/posts" class="nav-link"><MessageSquare class="nav-icon" /> <span class="nav-label">Stories</span></a>
-            <a href="/games" class="nav-link"><LayoutGrid class="nav-icon" /> <span class="nav-label">Library</span></a>
-            <a href="/announcements" class="nav-link"><Megaphone class="nav-icon" /> <span class="nav-label">Feeds</span></a>
+            <a href="/" class="nav-link"><Home class="nav-icon" /> <span class="nav-label">ホーム</span></a>
+            <a href="/posts" class="nav-link"><MessageSquare class="nav-icon" /> <span class="nav-label">ストーリー</span></a>
+            <a href="/games" class="nav-link"><LayoutGrid class="nav-icon" /> <span class="nav-label">ライブラリ</span></a>
+            <a href="/announcements" class="nav-link"><Megaphone class="nav-icon" /> <span class="nav-label">フィード</span></a>
           </div>
           <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Theme">
               <Sun class="icon sun-icon" />
@@ -102,8 +108,8 @@ const logoUrl = globalSettings.site_logo
       <div class="container footer-content">
         <p class="copyright">&copy; {new Date().getFullYear()} {globalSettings.site_title}.</p>
         <div class="footer-links">
-          <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
+          <a href="/privacy">プライバシーポリシー</a>
+          <a href="/terms">利用規約</a>
         </div>
       </div>
     </footer>

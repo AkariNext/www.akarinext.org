@@ -65,10 +65,10 @@ const getCategoryIcon = (cat: string) => {
 
 const getCategoryLabel = (cat: string) => {
     switch(cat) {
-        case 'tech': return 'Dev';
-        case 'game': return 'Game';
-        case 'misc': return 'Chat';
-        default: return 'Other';
+        case 'tech': return '開発';
+        case 'game': return 'ゲーム';
+        case 'misc': return '雑談';
+        default: return 'その他';
     }
 }
 
@@ -89,36 +89,36 @@ const getCategoryColor = (cat: string) => {
           <div class="hero-content">
               <span class="hero-badge"><Zap class="icon icon-xs" /> Official Community</span>
               <h1 class="hero-title">
-                  <span class="gradient-text">Create.</span>
-                  <span class="gradient-text delay-1">Play.</span>
-                  <span class="gradient-text delay-2">Connect.</span>
+                  <span class="gradient-text">創る。</span>
+                  <span class="gradient-text delay-1">遊ぶ。</span>
+                  <span class="gradient-text delay-2">繋がる。</span>
               </h1>
               <p class="hero-desc">
-                  AkariNextは、ゲーム、開発、そして雑談を楽しむためのコミュニティです。
-                  技術の共有から、深夜のゲーム大会まで。
+                  AkariNextは、開発・ゲーム・雑談を楽しむためのクリエイティブコミュニティ。
+                  技術の共有から深夜のゲーム大会まで、あなたの「好き」が広がる場所。
               </p>
               <div class="hero-stats">
                   <div class="stat-item">
-                      <span class="stat-value">Dev</span>
+                      <span class="stat-value">開発</span>
                       <span class="stat-label">Engineering</span>
                   </div>
                   <div class="stat-divider"></div>
                   <div class="stat-item">
-                      <span class="stat-value">Game</span>
+                      <span class="stat-value">ゲーム</span>
                       <span class="stat-label">Entertainment</span>
                   </div>
                   <div class="stat-divider"></div>
                   <div class="stat-item">
-                      <span class="stat-value">Chat</span>
+                      <span class="stat-value">雑談</span>
                       <span class="stat-label">Communication</span>
                   </div>
               </div>
               <div class="hero-actions">
                   <a href="/posts" class="btn btn-primary btn-lg">
-                      Explore Stories <ArrowRight class="icon" />
+                      ストーリーを読む <ArrowRight class="icon" />
                   </a>
                   <a href="/games" class="btn btn-lg">
-                      View Games <Gamepad2 class="icon" />
+                      ゲームを探す <Gamepad2 class="icon" />
                   </a>
               </div>
           </div>
@@ -148,22 +148,22 @@ const getCategoryColor = (cat: string) => {
               <div class="feature-icon-box bg-blue-soft">
                   <Code2 class="icon text-blue" />
               </div>
-              <h3>Development</h3>
-              <p>プログラミングや技術選定についての知見を共有。</p>
+              <h3>技術と開発</h3>
+              <p>プログラミングや、新しい技術についての知見を共有しましょう。</p>
           </a>
           <a href="/games" class="feature-card glass-card hover-glow-green">
               <div class="feature-icon-box bg-green-soft">
                   <Gamepad2 class="icon text-green" />
               </div>
-              <h3>Gaming</h3>
-              <p>メンバーが熱中しているゲームの記録やレビュー。</p>
+              <h3>ゲームライフ</h3>
+              <p>メンバーが熱中している最新タイトルの記録やレビューをチェック。</p>
           </a>
           <a href="/announcements" class="feature-card glass-card hover-glow-amber">
               <div class="feature-icon-box bg-amber-soft">
                   <Users class="icon text-amber" />
               </div>
-              <h3>Community</h3>
-              <p>イベント情報や日々の雑談、お知らせなど。</p>
+              <h3>コミュニティ</h3>
+              <p>イベント情報や日々の雑談など、みんなとの交流の場。</p>
           </a>
       </div>
   </section>
@@ -171,8 +171,8 @@ const getCategoryColor = (cat: string) => {
   <!-- Latest Activity Mix -->
   <section class="activity-section container">
       <div class="section-header">
-          <h2 class="section-title">Latest Updates</h2>
-          <a href="/posts" class="view-all">View All <ArrowRight class="icon icon-xs" /></a>
+          <h2 class="section-title">最近の投稿</h2>
+          <a href="/posts" class="view-all">すべて見る <ArrowRight class="icon icon-xs" /></a>
       </div>
 
       <div class="activity-grid">
@@ -220,7 +220,7 @@ const getCategoryColor = (cat: string) => {
               })
           ) : (
               <div class="empty-state glass-card">
-                  <p>No recent activity.</p>
+                  <p>まだ投稿はありません。</p>
               </div>
           )}
       </div>
@@ -232,9 +232,9 @@ const getCategoryColor = (cat: string) => {
         <div class="container">
             <div class="games-banner glass-card">
                 <div class="banner-content">
-                    <h2><Trophy class="icon icon-lg text-yellow" /> Featured Games</h2>
-                    <p>みんなが遊んでいる最新タイトルをチェックしよう</p>
-                    <a href="/games" class="btn btn-sm">Library <ArrowRight class="icon icon-xs" /></a>
+                    <h2><Trophy class="icon icon-lg text-yellow" /> 注目のゲーム</h2>
+                    <p>コミュニティが今注目しているタイトルをチェック</p>
+                    <a href="/games" class="btn btn-sm">ライブラリを見る <ArrowRight class="icon icon-xs" /></a>
                 </div>
                 <div class="banner-images">
                     {recentGames.map(game => (

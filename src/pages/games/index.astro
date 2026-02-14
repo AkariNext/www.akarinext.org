@@ -75,9 +75,9 @@ const getCoverUrl = (cover: Game['cover_image']) => {
 <Layout title="Game Library" description="Current games being played by the community.">
     <div class="page-header">
         <div class="container text-center">
-            <h1 class="page-title"><Gamepad2 class="icon icon-lg" /> Game Library</h1>
+            <h1 class="page-title"><Gamepad2 class="icon icon-lg" /> ゲームライブラリ</h1>
             <p class="page-desc">
-                Explore the collection of games our community is currently enjoying.
+                コミュニティのメンバーが所有・プレイしているゲームのコレクションです。
             </p>
         </div>
     </div>
@@ -87,10 +87,10 @@ const getCoverUrl = (cover: Game['cover_image']) => {
         <div class="search-section">
             <div class="search-bar-glass">
                 <Users class="search-icon" />
-                <input type="text" id="gameSearch" placeholder="Filter games or owners..." />
+                <input type="text" id="gameSearch" placeholder="タイトルやユーザー名で検索..." />
                 <div class="stats-pill">
                     <span class="count">{games.length}</span>
-                    <span class="label">Games</span>
+                    <span class="label">タイトル</span>
                 </div>
             </div>
         </div>
@@ -152,8 +152,8 @@ const getCoverUrl = (cover: Game['cover_image']) => {
         ) : (
             <div class="empty-gallery">
                 <Gamepad2 class="empty-icon-lg" />
-                <h2>No matches found</h2>
-                <p>Try searching for a different game or player</p>
+                <h2>該当するゲームが見つかりません</h2>
+                <p>別のキーワードで検索してみてください。</p>
             </div>
         )}
     </div>
