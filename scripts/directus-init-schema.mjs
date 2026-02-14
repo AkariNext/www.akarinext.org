@@ -247,6 +247,63 @@ async function main() {
 		},
 	];
 
+	const gameServersFields = [
+		{
+			field: "name",
+			type: "string",
+			meta: { interface: "input", required: true },
+		},
+		{
+			field: "type",
+			type: "string",
+			meta: {
+				interface: "select-dropdown",
+				required: true,
+				options: {
+					choices: [
+						{ text: "Minecraft", value: "minecraft" },
+						{ text: "Other", value: "other" },
+					],
+				},
+			},
+		},
+		{
+			field: "ip",
+			type: "string",
+			meta: { interface: "input", required: true },
+		},
+		{
+			field: "port",
+			type: "integer",
+			meta: { interface: "input", required: true },
+			schema: { default_value: 25565 },
+		},
+		{
+			field: "protocol",
+			type: "string",
+			meta: { interface: "input" },
+			schema: { default_value: "TCP" },
+		},
+		{
+			field: "description",
+			type: "text",
+			meta: { interface: "input-multiline" },
+		},
+		{
+			field: "status",
+			type: "string",
+			meta: {
+				interface: "select-dropdown",
+				options: {
+					choices: [
+						{ text: "下書き", value: "draft" },
+						{ text: "公開", value: "published" },
+					],
+				},
+			},
+			schema: { default_value: "published" },
+		},
+	];
 	const gamePlayersFields = [
 		{
 			field: "user",
@@ -271,7 +328,7 @@ async function main() {
 				options: {
 					choices: [
 						{ text: "プレイ中", value: "playing" },
-						{ text: "終了", value: "finished" },
+						{ text: "プレイ終了", value: "finished" },
 					],
 				},
 			},
@@ -423,6 +480,21 @@ async function main() {
 		await ensureFields("game_players", gamePlayersFields);
 	}
 
+	// --- 7. game_servers ---
+	if (!(await hasCollection("game_servers"))) {
+		console.log("game_servers を作成中...");
+		await request("POST", "/collections", {
+			collection: "game_servers",
+			schema: { name: "game_servers" },
+			meta: { icon: "dns", singleton: false },
+			fields: gameServersFields,
+		});
+		console.log("  ✓ game_servers 作成完了");
+	} else {
+		console.log("game_servers は既に存在します");
+		await ensureFields("game_servers", gameServersFields);
+	}
+
 	// --- リレーション・権限設定 ---
 
 	// 画像プリセットの作成
@@ -469,7 +541,7 @@ async function main() {
 	console.log("\nPublic 権限について...");
 	console.log("Directus の Settings -> Access Policies & Permissions にて");
 	console.log("Public ロールに対して、以下のコレクションの Read 権限を手動で許可してください:");
-	console.log(" - global, posts, announcements, games, game_players, authors, directus_files, directus_presets");
+	console.log(" - global, posts, announcements, games, game_players, game_servers, authors, directus_files, directus_presets");
 
 	// global に初期データ（singleton は items で作成可能）
 	try {

@@ -6,7 +6,11 @@ import {
   readItems,
   readSingleton,
   skipDirectusFetch,
+  type Post,
+  type Game,
+  type GameServer
 } from "../lib/directus";
+import ServerCard from "../components/ServerCard.astro";
 
 // Fetch data
 let globalSettings = {
@@ -14,12 +18,13 @@ let globalSettings = {
   site_description: "Connect, Play, and Share Your Journey.",
 };
 
-let recentPosts: Array<any> = [];
-let recentGames: Array<any> = [];
+let recentPosts: Post[] = [];
+let recentGames: Game[] = [];
+let gameServers: GameServer[] = [];
 
 if (!skipDirectusFetch) {
   try {
-    const [settingsData, postsData, gamesData] = await Promise.all([
+    const [settingsData, postsData, gamesData, serversData] = await Promise.all([
       directus.request(readSingleton("global")).catch(() => null),
       directus.request(
         readItems("posts", {
@@ -35,12 +40,19 @@ if (!skipDirectusFetch) {
           limit: 4,
           sort: ["-id"] // Just getting some games
         })
+      ).catch(() => []),
+      directus.request(
+        readItems("game_servers", {
+          filter: { status: { _eq: "published" } },
+          fields: ["id", "name", "type", "ip", "port", "protocol", "description"]
+        })
       ).catch(() => [])
     ]);
 
-    if (settingsData) globalSettings = settingsData;
-    if (postsData) recentPosts = postsData;
-    if (gamesData) recentGames = gamesData;
+    if (settingsData) globalSettings = settingsData as any;
+    if (postsData) recentPosts = postsData as Post[];
+    if (gamesData) recentGames = gamesData as Game[];
+    if (serversData) gameServers = serversData as GameServer[];
 
   } catch (error) {
     // Silent
@@ -168,10 +180,25 @@ const getCategoryColor = (cat: string) => {
       </div>
   </section>
 
+  <!-- Server Status Section -->
+  {gameServers.length > 0 && (
+    <section class="servers-section container">
+        <div class="section-header">
+            <h2 class="section-title">サーバー稼働状況</h2>
+            <span class="view-all">Community Servers</span>
+        </div>
+        <div class="servers-grid">
+            {gameServers.map(server => (
+                <ServerCard server={server} />
+            ))}
+        </div>
+    </section>
+  )}
+
   <!-- Latest Activity Mix -->
   <section class="activity-section container">
       <div class="section-header">
-          <h2 class="section-title">最近の投稿</h2>
+          <h2 class="section-title">最新のストーリー</h2>
           <a href="/posts" class="view-all">すべて見る <ArrowRight class="icon icon-xs" /></a>
       </div>
 
@@ -617,5 +644,18 @@ const getCategoryColor = (cat: string) => {
       .hero-actions { justify-content: center; }
       .hero-visual { display: none; }
       .games-banner { flex-direction: column; text-align: center; }
+  }
+
+  /* Server Section Styles */
+  .servers-section {
+      margin-bottom: 5rem;
+  }
+  .servers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 2rem;
+  }
+  @media (max-width: 640px) {
+      .servers-grid { grid-template-columns: 1fr; }
   }
 </style>

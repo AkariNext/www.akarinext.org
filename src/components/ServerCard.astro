@@ -1,0 +1,415 @@
+---
+import { Activity, Users, Info, Globe, ShieldCheck, Wifi, WifiOff } from "lucide-astro";
+
+interface Props {
+  server: {
+    id: number;
+    name: string;
+    type: "minecraft" | "other";
+    ip: string;
+    port: number;
+    protocol: string;
+    description?: string;
+  };
+}
+
+const { server } = Astro.props;
+
+// Use the address exactly as provided in Directus for maximum compatibility
+const address = server.ip.trim();
+const port = server.port;
+const fetchAddress = port ? `${address}:${port}` : address;
+
+interface MinecraftStatus {
+  online: boolean;
+  players?: {
+    online: number;
+    max: number;
+    list?: { name: string; uuid: string }[];
+  };
+  motd?: {
+    clean?: string[];
+  };
+  version?: string;
+  hostname?: string;
+  ip?: string;
+}
+
+let statusData: MinecraftStatus | null = null;
+let isOnline = false;
+const isBedrock = server.type === 'minecraft' && (server.protocol?.toLowerCase().includes('bedrock') || port === 19132);
+
+if (server.type === 'minecraft') {
+  try {
+    const apiEndpoint = isBedrock ? 'bedrock/3' : '3';
+    // BungeeCord/Velocity can be picky. We fetch from the v3 API. 
+    // If you have trouble with Bungee, sometimes using the hostname alone without port (if default) helps, 
+    // but here we use the specific fetchAddress.
+    const response = await fetch(`https://api.mcsrvstat.us/${apiEndpoint}/${fetchAddress}`);
+    
+    if (response.ok) {
+        statusData = await response.json();
+        // BungeeCord sometimes returns online but with empty metadata if query is disabled.
+        // We trust the 'online' field primarily.
+        isOnline = !!(statusData && statusData.online);
+    }
+    
+    // Fallback: If still offline and it's a Java server, try without the v3 subpath just in case
+    if (!isOnline && !isBedrock) {
+        const fallbackRes = await fetch(`https://api.mcsrvstat.us/2/${fetchAddress}`);
+        if (fallbackRes.ok) {
+            const fallbackData = await fallbackRes.json();
+            if (fallbackData && fallbackData.online) {
+                statusData = fallbackData;
+                isOnline = true;
+            }
+        }
+    }
+  } catch (e) {
+    console.error(`[ServerCard] Failed to fetch Minecraft status for ${server.name} (${fetchAddress}):`, e);
+  }
+} else {
+    isOnline = true;
+}
+---
+
+<div class={`server-card glass-card ${isOnline ? 'online' : 'offline'}`}>
+    <div class="server-header">
+        <div class="server-ident">
+            <div class={`status-badge ${isOnline ? 'bg-online' : 'bg-offline'}`}>
+                {isOnline ? <Wifi class="icon-xs" /> : <WifiOff class="icon-xs" />}
+                <span>{isOnline ? 'オンライン' : 'オフライン'}</span>
+            </div>
+            <h3 class="server-title">{server.name}</h3>
+        </div>
+        <div class="server-type-pill">{isBedrock ? 'Minecraft (BE)' : 'Minecraft'}</div>
+    </div>
+
+    <div class="server-body">
+        {server.type === 'minecraft' && isOnline && statusData ? (
+            <>
+                {statusData.motd?.clean && statusData.motd.clean.length > 0 && (
+                    <div class="motd-container">
+                        {statusData.motd.clean.map((line: string) => (
+                            <p class="motd-line">{line}</p>
+                        ))}
+                    </div>
+                )}
+                
+                <div class="server-stats-grid">
+                    <div class="server-stat">
+                        <Users class="stat-icon" />
+                        <div class="stat-info">
+                            <span class="stat-label">プレイヤー数</span>
+                            <span class="stat-value">
+                                {statusData.players?.online ?? 0} <span class="stat-divider">/</span> {statusData.players?.max ?? 0}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="server-stat">
+                        <Activity class="stat-icon" />
+                        <div class="stat-info">
+                            <span class="stat-label">バージョン</span>
+                            <span class="stat-value">{statusData.version || '不明'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {statusData.players?.list && statusData.players.list.length > 0 && (
+                    <div class="player-list-section">
+                        <span class="mini-label">現在のプレイヤー</span>
+                        <div class="player-avatars">
+                            {statusData.players.list.slice(0, 12).map((player: any) => (
+                                <div class="player-chip" title={player.name}>
+                                    <img 
+                                        src={`https://minotar.net/avatar/${player.uuid || player.name}/24`} 
+                                        alt={player.name} 
+                                        class="player-head" 
+                                        onerror="this.src='https://minotar.net/avatar/steve/24'"
+                                    />
+                                    <span class="player-name-text">{player.name}</span>
+                                </div>
+                            ))}
+                            {statusData.players.list.length > 12 && (
+                                <span class="more-players">他 {statusData.players.list.length - 12} 名...</span>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </>
+        ) : (
+            <div class="offline-placeholder">
+                <p class="server-ip-display">
+                    <Globe class="icon-xs" /> {server.ip}:{server.port}
+                </p>
+                {!isOnline && <p class="offline-msg">サーバーが応答していません</p>}
+            </div>
+        )}
+        
+        {server.description && <p class="server-desc">{server.description}</p>}
+    </div>
+
+    <div class="server-footer">
+        <div class="copy-ip" data-ip={`${server.ip}:${server.port}`}>
+            <span class="ip-text">{server.ip}:{server.port}</span>
+            <button class="copy-btn">コピー</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .server-card {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        transition: all 0.3s cubic-bezier(0.2, 1, 0.2, 1);
+        border: 1px solid var(--border-glass);
+    }
+
+    .server-card.online {
+        border-left: 4px solid #10b981;
+    }
+
+    .server-card.offline {
+        border-left: 4px solid #ef4444;
+        opacity: 0.8;
+    }
+
+    .server-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .server-ident {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: white;
+        letter-spacing: 0.05em;
+    }
+
+    .bg-online { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
+    .bg-offline { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
+
+    .server-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin: 0;
+    }
+
+    .server-type-pill {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 0.25rem 0.5rem;
+        background: var(--accent-soft);
+        color: var(--accent-primary);
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+    }
+
+    /* Body & Stats */
+    .motd-container {
+        background: var(--bg-surface-hover);
+        padding: 0.85rem;
+        border-radius: 12px;
+        margin-bottom: 1.25rem;
+        border: 1px solid var(--border-subtle);
+    }
+
+    :global([data-theme="dark"]) .motd-container {
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .motd-line {
+        font-size: 0.85rem;
+        color: var(--text-main);
+        margin: 0;
+        font-family: 'Noto Sans JP', sans-serif;
+        line-height: 1.5;
+        font-weight: 500;
+    }
+
+    :global([data-theme="dark"]) .motd-line {
+        color: #e2e8f0;
+    }
+
+    .server-stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .server-stat {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: var(--bg-surface-hover);
+        padding: 0.75rem;
+        border-radius: 12px;
+    }
+
+    .stat-icon {
+        width: 1.25rem;
+        height: 1.25rem;
+        color: var(--accent-primary);
+        opacity: 0.8;
+    }
+
+    .stat-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    .stat-value {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--text-main);
+    }
+
+    /* Player List */
+    .player-list-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .mini-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+
+    .player-avatars {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .player-chip {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: var(--bg-surface-solid);
+        padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+        border-radius: 6px;
+        border: 1px solid var(--border-subtle);
+    }
+
+    .player-head {
+        width: 18px;
+        height: 18px;
+        border-radius: 2px;
+    }
+
+    .player-name-text {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-main);
+    }
+
+    .more-players {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        align-self: center;
+    }
+
+    .server-ip-display {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .server-desc {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+        margin-top: 0.5rem;
+    }
+
+    /* Footer / Copy */
+    .server-footer {
+        margin-top: auto;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .copy-ip {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--bg-surface-hover);
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .ip-text {
+        font-size: 0.85rem;
+        color: var(--text-main);
+        font-weight: 500;
+    }
+
+    .copy-btn {
+        background: var(--accent-primary);
+        color: white;
+        border: none;
+        padding: 0.25rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .copy-btn:hover {
+        opacity: 0.8;
+    }
+
+    .icon-xs { width: 1rem; height: 1rem; }
+</style>
+
+<script>
+    // Copy to clipboard logic
+    document.querySelectorAll('.copy-ip').forEach(container => {
+        const btn = container.querySelector('.copy-btn');
+        const ip = container.getAttribute('data-ip');
+        
+        btn?.addEventListener('click', () => {
+            if (ip) {
+                navigator.clipboard.writeText(ip);
+                const originalText = btn.textContent;
+                btn.textContent = 'コピー済み!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }
+        });
+    });
+</script>

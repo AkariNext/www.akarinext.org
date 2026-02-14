@@ -46,6 +46,17 @@ export type GamePlayer = {
 	status: "playing" | "finished";
 };
 
+export type GameServer = {
+	id: number;
+	name: string;
+	type: "minecraft" | "other";
+	ip: string;
+	port: number;
+	protocol: string;
+	description?: string;
+	status: "published" | "draft";
+};
+
 export type GlobalSettings = {
 	site_title: string;
 	site_description: string;
@@ -57,6 +68,7 @@ export type Schema = {
 	announcements: Announcement[];
 	games: Game[];
 	game_players: GamePlayer[];
+	game_servers: GameServer[];
 	authors: Author[];
 	global: GlobalSettings;
 };
