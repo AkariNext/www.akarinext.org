@@ -1,10 +1,10 @@
 import { InfluxDB } from '@influxdata/influxdb-client';
 
-const url = import.meta.env.INFLUX_URL || 'http://localhost:8086';
+const url = import.meta.env.INFLUX_URL || process.env.INFLUX_URL || 'http://localhost:8086';
 // In development, you might not have the token set yet
-const token = import.meta.env.INFLUX_TOKEN; 
-const org = import.meta.env.INFLUX_ORG || 'akarinext';
-const bucket = import.meta.env.INFLUX_BUCKET || 'server_metrics';
+const token = import.meta.env.INFLUX_TOKEN || process.env.INFLUX_TOKEN; 
+const org = import.meta.env.INFLUX_ORG || process.env.INFLUX_ORG || 'akarinext';
+const bucket = import.meta.env.INFLUX_BUCKET || process.env.INFLUX_BUCKET || 'server_metrics';
 
 console.log(`[InfluxDB Lib] Init: URL=${url}, Org=${org}, Bucket=${bucket}, TokenDefined=${!!token}`);
 
