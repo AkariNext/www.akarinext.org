@@ -25,25 +25,23 @@ ENV PUBLIC_SKIP_DIRECTUS_BUILD=${PUBLIC_SKIP_DIRECTUS_BUILD}
 RUN pnpm run build
 
 # Production stage
-FROM nginx:alpine
+FROM node:22-alpine AS runner
 
-# Copy built assets from Astro
-COPY --from=builder /app/dist /usr/share/nginx/html
+WORKDIR /app
 
-# Nginx config for SPA-style routing (optional, for client-side routing)
-RUN echo 'server { \
-    listen 80; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-    location /assets/ { \
-        expires 1y; \
-        add_header Cache-Control "public, immutable"; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-EXPOSE 80
+# Copy necessary files from builder
+COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
+COPY --from=builder /app/dist ./dist
+# Only install production dependencies
+RUN pnpm install --prod --frozen-lockfile
 
-CMD ["nginx", "-g", "daemon off;"]
+# Expose Astro's default port (or Dokploy's PORT env)
+ENV HOST=0.0.0.0
+ENV PORT=4321
+EXPOSE 4321
+
+# Start the SSR server
+CMD ["node", "./dist/server/entry.mjs"]

@@ -11,7 +11,7 @@ cmds = ["corepack enable", "corepack prepare pnpm@latest --activate", "pnpm inst
 cmds = ["pnpm run build"]
 
 [start]
-cmd = "pnpm start"
+cmd = "node ./dist/server/entry.mjs"
 
 [variables]
 NODE_ENV = "production"
