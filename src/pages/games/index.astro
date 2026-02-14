@@ -41,7 +41,7 @@ if (!skipDirectusFetch) {
           { user: ["id", "name"] },
           { game: ["id", "name", "slug"] },
         ],
-        filter: { status: { _eq: "playing" } },
+        // filter: { status: { _eq: "playing" } }, // Fetch all players
         sort: ["-started_at"],
       })
     )) ?? [];
@@ -55,7 +55,10 @@ const playersByGame = new Map<number, GamePlayer[]>();
 gamePlayers.forEach((gp) => {
     if(gp.game?.id) {
         const list = playersByGame.get(gp.game.id) || [];
-        list.push(gp);
+        // Prevent duplicate users for the same game
+        if (!list.some(p => p.user.id === gp.user.id)) {
+            list.push(gp);
+        }
         playersByGame.set(gp.game.id, list);
     }
 });
@@ -80,24 +83,7 @@ const getCoverUrl = (cover: Game['cover_image']) => {
     </div>
 
     <div class="container">
-        <!-- Active Players -->
-        {gamePlayers.length > 0 && (
-            <section class="active-section glass-card">
-                <h2 class="section-title"><Users class="icon icon-blue" /> Now Playing</h2>
-                <div class="player-chips">
-                    {gamePlayers.map((gp) => (
-                        <div class="player-chip">
-                             <div class="status-dot tooltip" title="Playing Now"></div>
-                             <a href={`/users/${gp.user?.id}`} class="chip-user-link">
-                                {gp.user?.name || "Unknown"}
-                             </a>
-                             <Play class="icon icon-xs text-muted" />
-                             <span class="chip-game">{gp.game?.name || "Unknown"}</span>
-                        </div>
-                    ))}
-                </div>
-            </section>
-        )}
+
 
         <!-- Games Grid -->
         {games.length > 0 ? (
@@ -125,7 +111,7 @@ const getCoverUrl = (cover: Game['cover_image']) => {
                                 
                                 {players.length > 0 && (
                                     <div class="active-players-list">
-                                        <span class="active-label"><Users class="icon icon-xs" /> Playing:</span>
+                                        <span class="active-label"><Users class="icon icon-xs" /> Owners:</span>
                                         {players.map(p => (
                                             <a href={`/users/${p.user?.id}`} class="mini-badge" style="text-decoration:none;">
                                                 {p.user?.name}
@@ -175,10 +161,7 @@ const getCoverUrl = (cover: Game['cover_image']) => {
     .icon-blue { color: var(--accent-primary); width: 1.5rem; height: 1.5rem; margin-right: 0.5rem; vertical-align: middle; }
     .text-muted { color: var(--text-muted); opacity: 0.7; }
 
-    .active-section {
-        margin-bottom: 3rem;
-        padding: 2rem;
-    }
+
     
     .section-title {
         font-size: 1.25rem;
@@ -189,38 +172,11 @@ const getCoverUrl = (cover: Game['cover_image']) => {
         align-items: center;
     }
     
-    .player-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-    }
+
     
-    .player-chip {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: var(--bg-surface-hover);
-        border: 1px solid var(--border-subtle);
-        padding: 0.5rem 1rem;
-        border-radius: 99px;
-        font-size: 0.85rem;
-        color: var(--text-main);
-        box-shadow: var(--shadow-sm);
-        transition: transform 0.2s;
-    }
+
     
-    .player-chip:hover {
-        transform: translateY(-2px);
-        border-color: var(--accent-soft);
-    }
-    
-    .status-dot {
-        width: 8px;
-        height: 8px;
-        background: #10b981; /* Green-500 */
-        border-radius: 50%;
-        box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
-    }
+    .text-xs { font-size: 0.75em; opacity: 0.7; }
     
     .chip-game {
         color: var(--accent-primary);

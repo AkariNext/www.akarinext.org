@@ -226,9 +226,9 @@ const getCategoryColor = (cat: string) => {
       </div>
   </section>
   
-  <!-- Games Showcase -->
-  {recentGames.length > 0 && (
-    <section class="games-Showcase-section">
+   <!-- Games Showcase -->
+   {recentGames.length > 0 && (
+    <section class="games-showcase-section">
         <div class="container">
             <div class="games-banner glass-card">
                 <div class="banner-content">
@@ -564,6 +564,11 @@ const getCategoryColor = (cat: string) => {
   }
   
   /* Games Banner */
+  /* Games Showcase */
+  .games-showcase-section {
+      margin-bottom: 6rem;
+  }
+
   .games-banner {
       display: flex;
       align-items: center;
@@ -585,18 +590,24 @@ const getCategoryColor = (cat: string) => {
   
   .mini-game-cover {
       width: 80px;
-      height: 100px;
+      height: 120px; /* Taller for better cover aspect ratio */
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       transform: rotate(3deg);
       border: 2px solid var(--border-light);
+      background: var(--bg-surface-solid); /* Fallback background */
   }
   
   .mini-game-cover:nth-child(2) { transform: rotate(-2deg) translateY(-10px); }
   .mini-game-cover:nth-child(3) { transform: rotate(5deg); }
   
-  .mini-game-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .mini-game-cover img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; /* Ensure image covers the area, might crop */
+      display: block;
+  }
   .placeholder { background: var(--border-subtle); }
   
   @media (max-width: 900px) {

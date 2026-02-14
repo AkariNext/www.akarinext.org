@@ -10,8 +10,7 @@ if (!id) {
 }
 
 let user: Author | null = null;
-let playingGames: GamePlayer[] = [];
-let finishedGames: GamePlayer[] = [];
+let allGames: GamePlayer[] = [];
 
 if (!skipDirectusFetch) {
     try {
@@ -31,8 +30,7 @@ if (!skipDirectusFetch) {
         })) as unknown as GamePlayer[];
 
         if (players) {
-            playingGames = players.filter((p: GamePlayer) => p.status === 'playing');
-            finishedGames = players.filter((p: GamePlayer) => p.status === 'finished');
+            allGames = players;
         }
 
     } catch (e) {
@@ -102,12 +100,12 @@ const getCoverUrl = (cover: any) => {
     </div>
 
     <div class="container content-container">
-        <!-- Playing Now -->
-        {playingGames.length > 0 && (
+        <!-- Game Library -->
+        {allGames.length > 0 ? (
             <section class="game-section">
-                <h2 class="section-title"><Play class="icon icon-blue" /> Playing Now</h2>
+                <h2 class="section-title"><Gamepad2 class="icon icon-blue" /> Game Collection</h2>
                 <div class="games-grid">
-                    {playingGames.map((p) => {
+                    {allGames.map((p) => {
                         const coverUrl = getCoverUrl(p.game.cover_image);
                         return (
                             <div class="game-card">
@@ -119,7 +117,6 @@ const getCoverUrl = (cover: any) => {
                                             <Gamepad2 class="placeholder-icon" />
                                         </div>
                                     )}
-                                    <div class="status-badge playing">Playing</div>
                                 </div>
                                 <div class="game-info">
                                     <h3 class="game-name">{p.game.name}</h3>
@@ -129,38 +126,7 @@ const getCoverUrl = (cover: any) => {
                     })}
                 </div>
             </section>
-        )}
-
-        <!-- Finished Games -->
-        {finishedGames.length > 0 && (
-            <section class="game-section">
-                <h2 class="section-title"><CheckCircle class="icon icon-green" /> Finished Games</h2>
-                <div class="games-grid">
-                     {finishedGames.map((p) => {
-                        const coverUrl = getCoverUrl(p.game.cover_image);
-                        return (
-                            <div class="game-card opacity-card">
-                                <div class="game-cover-wrapper">
-                                    {coverUrl ? (
-                                        <img src={coverUrl} alt={p.game.name} class="game-cover" loading="lazy" />
-                                    ) : (
-                                        <div class="game-cover-placeholder">
-                                            <Gamepad2 class="placeholder-icon" />
-                                        </div>
-                                    )}
-                                    <div class="status-badge finished">Finished</div>
-                                </div>
-                                <div class="game-info">
-                                    <h3 class="game-name">{p.game.name}</h3>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </section>
-        )}
-        
-        {playingGames.length === 0 && finishedGames.length === 0 && (
+        ) : (
             <div class="empty-state">
                 <p>No games recorded yet.</p>
             </div>
@@ -361,30 +327,7 @@ const getCoverUrl = (cover: any) => {
         opacity: 0.3;
     }
     
-    .status-badge {
-        position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-    
-    .status-badge.playing {
-        background: rgba(16, 185, 129, 0.9);
-        color: white;
-        backdrop-filter: blur(4px);
-    }
-    
-    .status-badge.finished {
-        background: rgba(100, 116, 139, 0.9);
-        color: white;
-        backdrop-filter: blur(4px);
-    }
+
 
     .game-info {
         padding: 1rem;
