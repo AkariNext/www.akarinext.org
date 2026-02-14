@@ -55,10 +55,12 @@ try {
     const targetHost = server.ip.trim(); 
     
     pingHistory = await getServerPingHistory(targetHost);
+    console.log(`[ServerCard] Host: ${targetHost}, History: ${pingHistory.length} points`);
     
     if (pingHistory.length > 0) {
         const total = pingHistory.reduce((acc, curr) => acc + curr.avg, 0);
         avgPing = Math.round(total / pingHistory.length);
+        console.log(`[ServerCard] Avg Ping: ${avgPing}ms`);
 
         // Generate SVG Path for Sparkline
         const width = 100;
