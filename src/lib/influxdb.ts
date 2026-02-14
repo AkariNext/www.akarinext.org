@@ -36,6 +36,7 @@ export async function getServerPingHistory(host: string, range = '-1h'): Promise
 
     try {
         const result: PingData[] = [];
+        // console.log(`[InfluxDB] Querying for host: ${host}, bucket: ${bucket}`);
         await new Promise<void>((resolve, reject) => {
             queryApi.queryRows(fluxQuery, {
                 next(row: any, tableMeta: any) {
@@ -51,10 +52,14 @@ export async function getServerPingHistory(host: string, range = '-1h'): Promise
                     reject(error);
                 },
                 complete() {
+                    // console.log(`[InfluxDB] Query complete for ${host}. Rows: ${result.length}`);
                     resolve();
                 },
             });
         });
+        if (result.length === 0) {
+            console.warn(`[InfluxDB] No data found for host: ${host} in bucket: ${bucket}`);
+        }
         return result;
     } catch (e) {
         console.error("Failed to fetch influx data", e);
