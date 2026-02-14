@@ -46,7 +46,7 @@ DIRECTUS_URL=http://localhost:8055 DIRECTUS_EMAIL=admin@example.com DIRECTUS_PAS
 | フィールド | 型 | キー |
 |-----------|-----|------|
 | title | Input | title |
-| slug | Input | slug |
+| slug | Input（任意・空ならIDでURL生成） | slug |
 | content | WYSIWYG | content |
 | author | Many to One → authors | author |
 | published_date | DateTime | published_date |

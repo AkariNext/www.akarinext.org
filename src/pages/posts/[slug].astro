@@ -9,12 +9,12 @@ export async function getStaticPaths() {
 		const posts =
 			(await directus.request(
 				readItems("posts", {
-					fields: ["slug"],
+					fields: ["id", "slug"],
 					filter: { status: { _eq: "published" } },
 				}),
 			)) ?? [];
-		return posts.map((post: { slug: string }) => ({
-			params: { slug: post.slug },
+		return posts.map((post: { id: number; slug?: string | null }) => ({
+			params: { slug: String(post.slug || post.id) },
 		}));
 	} catch {
 		return [];
@@ -26,6 +26,11 @@ let post = null;
 
 if (!skipDirectusFetch) {
 	try {
+        // slug が数値なら id で検索、そうでなければ slug で検索
+        const isNumeric = /^\d+$/.test(slug || "");
+        const filter = isNumeric
+            ? { id: { _eq: parseInt(slug!, 10) } }
+            : { slug: { _eq: slug } };
         const result = await directus.request(
             readItems("posts", {
                 fields: [
@@ -37,7 +42,7 @@ if (!skipDirectusFetch) {
                     { author: ["id", "name", "avatar", "bio"] },
                     "image",
                 ],
-                filter: { slug: { _eq: slug } },
+                filter: { ...filter, status: { _eq: "published" } },
                 limit: 1,
             })
         );

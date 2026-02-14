@@ -52,7 +52,7 @@ const excerpt = post.content ? post.content.replace(/<[^>]*>?/gm, "").substring(
 <article class="post-card-premium">
     <div class="card-inner">
         <div class="card-image-section">
-            <a href={`/posts/${post.slug}`} class="image-wrapper">
+            <a href={`/posts/${post.slug || post.id}`} class="image-wrapper">
                 {post.image ? (
                     <img 
                         src={`${directusUrl}/assets/${post.image}?width=600&height=400&fit=cover`} 
@@ -95,7 +95,7 @@ const excerpt = post.content ? post.content.replace(/<[^>]*>?/gm, "").substring(
                     )}
                 </div>
                 <h3 class="post-title">
-                    <a href={`/posts/${post.slug}`}>{post.title}</a>
+                    <a href={`/posts/${post.slug || post.id}`}>{post.title}</a>
                 </h3>
             </header>
 

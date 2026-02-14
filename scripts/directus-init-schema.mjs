@@ -157,7 +157,12 @@ async function main() {
 		{
 			field: "slug",
 			type: "string",
-			meta: { interface: "input", required: true },
+			meta: {
+				interface: "input",
+				required: false,
+				note: "空のまま保存するとIDでURLが生成されます。任意で指定可能。",
+			},
+			schema: { is_nullable: true },
 		},
 		{
 			field: "content",
