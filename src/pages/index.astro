@@ -8,12 +8,14 @@ import {
   skipDirectusFetch,
   type Post,
   type Game,
-  type GameServer
+  type GameServer,
+  type GlobalSettings
 } from "../lib/directus";
 import ServerCard from "../components/ServerCard.astro";
+import PostCard from "../components/PostCard.astro";
 
 // Fetch data
-let globalSettings = {
+let globalSettings: GlobalSettings = {
   site_title: "AkariNext",
   site_description: "Connect, Play, and Share Your Journey.",
 };
@@ -49,7 +51,7 @@ if (!skipDirectusFetch) {
       ).catch(() => [])
     ]);
 
-    if (settingsData) globalSettings = settingsData as any;
+    if (settingsData) globalSettings = settingsData as GlobalSettings;
     if (postsData) recentPosts = postsData as Post[];
     if (gamesData) recentGames = gamesData as Game[];
     if (serversData) gameServers = serversData as GameServer[];
@@ -59,39 +61,13 @@ if (!skipDirectusFetch) {
   }
 }
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('ja-JP', {
-    month: 'short',
-    day: 'numeric'
-  });
+const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
 };
-
-const getCategoryIcon = (cat: string) => {
-    switch(cat) {
-        case 'tech': return Code2;
-        case 'game': return Gamepad2;
-        case 'misc': return MessageCircle;
-        default: return MessageCircle;
-    }
-}
-
-const getCategoryLabel = (cat: string) => {
-    switch(cat) {
-        case 'tech': return '開発';
-        case 'game': return 'ゲーム';
-        case 'misc': return '雑談';
-        default: return 'その他';
-    }
-}
-
-const getCategoryColor = (cat: string) => {
-    switch(cat) {
-        case 'tech': return 'var(--accent-primary)'; 
-        case 'game': return '#10b981'; // green
-        case 'misc': return '#f59e0b'; // amber
-        default: return 'var(--text-muted)';
-    }
-}
 ---
 
 <Layout title={globalSettings.site_title}>
@@ -181,19 +157,27 @@ const getCategoryColor = (cat: string) => {
   </section>
 
   <!-- Server Status Section -->
-  {gameServers.length > 0 && (
-    <section class="servers-section container">
-        <div class="section-header">
-            <h2 class="section-title">サーバー稼働状況</h2>
-            <span class="view-all">Community Servers</span>
-        </div>
-        <div class="servers-grid">
-            {gameServers.map(server => (
-                <ServerCard server={server} />
-            ))}
-        </div>
-    </section>
-  )}
+  <section class="servers-section container">
+      <div class="section-header">
+          <h2 class="section-title">サーバー稼働状況</h2>
+          <span class="view-all">Community Servers Status</span>
+      </div>
+      {gameServers.length > 0 ? (
+          <div class="servers-grid">
+              {gameServers.map(server => (
+                  <ServerCard server={server} />
+              ))}
+          </div>
+      ) : (
+          <div class="glass-card empty-servers-card">
+              <div class="empty-icon-box">
+                  <Gamepad2 class="icon icon-lg opacity-50" />
+              </div>
+              <p class="empty-text">現在、公開されているサーバー情報はありません。</p>
+              <p class="empty-hint">※ 管理者は Directus でサーバー情報を登録し、ステータスを「公開 (Published)」に設定してください。</p>
+          </div>
+      )}
+  </section>
 
   <!-- Latest Activity Mix -->
   <section class="activity-section container">
@@ -204,47 +188,9 @@ const getCategoryColor = (cat: string) => {
 
       <div class="activity-grid">
           {recentPosts.length > 0 ? (
-              recentPosts.map((post) => {
-                  const Icon = getCategoryIcon(post.category);
-                  const color = getCategoryColor(post.category);
-                  const label = getCategoryLabel(post.category);
-                  
-                  return (
-                    <a href={`/posts/${post.slug}`} class="activity-card glass-card">
-                        <div class="card-image-wrapper">
-                            {post.image ? (
-                                <img 
-                                    src={`${import.meta.env.PUBLIC_DIRECTUS_URL}/assets/${post.image}?key=card-thumb`} 
-                                    alt={post.title} 
-                                    class="card-image"
-                                    loading="lazy"
-                                />
-                            ) : (
-                                <div class="card-image-placeholder" style={`background: linear-gradient(135deg, ${color}20, var(--bg-surface));`}>
-                                    <Icon class="placeholder-icon" style={`color: ${color}`} />
-                                </div>
-                            )}
-                            <div class="card-badge" style={`background: ${color}; color: white; box-shadow: 0 2px 8px ${color}60;`}>
-                                <Icon class="icon icon-xs" /> {label}
-                            </div>
-                        </div>
-                        
-                        <div class="activity-content">
-                            <span class="activity-date">{formatDate(post.published_date)}</span>
-                            <h3 class="activity-title">
-                                {post.title}
-                            </h3>
-                            <div class="activity-footer">
-                                {post.author?.name && (
-                                    <span class="author-info">
-                                        by {post.author.name}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    </a>
-                  );
-              })
+              recentPosts.map((post) => (
+                  <PostCard post={post as any} />
+              ))
           ) : (
               <div class="empty-state glass-card">
                   <p>まだ投稿はありません。</p>
@@ -655,7 +601,52 @@ const getCategoryColor = (cat: string) => {
       grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
       gap: 2rem;
   }
-  @media (max-width: 640px) {
-      .servers-grid { grid-template-columns: 1fr; }
+  .card-tags {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+  }
+
+  .mini-tag {
+      font-size: 0.65rem;
+      color: var(--accent-primary);
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      background: var(--accent-soft);
+      border-radius: 4px;
+      letter-spacing: 0.02em;
+  }
+
+  .activity-card:hover .mini-tag {
+      background: var(--accent-primary);
+      color: white;
+  }
+  .empty-servers-card {
+      padding: 4rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      border: 1px dashed var(--border-subtle);
+  }
+
+  .empty-icon-box {
+      margin-bottom: 0.5rem;
+      color: var(--accent-primary);
+  }
+
+  .empty-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+  }
+
+  .empty-hint {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      max-width: 500px;
   }
 </style>

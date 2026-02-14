@@ -90,16 +90,23 @@ DIRECTUS_URL=http://localhost:8055 DIRECTUS_EMAIL=admin@example.com DIRECTUS_PAS
 - `game_players`
 - `authors`
 - `directus_files`
-- `directus_presets`（画像表示に必要）
-- directus_presets（プリセット使用に必要）
+- `directus_presets`（画像変換プリセットの適用に必要）
 
-## 画像プリセット（推奨）
+## 画像プリセット（必須）
 
-**Settings → Files & Thumbnails → Presets** で以下を作成:
+最適化された画像を表示するために、**Settings → Files & Thumbnails → Presets** で以下のプリセットを作成してください。
 
+### 1. card-thumb (記事・ゲームカード用)
 - **Key**: `card-thumb`
 - **Width**: `600`
 - **Height**: `400`
+- **Fit**: `Cover`
+- **Quality**: `80`
+
+### 2. avatar-thumb (著者アイコン用)
+- **Key**: `avatar-thumb`
+- **Width**: `48` (Retina対応)
+- **Height**: `48`
 - **Fit**: `Cover`
 - **Quality**: `80`
 

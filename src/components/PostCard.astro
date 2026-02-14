@@ -1,0 +1,360 @@
+---
+import { Calendar, User, Tag, Code2, Gamepad2, MessageCircle } from "lucide-astro";
+
+interface Props {
+	post: {
+		id: number;
+		title: string;
+		slug: string;
+		content?: string;
+		published_date: string;
+		category: "tech" | "game" | "misc" | string;
+		image?: string;
+		author?: {
+			id: number;
+			name: string;
+			avatar?: string;
+		};
+		tags?: string[];
+	};
+}
+
+const { post } = Astro.props;
+
+const directusUrl = import.meta.env.PUBLIC_DIRECTUS_URL || "http://localhost:8055";
+
+const getCategoryInfo = (cat: string) => {
+	switch (cat) {
+		case "tech":
+			return { icon: Code2, color: "#3b82f6", label: "技術・開発" };
+		case "game":
+			return { icon: Gamepad2, color: "#10b981", label: "ゲーム" };
+		default:
+			return { icon: MessageCircle, color: "#f59e0b", label: "雑談" };
+	}
+};
+
+const { icon: Icon, color, label } = getCategoryInfo(post.category);
+
+const formatDate = (dateStr: string) => {
+	return new Date(dateStr).toLocaleDateString("ja-JP", {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+	});
+};
+
+const excerpt = post.content ? post.content.replace(/<[^>]*>?/gm, "").substring(0, 80) : "";
+---
+
+<article class="post-card-premium">
+    <div class="card-inner">
+        <div class="card-image-section">
+            <a href={`/posts/${post.slug}`} class="image-wrapper">
+                {post.image ? (
+                    <img 
+                        src={`${directusUrl}/assets/${post.image}?key=card-thumb`} 
+                        alt={post.title} 
+                        class="card-img"
+                        loading="lazy"
+                    />
+                ) : (
+                    <div class="card-img-placeholder" style={`background: linear-gradient(135deg, ${color}15, var(--bg-surface));`}>
+                        <Icon class="placeholder-icon" style={`color: ${color}`} />
+                    </div>
+                )}
+                <div class="image-overlay"></div>
+            </a>
+            
+            <div class="category-pill" style={`--pill-color: ${color}`}>
+                <div class="pill-bg" style={`background: ${color}`}></div>
+                <Icon class="pill-icon" />
+                <span>{label}</span>
+            </div>
+        </div>
+
+        <div class="card-content">
+            <header class="content-header">
+                <div class="meta-row">
+                    <span class="meta-item"><Calendar class="icon-mini" /> {formatDate(post.published_date)}</span>
+                    {post.author && (
+                        <a href={`/users/${post.author.id}`} class="meta-item author-link">
+                            {post.author.avatar ? (
+                                <img 
+                                    src={`${directusUrl}/assets/${post.author.avatar}?key=avatar-thumb`} 
+                                    alt={post.author.name} 
+                                    class="author-avatar"
+                                />
+                            ) : (
+                                <User class="icon-mini" />
+                            )}
+                            <span>{post.author.name}</span>
+                        </a>
+                    )}
+                </div>
+                <h3 class="post-title">
+                    <a href={`/posts/${post.slug}`}>{post.title}</a>
+                </h3>
+            </header>
+
+            {excerpt && <p class="post-excerpt">{excerpt}...</p>}
+
+            <footer class="content-footer">
+                {post.tags && post.tags.length > 0 && (
+                    <div class="tag-cloud">
+                        {post.tags.slice(0, 3).map((t) => (
+                            <a href={`/posts?tag=${t}`} class="premium-tag">
+                                <Tag class="tag-icon" />
+                                <span>{t}</span>
+                            </a>
+                        ))}
+                    </div>
+                )}
+            </footer>
+        </div>
+    </div>
+</article>
+
+<style>
+    .post-card-premium {
+        position: relative;
+        border-radius: 28px;
+        transition: all 0.6s cubic-bezier(0.2, 1, 0.2, 1);
+        height: 100%;
+        background: var(--bg-surface-solid);
+        border: 1px solid var(--border-subtle);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .post-card-premium:hover {
+        transform: translateY(-12px);
+        box-shadow: 0 40px 80px -20px rgba(0,0,0,0.15);
+        border-color: var(--accent-primary);
+    }
+
+    .card-inner {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        border-radius: 28px;
+        overflow: hidden;
+        background: var(--bg-surface);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .card-image-section {
+        position: relative;
+        height: 260px;
+        overflow: hidden;
+    }
+
+    .image-wrapper {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    .card-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 1.2s cubic-bezier(0.2, 1, 0.2, 1);
+    }
+
+    .post-card-premium:hover .card-img {
+        transform: scale(1.15) rotate(1deg);
+    }
+
+    .image-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5));
+        opacity: 0.4;
+        transition: opacity 0.5s;
+    }
+
+    .post-card-premium:hover .image-overlay {
+        opacity: 0.2;
+    }
+
+    .card-img-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.8s ease;
+    }
+
+    .post-card-premium:hover .card-img-placeholder {
+        transform: scale(1.1);
+    }
+
+    .placeholder-icon {
+        width: 4rem;
+        height: 4rem;
+        opacity: 0.2;
+    }
+
+    .category-pill {
+        position: absolute;
+        bottom: 1.5rem;
+        left: 1.5rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.6rem 1.2rem;
+        border-radius: 100px;
+        color: white;
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        z-index: 10;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255,255,255,0.4);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        overflow: hidden; /* Added to clip background */
+    }
+
+    .pill-bg {
+        position: absolute;
+        inset: 0;
+        opacity: 0.9;
+        z-index: -1;
+        border-radius: inherit; /* Ensure background matches pill shape */
+    }
+
+    .pill-icon {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .card-content {
+        padding: 2.5rem;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        gap: 1.5rem;
+    }
+
+    .meta-row {
+        display: flex;
+        gap: 1.5rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .author-link {
+        color: inherit;
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+
+    .author-link:hover {
+        color: var(--accent-primary);
+    }
+
+    .author-avatar {
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-main);
+    }
+
+    .post-title {
+        font-size: 1.6rem;
+        font-weight: 900;
+        line-height: 1.2;
+        margin: 0;
+        letter-spacing: -0.04em;
+        color: var(--text-main);
+    }
+
+    .post-title a {
+        color: inherit;
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+
+    .post-card-premium:hover .post-title {
+        color: var(--accent-primary);
+    }
+
+    .post-excerpt {
+        font-size: 1rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        flex: 1;
+    }
+
+    .content-footer {
+        margin-top: auto;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .tag-cloud {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+    }
+
+    .premium-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--accent-primary);
+        background: var(--accent-soft);
+        padding: 0.4rem 0.8rem;
+        border-radius: 10px;
+        text-decoration: none;
+        transition: all 0.3s;
+        border: 1px solid transparent;
+    }
+
+    .premium-tag:hover {
+        background: var(--accent-primary);
+        color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(14, 165, 233, 0.4);
+    }
+
+    .tag-icon {
+        width: 0.8rem;
+        height: 0.8rem;
+    }
+
+    .icon-mini {
+        width: 0.9rem;
+        height: 0.9rem;
+    }
+
+    :global([data-theme="dark"]) .post-card-premium {
+        background: rgba(30, 41, 59, 0.6);
+        border-color: rgba(255,255,255,0.1);
+    }
+</style>
