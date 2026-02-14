@@ -1,6 +1,6 @@
 ---
 import "../styles/global.css";
-import { MessageSquare, LayoutGrid, Gamepad2, Megaphone, Home, Sun, Moon } from "lucide-astro";
+import { MessageSquare, LayoutGrid, Gamepad2, Megaphone, Home, Sun, Moon, BookOpen } from "lucide-astro";
 import { directus, readSingleton, skipDirectusFetch } from "../lib/directus";
 
 interface Props {
@@ -46,9 +46,9 @@ const isActive = (path: string) => {
 
 const navItems = [
     { label: 'ホーム', path: '/', icon: Home },
-    { label: 'ストーリー', path: '/posts', icon: MessageSquare },
-    { label: 'ライブラリ', path: '/games', icon: LayoutGrid },
-    { label: 'フィード', path: '/announcements', icon: Megaphone },
+    { label: 'ブログ', path: '/posts', icon: BookOpen },
+    { label: 'ゲーム', path: '/games', icon: Gamepad2 },
+    { label: 'ニュース', path: '/announcements', icon: Megaphone },
 ];
 ---
 
