@@ -54,10 +54,11 @@ async function ensureFields(collection, fields) {
 	console.log(`${collection} のフィールドを確認中...`);
 	const res = await request("GET", `/fields/${collection}`);
 	const existingFieldsData = res?.data || [];
-	const existingFieldNames = existingFieldsData.map((f) => f.field);
 
 	for (const fieldDef of fields) {
-		if (!existingFieldNames.includes(fieldDef.field)) {
+		const existingField = existingFieldsData.find(f => f.field === fieldDef.field);
+
+		if (!existingField) {
 			console.log(`  + ${fieldDef.field} を追加中...`);
 			try {
 				await request("POST", `/fields/${collection}`, fieldDef);
@@ -66,6 +67,20 @@ async function ensureFields(collection, fields) {
 				console.warn(`    ! ${fieldDef.field} 追加失敗:`, e.message);
 			}
 		} else {
+			// 型が異なる場合は削除して再作成（警告付き。データは失われますが、スキーマの整合性を優先）
+			if (existingField.type !== fieldDef.type && fieldDef.type !== 'alias' && existingField.type !== 'alias') {
+				console.warn(`  ! 型不一致を検出: ${collection}.${fieldDef.field} (既存: ${existingField.type}, 新規: ${fieldDef.type})`);
+				console.log(`    ~ フィールドを再作成して型を同期します...`);
+				try {
+					await request("DELETE", `/fields/${collection}/${fieldDef.field}`);
+					await request("POST", `/fields/${collection}`, fieldDef);
+					console.log(`    ✓ ${fieldDef.field} の再作成完了`);
+					continue; // 次のフィールドへ
+				} catch (e) {
+					console.error(`    ✕ ${fieldDef.field} の再作成に失敗しました:`, e.message);
+				}
+			}
+
 			// 既存フィールドの更新を試みる (メタデータの同期)
 			console.log(`  ~ ${fieldDef.field} の更新を確認中...`);
 			try {
@@ -369,7 +384,57 @@ async function main() {
                 schema: { name: junctionName },
                 fields: [
                     { field: "authors_id", type: "integer", meta: { hidden: true } },
-                    { field: "games_id", type: "integer", meta: { hidden: true } }
+                    { field: "games_id", type: "integer", meta: { hidden: true } },
+                    { 
+                        field: "skill_level", 
+                        type: "string", 
+                        meta: { 
+                            interface: "select-dropdown",
+                            note: "スキルレベル",
+                            options: {
+                                choices: [
+                                    { text: "カジュアル", value: "casual" },
+                                    { text: "中級", value: "intermediate" },
+                                    { text: "エキスパート", value: "expert" },
+                                    { text: "あなたより上手", value: "better_than_you" }
+                                ]
+                            }
+                        } 
+                    },
+                    { 
+                        field: "impression", 
+                        type: "string", 
+                        meta: { 
+                            interface: "select-dropdown",
+                            note: "感想",
+                            options: {
+                                choices: [
+                                    { text: "夢中", value: "obsessed" },
+                                    { text: "大好き", value: "love" },
+                                    { text: "わりと好き", value: "like" },
+                                    { text: "ビミョーかも", value: "meh" },
+                                    { text: "ギブアップ", value: "give_up" }
+                                ]
+                            }
+                        } 
+                    },
+                    {
+                        field: "recruitment",
+                        type: "string",
+                        meta: {
+                            interface: "select-dropdown",
+                            note: "募集内容",
+                            options: {
+                                choices: [
+                                    { text: "グループ探してます", value: "looking_for_group" },
+                                    { text: "いつでも誘って", value: "invite_anytime" },
+                                    { text: "ヒントを教えて", value: "need_hints" },
+                                    { text: "教えられるよ", value: "can_teach" },
+                                    { text: "議論大歓迎", value: "discussion_welcome" }
+                                ]
+                            }
+                        }
+                    }
                 ]
             });
 
@@ -407,6 +472,60 @@ async function main() {
         } else {
              console.log(`${junctionName} は既に存在します`);
         }
+
+        // Ensure detailed status fields exist
+        await ensureFields(junctionName, [
+            { 
+                field: "skill_level", 
+                type: "string", 
+                meta: { 
+                    interface: "select-dropdown",
+                    note: "スキルレベル",
+                    options: {
+                        choices: [
+                            { text: "カジュアル", value: "casual" },
+                            { text: "中級", value: "intermediate" },
+                            { text: "エキスパート", value: "expert" },
+                            { text: "あなたより上手", value: "better_than_you" }
+                        ]
+                    }
+                } 
+            },
+            { 
+                field: "impression", 
+                type: "string", 
+                meta: { 
+                    interface: "select-dropdown",
+                    note: "感想",
+                    options: {
+                        choices: [
+                            { text: "夢中", value: "obsessed" },
+                            { text: "大好き", value: "love" },
+                            { text: "わりと好き", value: "like" },
+                            { text: "ビミョーかも", value: "meh" },
+                            { text: "ギブアップ", value: "give_up" }
+                        ]
+                    }
+                } 
+            },
+            {
+                field: "recruitment",
+                type: "string",
+                meta: {
+                    interface: "select-dropdown",
+                    note: "募集内容",
+                    options: {
+                        choices: [
+                            { text: "グループ探してます", value: "looking_for_group" },
+                            { text: "いつでも誘って", value: "invite_anytime" },
+                            { text: "ヒントを教えて", value: "need_hints" },
+                            { text: "教えられるよ", value: "can_teach" },
+                            { text: "議論大歓迎", value: "discussion_welcome" }
+                        ]
+                    }
+                }
+            }
+        ]);
 
         // 既存のリレーション定義を強制更新 (one_field の設定漏れを防ぐため)
         try {

@@ -1,9 +1,8 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { directus, readItems, skipDirectusFetch } from "../../lib/directus";
-import { User, Gamepad2, Play, Users, Image as ImageIcon, Sparkles } from "lucide-astro";
+import { directus, readItems, skipDirectusFetch, type Author, type GamePlayer } from "../../lib/directus";
+import { Users, Gamepad2, Search, ArrowRight, Shield, Play, HelpCircle, GraduationCap, MessageSquare } from "lucide-astro";
 
-// Types
 interface Game {
   id: number;
   name: string;
@@ -11,17 +10,9 @@ interface Game {
   description?: string;
   cover_image?: string | { id: string };
 }
-interface GamePlayer {
-  id: number;
-  user: { id: number; name: string; avatar?: string };
-  game: { id: number; name: string; slug: string };
-  started_at: string;
-  status: string;
-}
 
 // Data Handling
 let games: Game[] = [];
-let gamePlayers: GamePlayer[] = [];
 // Group players
 const playersByGame = new Map<number, GamePlayer[]>();
 
@@ -42,6 +33,9 @@ if (!skipDirectusFetch) {
           "name",
           "avatar",
           "playing_games.games_id.id", // Fetch ID of the game
+          "playing_games.skill_level",
+          "playing_games.impression",
+          "playing_games.recruitment",
         ],
         filter: {
              // Only fetch authors who are playing at least one game (optional optimization)
@@ -62,7 +56,10 @@ if (!skipDirectusFetch) {
                         user: { id: author.id, name: author.name, avatar: author.avatar },
                         game: { id: gameId, name: '', slug: '' }, // Name/Slug not needed here
                         started_at: '',
-                        status: 'playing'
+                        status: 'playing',
+                        skill_level: relation.skill_level,
+                        impression: relation.impression,
+                        recruitment: relation.recruitment
                     });
                      playersByGame.set(gameId, list);
                 }
@@ -79,8 +76,40 @@ const directusUrl = import.meta.env.PUBLIC_DIRECTUS_URL || "http://localhost:805
 
 const getCoverUrl = (cover: Game['cover_image']) => {
     if (!cover) return null;
-    const id = typeof cover === 'string' ? cover : cover.id;
-    return `${directusUrl}/assets/${id}?width=360&height=480&fit=cover`;
+    const id = typeof cover === 'string' ? cover : cover?.id;
+  return `${directusUrl}/assets/${id}?preset=card-thumb`;
+}
+
+const getSkillLabel = (level?: string) => {
+    switch (level) {
+        case 'casual': return 'カジュアル';
+        case 'intermediate': return '中級';
+        case 'expert': return 'エキスパート';
+        case 'better_than_you': return 'あなたより上手';
+        default: return null;
+    }
+}
+
+const getImpressionLabel = (imp?: string) => {
+    switch (imp) {
+        case 'obsessed': return '夢中';
+        case 'love': return '大好き';
+        case 'like': return 'わりと好き';
+        case 'meh': return 'ビミョーかも';
+        case 'give_up': return 'ギブアップ';
+        default: return null;
+    }
+}
+
+const getRecruitmentLabel = (val: string) => {
+    switch (val) {
+        case 'looking_for_group': return 'グループ探してます';
+        case 'invite_anytime': return 'いつでも誘って';
+        case 'need_hints': return 'ヒントを教えて';
+        case 'can_teach': return '教えられるよ';
+        case 'discussion_welcome': return '議論大歓迎';
+        default: return null;
+    }
 }
 ---
 
@@ -155,15 +184,23 @@ const getCoverUrl = (cover: Game['cover_image']) => {
                                         {players.length > 0 ? (
                                             <>
                                                 <div class="avatar-stack">
-                                                    {players.slice(0, 4).map(p => (
-                                                        <div class="stack-avatar" title={p.user?.name}>
-                                                            {p.user?.avatar ? (
-                                                                <img src={`${directusUrl}/assets/${p.user.avatar}?width=48&height=48&fit=cover`} alt="" />
-                                                            ) : (
-                                                                <div class="stack-placeholder">{p.user?.name?.charAt(0)}</div>
-                                                            )}
-                                                        </div>
-                                                    ))}
+                                                    {players.slice(0, 4).map(p => {
+                                                        const skill = getSkillLabel(p.skill_level);
+                                                        const imp = getImpressionLabel(p.impression);
+                                                        const rec = p.recruitment ? getRecruitmentLabel(p.recruitment as string) : null;
+                                                        const details = [skill, imp, rec].filter(Boolean).join(' / ');
+                                                        const title = details ? `${p.user?.name} (${details})` : p.user?.name;
+                                                        
+                                                        return (
+                                                            <div class="stack-avatar" title={title}>
+                                                                {p.user?.avatar ? (
+                                                                    <img src={`${directusUrl}/assets/${p.user.avatar}?width=48&height=48&fit=cover`} alt="" />
+                                                                ) : (
+                                                                    <div class="stack-placeholder">{p.user?.name?.charAt(0)}</div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
                                                     {players.length > 4 && <div class="stack-more">+{players.length - 4}</div>}
                                                 </div>
                                                 <div class="owner-names-mini">

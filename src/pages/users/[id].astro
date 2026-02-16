@@ -1,7 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { directus, readItem, readItems, skipDirectusFetch, type Author, type GamePlayer, type Post } from "../../lib/directus";
-import { Twitter, Github, Globe, Twitch, Youtube, Gamepad2, Play, CheckCircle, MessageSquare, BookOpen, Clock, ArrowRight, Shield } from "lucide-astro";
+import { Twitter, Github, Globe, Twitch, Youtube, Gamepad2, Play, CheckCircle, MessageSquare, BookOpen, Clock, ArrowRight, Shield, Users, UserSearch, HelpCircle, GraduationCap, MessagesSquare } from "lucide-astro";
 import PostCard from "../../components/PostCard.astro";
 
 const { id } = Astro.params;
@@ -29,10 +29,16 @@ if (!skipDirectusFetch) {
                 'playing_games.games_id.name',
                 'playing_games.games_id.slug',
                 'playing_games.games_id.cover_image',
+                'playing_games.skill_level',
+                'playing_games.impression',
+                'playing_games.recruitment',
                 'finished_games.games_id.id',
                 'finished_games.games_id.name',
                 'finished_games.games_id.slug',
                 'finished_games.games_id.cover_image',
+                'finished_games.skill_level',
+                'finished_games.impression',
+                'finished_games.recruitment',
             ]
         }));
 
@@ -45,7 +51,10 @@ if (!skipDirectusFetch) {
                         user: user!,
                         game: g.games_id,
                         started_at: '',
-                        status: 'playing'
+                        status: 'playing',
+                        skill_level: g.skill_level,
+                        impression: g.impression,
+                        recruitment: g.recruitment
                     });
                 }
             });
@@ -59,7 +68,10 @@ if (!skipDirectusFetch) {
                         user: user!,
                         game: g.games_id,
                         started_at: '',
-                        status: 'finished'
+                        status: 'finished',
+                        skill_level: g.skill_level,
+                        impression: g.impression,
+                        recruitment: g.recruitment
                     });
                 }
             });
@@ -150,6 +162,38 @@ const getStatusLabel = (status: string) => {
         case 'playing': return 'プレイ中';
         case 'finished': return 'プレイ終了';
         default: return status;
+    }
+}
+
+const getSkillLabel = (level?: string) => {
+    switch (level) {
+        case 'casual': return 'カジュアル';
+        case 'intermediate': return '中級';
+        case 'expert': return 'エキスパート';
+        case 'better_than_you': return 'あなたより上手';
+        default: return null;
+    }
+}
+
+const getImpressionLabel = (imp?: string) => {
+    switch (imp) {
+        case 'obsessed': return '夢中';
+        case 'love': return '大好き';
+        case 'like': return 'わりと好き';
+        case 'meh': return 'ビミョーかも';
+        case 'give_up': return 'ギブアップ';
+        default: return null;
+    }
+}
+
+const getRecruitmentLabel = (val: string) => {
+    switch (val) {
+        case 'looking_for_group': return { label: 'グループ探してます', icon: UserSearch };
+        case 'invite_anytime': return { label: 'いつでも誘って', icon: Users };
+        case 'need_hints': return { label: 'ヒントを教えて', icon: HelpCircle };
+        case 'can_teach': return { label: '教えられるよ', icon: GraduationCap };
+        case 'discussion_welcome': return { label: '議論大歓迎', icon: MessageSquare };
+        default: return null;
     }
 }
 ---
@@ -292,13 +336,44 @@ const getStatusLabel = (status: string) => {
                                     </div>
                                     
                                     <div class="info-glass-panel">
-                                        <h3 class="game-name-display">{p.game.name}</h3>
-                                        {p.status && (
-                                            <div class={`status-indicator ${p.status}`}>
-                                                <div class="status-dot"></div>
-                                                <span>{getStatusLabel(p.status)}</span>
-                                            </div>
-                                        )}
+                                        <div class="info-header-row">
+                                            <h3 class="game-name-display">{p.game.name}</h3>
+                                            {p.status && (
+                                                <div class={`status-badge-compact ${p.status}`}>
+                                                    <div class="status-dot"></div>
+                                                    <span>{getStatusLabel(p.status)}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div class="reveal-content">
+                                            {(p.skill_level || p.impression || p.recruitment) && (
+                                                <div class="game-status-details">
+                                                    {p.skill_level && (
+                                                        <div class="status-badge skill">
+                                                            <Shield class="icon-tiny" />
+                                                            <span>{getSkillLabel(p.skill_level)}</span>
+                                                        </div>
+                                                    )}
+                                                    {p.impression && (
+                                                        <div class="status-badge impression">
+                                                            <MessageSquare class="icon-tiny" />
+                                                            <span>{getImpressionLabel(p.impression)}</span>
+                                                        </div>
+                                                    )}
+                                                    {p.recruitment && (() => {
+                                                        const item = getRecruitmentLabel(p.recruitment);
+                                                        if (!item) return null;
+                                                        const Icon = item.icon;
+                                                        return (
+                                                            <div class="status-badge recruitment">
+                                                                <Icon class="icon-tiny" />
+                                                                <span>{item.label}</span>
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -680,8 +755,8 @@ const getStatusLabel = (status: string) => {
     }
 
     .game-poster-item:hover .poster-card-premium {
-        transform: translateY(-10px);
-        box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
         border-color: var(--accent-primary);
     }
 
@@ -719,32 +794,40 @@ const getStatusLabel = (status: string) => {
 
     .info-glass-panel {
         position: absolute;
-        bottom: 12px;
-        left: 12px;
-        right: 12px;
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
         background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 16px;
-        padding: 1rem;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 0.75rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         z-index: 5;
-        transition: all 0.3s;
+        transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
     }
 
     :global([data-theme="dark"]) .info-glass-panel {
-        background: rgba(30, 41, 59, 0.8);
-        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(15, 23, 42, 0.75);
+        border-color: rgba(255, 255, 255, 0.05);
     }
 
     .game-poster-item:hover .info-glass-panel {
-        background: rgba(255, 255, 255, 0.9);
-        bottom: 16px;
+        background: rgba(255, 255, 255, 0.95);
+        bottom: 14px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
     }
 
     :global([data-theme="dark"]) .game-poster-item:hover .info-glass-panel {
         background: rgba(15, 23, 42, 0.95);
+    }
+
+    .info-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.5rem;
     }
 
     .game-name-display {
@@ -753,10 +836,106 @@ const getStatusLabel = (status: string) => {
         color: var(--text-main);
         margin: 0;
         line-height: 1.3;
+        flex: 1;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
+    }
+
+    .status-badge-compact {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        flex-shrink: 0;
+        background: var(--bg-surface-hover);
+        color: var(--text-muted);
+        border: 1px solid var(--border-subtle);
+    }
+
+    .status-badge-compact.playing {
+        color: #059669;
+        background: rgba(16, 185, 129, 0.08);
+        border-color: rgba(16, 185, 129, 0.15);
+    }
+
+    .status-badge-compact.playing .status-dot {
+        background: #10b981;
+        box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+    }
+
+    .status-badge-compact.finished .status-dot {
+        background: var(--text-muted);
+        opacity: 0.5;
+    }
+
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+    .reveal-content {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
+    }
+
+    .game-poster-item:hover .reveal-content {
+        max-height: 150px;
+        opacity: 1;
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .game-status-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.65rem;
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        line-height: 1;
+    }
+
+    .status-badge.skill {
+        background: rgba(var(--accent-primary-rgb), 0.1);
+        color: var(--accent-primary);
+        border: 1px solid rgba(var(--accent-primary-rgb), 0.15);
+    }
+
+    .status-badge.impression {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .status-badge.recruitment {
+        background: rgba(var(--accent-secondary-rgb), 0.1);
+        color: var(--accent-secondary);
+        border: 1px solid rgba(var(--accent-secondary-rgb), 0.15);
+    }
+
+    .status-badge .icon-tiny {
+        width: 10px;
+        height: 10px;
+        opacity: 0.8;
     }
 
     .status-indicator {

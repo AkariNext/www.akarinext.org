@@ -14,8 +14,8 @@ export type Author = {
 	social_links?: { platform: string; url: string }[];
 	is_staff?: boolean;
 	staff_title?: string;
-	playing_games?: { games_id: Game }[];
-	finished_games?: { games_id: Game }[];
+	playing_games?: { games_id: Game; skill_level?: string; impression?: string; recruitment?: string }[];
+	finished_games?: { games_id: Game; skill_level?: string; impression?: string; recruitment?: string }[];
 };
 
 export type Post = {
@@ -53,6 +53,9 @@ export type GamePlayer = {
 	game: Game;
 	started_at: string;
 	status: "playing" | "finished";
+	skill_level?: string;
+	impression?: string;
+	recruitment?: string;
 };
 
 export type GameServer = {
