@@ -59,10 +59,19 @@ const excerpt = excerptText.length > 80 ? excerptText.substring(0, 80) + "..." :
             <a href={`/posts/${post.slug || post.id}`} class="image-wrapper">
                 {post.image ? (
                     <img 
-                        src={`${directusUrl}/assets/${post.image}?width=600&height=400&fit=cover`} 
+                        src={`${directusUrl}/assets/${post.image}?width=600&height=400&fit=cover&format=webp&quality=80`} 
+                        srcset={`
+                            ${directusUrl}/assets/${post.image}?width=400&height=267&fit=cover&format=webp&quality=80 400w,
+                            ${directusUrl}/assets/${post.image}?width=600&height=400&fit=cover&format=webp&quality=80 600w,
+                            ${directusUrl}/assets/${post.image}?width=800&height=533&fit=cover&format=webp&quality=80 800w
+                        `}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         alt={post.title} 
                         class="card-img"
                         loading="lazy"
+                        decoding="async"
+                        width="600"
+                        height="400"
                     />
                 ) : (
                     <div class="card-img-placeholder" style={`background: linear-gradient(135deg, ${color}15, var(--bg-surface));`}>
