@@ -73,6 +73,9 @@ async function ensureFields(collection, fields) {
 				console.log(`    ✓ ${fieldDef.field} 更新/確認完了`);
 			} catch (e) {
 				console.warn(`    ! ${fieldDef.field} 更新失敗:`, e.message);
+                if (e.message.includes("400")) {
+                    console.warn(`      (詳細: 既存のデータ型と新しいインターフェースの互換性がない可能性があります)`);
+                }
 			}
 		}
 	}
@@ -167,7 +170,7 @@ async function main() {
 		{
 			field: "content",
 			type: "text",
-			meta: { interface: "input-rich-text-html" },
+			meta: { interface: "input-rich-text-md" }, // Markdownエディタに変更
 		},
 		{
 			field: "author",
@@ -232,7 +235,7 @@ async function main() {
 		{
 			field: "content",
 			type: "text",
-			meta: { interface: "input-rich-text-html" },
+			meta: { interface: "input-rich-text-md" }, // Markdownエディタに変更
 		},
 		{
 			field: "published_date",

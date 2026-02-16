@@ -1,6 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { directus, readItems, skipDirectusFetch } from "../../lib/directus";
+import { processContentHtml } from "../../lib/content";
 import { Megaphone, Calendar, Clock, BellRing, Sparkles } from "lucide-astro";
 
 let announcements: Array<{
@@ -28,6 +29,13 @@ if (!skipDirectusFetch) {
       const diff = toTime(b.published_date) - toTime(a.published_date);
       return diff !== 0 ? diff : ((b.id ?? 0) - (a.id ?? 0));
     });
+
+    // Process content asynchronously (OGP fetch etc)
+    announcements = await Promise.all(announcements.map(async (ann: any) => ({
+        ...ann,
+        content: await processContentHtml(ann.content)
+    })));
+
   } catch (e) {
     // Silent fail
   }
