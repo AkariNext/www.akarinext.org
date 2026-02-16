@@ -154,7 +154,19 @@ if (post.content) {
             
             {imageUrl ? (
                 <div class="hero-image-wrapper container">
-                    <img src={imageUrl} alt={post.title} class="hero-image" />
+                    <img 
+                        src={`${imageUrl}?width=1280&format=webp&quality=80`} 
+                        srcset={`
+                            ${imageUrl}?width=640&format=webp&quality=80 640w,
+                            ${imageUrl}?width=1280&format=webp&quality=80 1280w,
+                            ${imageUrl}?width=1920&format=webp&quality=80 1920w
+                        `}
+                        sizes="(max-width: 768px) 100vw, 1100px"
+                        alt={post.title} 
+                        class="hero-image" 
+                        loading="eager"
+                        decoding="async"
+                    />
                 </div>
             ) : (
                 <div class="hero-image-placeholder container">
