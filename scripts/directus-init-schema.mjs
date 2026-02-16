@@ -22,9 +22,13 @@ const DIRECTUS_PASSWORD = process.env.DIRECTUS_PASSWORD || "admin";
 
 const client = createDirectus(DIRECTUS_URL).with(rest()).with(authentication());
 
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function request(method, path, body) {
-	const token =
-		typeof client.getToken === "function" ? await client.getToken() : null;
+    await sleep(100); // Wait a bit between requests
+	const token = await client.getToken();
 	const res = await fetch(`${DIRECTUS_URL}${path}`, {
 		method,
 		headers: {
@@ -35,7 +39,7 @@ async function request(method, path, body) {
 	});
 	if (!res.ok) {
 		const err = await res.text();
-		throw new Error(`HTTP ${res.status}: ${err}`);
+		throw new Error(`HTTP ${res.status} on ${path}: ${err}`);
 	}
 	return res.json().catch(() => ({}));
 }
@@ -338,36 +342,6 @@ async function main() {
 			schema: { default_value: "published" },
 		},
 	];
-	const gamePlayersFields = [
-		{
-			field: "user",
-			type: "integer",
-			meta: { interface: "select-dropdown-m2o" },
-		},
-		{
-			field: "game",
-			type: "integer",
-			meta: { interface: "select-dropdown-m2o" },
-		},
-		{
-			field: "started_at",
-			type: "timestamp",
-			meta: { interface: "datetime" },
-		},
-		{
-			field: "status",
-			type: "string",
-			meta: {
-				interface: "select-dropdown",
-				options: {
-					choices: [
-						{ text: "プレイ中", value: "playing" },
-						{ text: "プレイ終了", value: "finished" },
-					],
-				},
-			},
-		},
-	];
 
 	// --- 1. authors ---
 	if (!(await hasCollection("authors"))) {
@@ -383,6 +357,98 @@ async function main() {
 		console.log("authors は既に存在します");
 		await ensureFields("authors", authorsFields);
 	}
+
+    // --- 1.5 authors M2M Relations (Junction Tables) ---
+    // Helper to create M2M junction
+    const ensureM2M = async (junctionName, fieldName, note) => {
+        if (!(await hasCollection(junctionName))) {
+            console.log(`${junctionName} (M2M中間テーブル) を作成中...`);
+            await request("POST", "/collections", {
+                collection: junctionName,
+                meta: { hidden: true, icon: "import_export" },
+                schema: { name: junctionName },
+                fields: [
+                    { field: "authors_id", type: "integer", meta: { hidden: true } },
+                    { field: "games_id", type: "integer", meta: { hidden: true } }
+                ]
+            });
+
+            // Relation: authors -> junction
+            await request("POST", "/relations", {
+                collection: junctionName,
+                field: "authors_id",
+                related_collection: "authors",
+                meta: {
+                    one_collection: "authors",
+                    one_field: fieldName, // Set the alias field name here!
+                    many_collection: junctionName,
+                    many_field: "authors_id",
+                    junction_field: "games_id",
+                },
+                schema: { on_delete: "CASCADE" }
+            });
+
+            // Relation: junction -> games
+            await request("POST", "/relations", {
+                collection: junctionName,
+                field: "games_id",
+                related_collection: "games",
+                meta: {
+                    one_collection: "games",
+                    one_field: null,
+                    many_collection: junctionName,
+                    many_field: "games_id",
+                    junction_field: "authors_id",
+                },
+                schema: { on_delete: "CASCADE" }
+            });
+            
+            console.log(`  ✓ ${junctionName} 作成とリレーション設定完了`);
+        } else {
+             console.log(`${junctionName} は既に存在します`);
+        }
+
+        // 既存のリレーション定義を強制更新 (one_field の設定漏れを防ぐため)
+        try {
+            console.log(`  ~ ${junctionName}.authors_id リレーションを更新中...`);
+            await request("PATCH", `/relations/${junctionName}/authors_id`, {
+                meta: {
+                    one_field: fieldName, // Alias field in authors
+                }
+            });
+             console.log(`    ✓ リレーション更新完了`);
+        } catch (e) {
+            console.warn(`    ! リレーション更新失敗 (想定内:まだ存在しない等):`, e.message);
+        }
+    };
+
+    await ensureM2M("authors_playing_games", "playing_games", "プレイ中のゲーム");
+    await ensureM2M("authors_finished_games", "finished_games", "クリア済みのゲーム");
+
+    // Add Alias Fields to authors (After relations exist)
+    await ensureFields("authors", [
+        {
+            field: "playing_games",
+            type: "alias",
+            meta: {
+                interface: "list-m2m",
+                special: ["m2m"],
+                note: "プレイ中のゲーム",
+                // 簡易的なフィルタ: 同じユーザーがクリア済みにしたゲームは除外...したいが
+                // Directusの標準フィルタ($parent等)はM2M作成時には複雑なため、
+                // 一旦バリデーションは行わない（運用対処）
+            },
+        },
+        {
+            field: "finished_games",
+            type: "alias",
+            meta: {
+                interface: "list-m2m",
+                special: ["m2m"],
+                note: "クリア済みのゲーム",
+            },
+        }
+    ]);
 
 	// --- 2. global (singleton) ---
 	if (!(await hasCollection("global"))) {
@@ -475,45 +541,6 @@ async function main() {
 		await ensureFields("games", gamesFields);
 	}
 
-	// --- 6. game_players ---
-	if (!(await hasCollection("game_players"))) {
-		console.log("game_players を作成中...");
-		await request("POST", "/collections", {
-			collection: "game_players",
-			schema: { name: "game_players" },
-			meta: { icon: "groups", singleton: false },
-			fields: gamePlayersFields,
-		});
-		await request("POST", "/relations", {
-			collection: "game_players",
-			field: "user",
-			related_collection: "authors",
-			meta: {
-				many_collection: "game_players",
-				many_field: "user",
-				one_collection: "authors",
-				one_field: null,
-			},
-			schema: { on_delete: "CASCADE" },
-		});
-		await request("POST", "/relations", {
-			collection: "game_players",
-			field: "game",
-			related_collection: "games",
-			meta: {
-				many_collection: "game_players",
-				many_field: "game",
-				one_collection: "games",
-				one_field: null,
-			},
-			schema: { on_delete: "CASCADE" },
-		});
-		console.log("  ✓ game_players 作成完了");
-	} else {
-		console.log("game_players は既に存在します");
-		await ensureFields("game_players", gamePlayersFields);
-	}
-
 	// --- 7. game_servers ---
 	if (!(await hasCollection("game_servers"))) {
 		console.log("game_servers を作成中...");
@@ -575,7 +602,8 @@ async function main() {
 	console.log("\nPublic 権限について...");
 	console.log("Directus の Settings -> Access Policies & Permissions にて");
 	console.log("Public ロールに対して、以下のコレクションの Read 権限を手動で許可してください:");
-	console.log(" - global, posts, announcements, games, game_players, game_servers, authors, directus_files, directus_presets");
+	console.log(" - global, posts, announcements, games, game_servers, authors, directus_files, directus_presets");
+	console.log(" - authors_playing_games, authors_finished_games (M2M中間テーブル)");
 
 	// global に初期データ（singleton は items で作成可能）
 	try {
@@ -592,6 +620,14 @@ async function main() {
 	} catch (e) {
 		console.log("\n※ global の初期データは手動で設定してください");
 	}
+
+    // キャッシュクリア
+    try {
+        await request("POST", "/utils/cache/clear");
+        console.log("\n✓ キャッシュをクリアしました");
+    } catch (e) {
+        console.warn("\n! キャッシュクリアに失敗しました (権限不足等の可能性)", e.message);
+    }
 
 	console.log("\n完了！");
 }

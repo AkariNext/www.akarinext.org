@@ -22,6 +22,8 @@ interface GamePlayer {
 // Data Handling
 let games: Game[] = [];
 let gamePlayers: GamePlayer[] = [];
+// Group players
+const playersByGame = new Map<number, GamePlayer[]>();
 
 if (!skipDirectusFetch) {
   try {
@@ -32,36 +34,46 @@ if (!skipDirectusFetch) {
       })
     )) ?? [];
 
-    gamePlayers = (await directus.request(
-      readItems("game_players", {
+    // Fetch Users and their playing games
+    const authors = (await directus.request(
+      readItems("authors", {
         fields: [
           "id",
-          "started_at",
-          "status",
-          { user: ["id", "name", "avatar"] },
-          { game: ["id", "name", "slug"] },
+          "name",
+          "avatar",
+          "playing_games.games_id.id", // Fetch ID of the game
         ],
-        // filter: { status: { _eq: "playing" } }, // Fetch all players
-        sort: ["-started_at"],
+        filter: {
+             // Only fetch authors who are playing at least one game (optional optimization)
+             // playing_games: { _nnull: true } 
+        } as any,
       })
     )) ?? [];
+
+    // Map players to games
+    authors.forEach((author: any) => {
+        if (author.playing_games && Array.isArray(author.playing_games)) {
+            author.playing_games.forEach((relation: any) => {
+                const gameId = relation.games_id?.id;
+                if (gameId) {
+                    const list = playersByGame.get(gameId) || [];
+                    list.push({
+                        id: 0, // Dummy ID
+                        user: { id: author.id, name: author.name, avatar: author.avatar },
+                        game: { id: gameId, name: '', slug: '' }, // Name/Slug not needed here
+                        started_at: '',
+                        status: 'playing'
+                    });
+                     playersByGame.set(gameId, list);
+                }
+            });
+        }
+    });
+
   } catch (e) {
     // Silent fail
   }
 }
-
-// Group players
-const playersByGame = new Map<number, GamePlayer[]>();
-gamePlayers.forEach((gp) => {
-    if(gp.game?.id) {
-        const list = playersByGame.get(gp.game.id) || [];
-        // Prevent duplicate users for the same game
-        if (!list.some(p => p.user.id === gp.user.id)) {
-            list.push(gp);
-        }
-        playersByGame.set(gp.game.id, list);
-    }
-});
 
 const directusUrl = import.meta.env.PUBLIC_DIRECTUS_URL || "http://localhost:8055";
 

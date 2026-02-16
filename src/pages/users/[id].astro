@@ -21,18 +21,48 @@ if (!skipDirectusFetch) {
              return Astro.redirect('/404');
         }
 
-        user = await directus.request(readItem('authors', userId));
+        // Fetch User and their Games (M2M)
+        user = await directus.request(readItem('authors', userId, {
+            fields: [
+                '*',
+                'playing_games.games_id.id',
+                'playing_games.games_id.name',
+                'playing_games.games_id.slug',
+                'playing_games.games_id.cover_image',
+                'finished_games.games_id.id',
+                'finished_games.games_id.name',
+                'finished_games.games_id.slug',
+                'finished_games.games_id.cover_image',
+            ]
+        }));
 
-        const players = await directus.request(readItems('game_players', {
-            filter: {
-                user: { _eq: userId }
-            } as any,
-            fields: ['status', { game: ['id', 'name', 'slug', 'cover_image'] }],
-            sort: ['-started_at']
-        })) as unknown as GamePlayer[];
+        // Transform M2M to GamePlayer structure
+        if (user.playing_games) {
+            user.playing_games.forEach((g: any) => {
+                if (g.games_id) {
+                    allGames.push({
+                        id: 0,
+                        user: user!,
+                        game: g.games_id,
+                        started_at: '',
+                        status: 'playing'
+                    });
+                }
+            });
+        }
 
-        if (players) {
-            allGames = players;
+        if (user.finished_games) {
+            user.finished_games.forEach((g: any) => {
+                if (g.games_id) {
+                    allGames.push({
+                        id: 0,
+                        user: user!,
+                        game: g.games_id,
+                        started_at: '',
+                        status: 'finished'
+                    });
+                }
+            });
         }
 
         const posts = await directus.request(readItems('posts', {

@@ -40,6 +40,9 @@ DIRECTUS_URL=http://localhost:8055 DIRECTUS_EMAIL=admin@example.com DIRECTUS_PAS
 | is_staff | Toggle (Boolean) | is_staff |
 | staff_title | Input | staff_title |
 | bio | Textarea | bio |
+| social_links | Repeater (JSON) | social_links |
+| playing_games | Many to Many → games | playing_games |
+| finished_games | Many to Many → games | finished_games |
 
 ### 3. posts（遊んだ記録）
 
@@ -73,7 +76,9 @@ DIRECTUS_URL=http://localhost:8055 DIRECTUS_EMAIL=admin@example.com DIRECTUS_PAS
 | description | Input (または Text) | description |
 | cover_image | Image | cover_image |
 
-### 6. game_players
+### 6. game_players (非推奨 - 移行中)
+
+> **Note:** 現在は `authors` コレクションの `playing_games` / `finished_games` フィールドへの移行を進めています。
 
 | フィールド | 型 | キー |
 |-----------|-----|------|
@@ -94,19 +99,15 @@ DIRECTUS_URL=http://localhost:8055 DIRECTUS_EMAIL=admin@example.com DIRECTUS_PAS
 | description | Textarea | description |
 | status | Dropdown (published, draft) | status |
 
-## アクセス権限
+### Manual Setup & Permissions
 
-**Settings → Access Policies & Permissions → Public** をクリックし、以下のコレクションに **Read** 権限（目のアイコン）を許可してください:
+Directus does not always allow setting complex permissions via API. Please ensure:
 
-- `global`
-- `posts`
-- `announcements`
-- `games`
-- `game_players`
-- `game_servers`
-- `authors`
-- `directus_files`
-- `directus_presets`（画像変換プリセットの適用に必要）
+1. **Image Presets**: Create a preset `card-thumb` (600x400, fit: cover) in Settings.
+2. **Public Access**: Go to Settings -> Access Policies & Permissions -> Public and grant **Read** access to:
+   - `global`, `posts`, `announcements`, `games`, `game_players` (deprecated), `game_servers`, `authors`
+   - `authors_playing_games`, `authors_finished_games` (M2M Junctions)
+   - `directus_files`, `directus_presets` (for images)（画像変換プリセットの適用に必要）
 
 ## 画像の表示について
 

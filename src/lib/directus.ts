@@ -14,6 +14,8 @@ export type Author = {
 	social_links?: { platform: string; url: string }[];
 	is_staff?: boolean;
 	staff_title?: string;
+	playing_games?: { games_id: Game }[];
+	finished_games?: { games_id: Game }[];
 };
 
 export type Post = {
@@ -74,7 +76,6 @@ export type Schema = {
 	posts: Post[];
 	announcements: Announcement[];
 	games: Game[];
-	game_players: GamePlayer[];
 	game_servers: GameServer[];
 	authors: Author[];
 	global: GlobalSettings;
