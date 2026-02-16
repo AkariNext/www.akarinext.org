@@ -4,7 +4,7 @@ import { directus, readItems, skipDirectusFetch } from "../../lib/directus";
 import { processContentHtml } from "../../lib/content";
 import { Calendar, User, ArrowLeft, Image as ImageIcon, Gamepad2, Code2, MessageCircle, MessageSquare, Zap, Tag as TagIcon, Twitter, Github, Globe, Twitch, Youtube, Shield } from "lucide-astro";
 
-
+export const prerender = false;
 
 const { slug } = Astro.params;
 let post = null;
