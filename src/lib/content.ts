@@ -1,8 +1,6 @@
 import * as cheerio from 'cheerio';
-import ogs from 'open-graph-scraper';
 import { marked } from 'marked';
-
-const ogpCache = new Map<string, any>();
+import { fetchOgp } from './ogp';
 
 /**
  * 記事コンテンツの処理ユーティリティ
@@ -57,21 +55,7 @@ export async function processContentHtml(content: string | null | undefined): Pr
 
     if (isStandalone) {
         try {
-            let data = ogpCache.get(href);
-            if (!data) {
-                // OGP取得 (SSLエラー回避のため一時的にNODE_TLS_REJECT_UNAUTHORIZEDを設定)
-                // 注意: 本番環境でセキュリティが重要な場合は適切なCA設定を行うべきですが、
-                // ここでは外部サイトのOGP取得のためのクライアントとして振る舞うため許容します。
-                const originalReject = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-                try {
-                    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-                    const { result } = await ogs({ url: href, timeout: 5000 });
-                    data = result;
-                } finally {
-                    process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalReject;
-                }
-                ogpCache.set(href, data);
-            }
+            const data = await fetchOgp(href);
 
             if (data && (data.ogTitle || data.ogDescription)) {
                 const title = data.ogTitle || data.twitterTitle || href;
