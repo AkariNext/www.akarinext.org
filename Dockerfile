@@ -37,7 +37,12 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
 COPY --from=builder /app/dist ./dist
 # Only install production dependencies
+# Only install production dependencies
 RUN pnpm install --prod --frozen-lockfile
+
+# Create cache directory and volume for persistence
+RUN mkdir -p /app/.cache
+VOLUME ["/app/.cache"]
 
 # Expose Astro's default port (or Dokploy's PORT env)
 ENV HOST=0.0.0.0

@@ -1,5 +1,6 @@
 ---
 import { Calendar, User, Tag, Code2, Gamepad2, MessageCircle } from "lucide-astro";
+import { marked } from "marked";
 
 interface Props {
 	post: {
@@ -46,7 +47,10 @@ const formatDate = (dateStr: string) => {
 	});
 };
 
-const excerpt = post.content ? post.content.replace(/<[^>]*>?/gm, "").substring(0, 80) : "";
+const excerptText = post.content 
+    ? (await marked.parse(post.content)).toString().replace(/<[^>]*>?/gm, "").replace(/\r?\n|\r/g, " ").trim()
+    : "";
+const excerpt = excerptText.length > 80 ? excerptText.substring(0, 80) + "..." : excerptText;
 ---
 
 <article class="post-card-premium">
