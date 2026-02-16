@@ -1,6 +1,4 @@
 ---
-import { Activity, Users, Info, Globe, ShieldCheck, Wifi, WifiOff } from "lucide-astro";
-
 interface Props {
   server: {
     id: number;
@@ -15,123 +13,19 @@ interface Props {
 }
 
 const { server } = Astro.props;
-
-// Use the address exactly as provided in Directus for maximum compatibility
-const address = server.ip.trim();
-const port = server.port;
-const fetchAddress = port ? `${address}:${port}` : address;
-
-interface MinecraftStatus {
-  online: boolean;
-  players?: {
-    online: number;
-    max: number;
-    list?: { name: string; uuid: string }[];
-  };
-  motd?: {
-    clean?: string[];
-  };
-  version?: string;
-  hostname?: string;
-  ip?: string;
-}
-
-import { getServerPingHistory, getServerAvailability, type PingData } from "../lib/influxdb";
-
-// ... (existing code) ...
-
-let statusData: MinecraftStatus | null = null;
-let isOnline = false;
-const isBedrock = server.type === 'minecraft' && (server.protocol?.toLowerCase().includes('bedrock') || port === 19132);
 const isWeb = server.type === 'web';
+const isBedrock = server.type === 'minecraft' && (server.protocol?.toLowerCase().includes('bedrock') || server.port === 19132);
 
-// Ping History Data
-let pingHistory: PingData[] = [];
-let avgPing = 0;
-let availability = 100;
-let sparklinePath = "";
-
-try {
-    // Determine the host to query in InfluxDB. Telegraf usually uses the hostname or IP.
-    // If you configured Telegraf to ping `google.com`, it will be stored under url="google.com".
-    // Adjust this logic to match how you added URLs to telegraf.conf
-    const targetHost = server.ip.trim(); 
-    
-    pingHistory = await getServerPingHistory(targetHost);
-    
-    if (pingHistory.length > 0) {
-        const total = pingHistory.reduce((acc, curr) => acc + curr.avg, 0);
-        avgPing = Math.round(total / pingHistory.length);
-
-        // Generate SVG Path for Sparkline
-        const width = 100;
-        const height = 30;
-        const maxPing = Math.max(...pingHistory.map(p => p.avg), 1);
-        
-        if (pingHistory.length > 1) {
-            // Normalize points
-            const points = pingHistory.map((p, i) => {
-                const x = (i / (pingHistory.length - 1)) * width;
-                const normalizedY = height - ((p.avg / (maxPing * 1.2)) * height); 
-                return `${x},${normalizedY}`;
-            });
-            sparklinePath = `M ${points.join(" L ")}`;
-        } else if (pingHistory.length === 1) {
-            // Simple horizontal line or dot
-            const normalizedY = height - ((pingHistory[0].avg / (maxPing * 1.2)) * height);
-            sparklinePath = `M 0,${normalizedY} L 100,${normalizedY}`;
-        }
-    }
-
-    // Availability (24h)
-    availability = await getServerAvailability(targetHost);
-} catch (e) {
-    // Influx fetch failed, ignore
-}
-
-if (server.type === 'minecraft') {
-    // ... (existing Minecraft logic) ...
-  try {
-    const apiEndpoint = isBedrock ? 'bedrock/3' : '3';
-    // BungeeCord/Velocity can be picky. We fetch from the v3 API. 
-    // If you have trouble with Bungee, sometimes using the hostname alone without port (if default) helps, 
-    // but here we use the specific fetchAddress.
-    const response = await fetch(`https://api.mcsrvstat.us/${apiEndpoint}/${fetchAddress}`);
-    
-    if (response.ok) {
-        statusData = await response.json();
-        // BungeeCord sometimes returns online but with empty metadata if query is disabled.
-        // We trust the 'online' field primarily.
-        isOnline = !!statusData?.online;
-    }
-    
-    // Fallback: If still offline and it's a Java server, try without the v3 subpath just in case
-    if (!isOnline && !isBedrock) {
-        const fallbackRes = await fetch(`https://api.mcsrvstat.us/2/${fetchAddress}`);
-        if (fallbackRes.ok) {
-            const fallbackData = await fallbackRes.json();
-            if (fallbackData?.online) {
-                statusData = fallbackData;
-                isOnline = true;
-            }
-        }
-    }
-  } catch (e) {
-    console.error(`[ServerCard] Failed to fetch Minecraft status for ${server.name} (${fetchAddress}):`, e);
-  }
-} else if (server.type === 'web') {
-    isOnline = true; // Assume web is online or handled by link availability
-} else {
-    isOnline = true;
-}
+// Initial placeholder values
+const address = server.ip;
 ---
 
-<div class={`server-card glass-card ${isOnline ? 'online' : 'offline'}`}>
+<server-card data-server={JSON.stringify(server)} data-is-bedrock={String(isBedrock)} class="server-card glass-card loading">
     <div class="server-header">
         <div class="server-ident">
-            <div class={`status-badge ${isOnline ? 'bg-online' : 'bg-offline'}`}>
-                {isOnline ? <Wifi class="icon-xs" /> : <WifiOff class="icon-xs" />}
-                <span>{isOnline ? 'オンライン' : 'オフライン'}</span>
+            <div class="status-badge bg-loading">
+                <div class="loader-spinner"></div>
+                <span class="status-text">確認中...</span>
             </div>
             <h3 class="server-title">{server.name}</h3>
         </div>
@@ -143,128 +37,58 @@ if (server.type === 'minecraft') {
     </div>
 
     <div class="server-body">
-        {isOnline ? (
-            <>
-                {server.type === 'minecraft' && statusData?.motd?.clean && statusData.motd.clean.length > 0 && (
-                    <div class="motd-container">
-                        {statusData.motd.clean.map((line: string) => (
-                            <p class="motd-line">{line}</p>
-                        ))}
-                    </div>
-                )}
-                
-                <div class="server-stats-grid">
-                    {server.type === 'minecraft' && (
-                        <div class="server-stat">
-                            <Users class="stat-icon" />
-                            <div class="stat-info">
-                                <span class="stat-label">プレイヤー数</span>
-                                <span class="stat-value">
-                                    {statusData?.players?.online ?? 0} <span class="stat-divider">/</span> {statusData?.players?.max ?? 0}
-                                </span>
-                            </div>
-                        </div>
-                    )}
-                    
-                    <div class="server-stat">
-                        <Activity class="stat-icon" />
-                        <div class="stat-info">
-                            <span class="stat-label">稼働率(24h)</span>
-                            <span class="stat-value">{availability}%</span>
-                        </div>
-                    </div>
-
-                    <div class="server-stat">
-                        <Activity class="stat-icon" />
-                        <div class="stat-info">
-                            <span class="stat-label">ステータス</span>
-                            {pingHistory.length > 0 ? (
-                                <div class="ping-meta">
-                                    <span class="stat-value">{avgPing}ms</span>
-                                    <svg class="sparkline" width="70" height="20" viewBox="0 0 100 30" preserveAspectRatio="none" style="overflow: visible;">
-                                        <path d={sparklinePath} fill="none" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-                                    </svg>
-                                </div>
-                            ) : (
-                                <span class="stat-value">
-                                    {isOnline ? (server.type === 'minecraft' ? (statusData?.version || '準備中') : '低遅延') : 'オフライン'}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {server.type === 'minecraft' && statusData?.players?.list && statusData.players.list.length > 0 && (
-                    <div class="player-list-section">
-                        <span class="mini-label">現在のプレイヤー</span>
-                        <div class="player-avatars">
-                            {statusData.players.list.slice(0, 12).map((player: any) => (
-                                <div class="player-chip" title={player.name}>
-                                    <img 
-                                        src={`https://minotar.net/avatar/${player.uuid || player.name}/24`} 
-                                        alt={player.name} 
-                                        class="player-head" 
-                                        onerror="this.src='https://minotar.net/avatar/steve/24'"
-                                    />
-                                    <span class="player-name-text">{player.name}</span>
-                                </div>
-                            ))}
-                            {statusData.players.list.length > 12 && (
-                                <span class="more-players">他 {statusData.players.list.length - 12} 名...</span>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </>
-        ) : (
-            <div class="offline-placeholder">
-                <p class="server-ip-display">
-                    <Globe class="icon-xs" /> {server.ip}:{server.port}
-                </p>
-                {!isOnline && <p class="offline-msg">サーバーが応答していません</p>}
-            </div>
-        )}
+        <div class="skeleton-content">
+             <div class="skeleton-line w-3_4"></div>
+             <div class="skeleton-grid">
+                 <div class="skeleton-box"></div>
+                 <div class="skeleton-box"></div>
+             </div>
+        </div>
         
+        <div class="live-content" style="display: none;">
+             <!-- Content will be injected via JS -->
+        </div>
+
         {server.description && <p class="server-desc">{server.description}</p>}
     </div>
 
     <div class="server-footer">
         {isWeb ? (
             <a href={server.ip.startsWith('http') ? server.ip : `https://${server.ip}`} target="_blank" rel="noopener noreferrer" class="visit-btn">
-                <Globe class="icon-xs" /> サイトを開く
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-xs"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> サイトを開く
             </a>
         ) : (
-            <div class="copy-ip" data-ip={`${server.ip}:${server.port}`}>
+             <div class="copy-ip" data-ip={`${server.ip}:${server.port}`}>
                 <span class="ip-text">{server.ip}:{server.port}</span>
                 <button class="copy-btn">コピー</button>
             </div>
         )}
     </div>
-</div>
+</server-card>
 
 <style>
     .server-card {
-        padding: 1.5rem;
+        padding: 0;
         display: flex;
         flex-direction: column;
-        gap: 1.25rem;
         transition: all 0.3s cubic-bezier(0.2, 1, 0.2, 1);
         border: 1px solid var(--border-glass);
+        min-height: 240px;
+        overflow: hidden;
+        position: relative;
     }
 
-    .server-card.online {
-        border-left: 4px solid #10b981;
-    }
-
-    .server-card.offline {
-        border-left: 4px solid #ef4444;
-        opacity: 0.8;
-    }
+    .server-card.online { border-top: 4px solid #10b981; }
+    .server-card.offline { border-top: 4px solid #ef4444; }
+    .server-card.loading { border-top: 4px solid var(--border-subtle); }
 
     .server-header {
+        padding: 1.5rem 1.5rem 1rem;
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
+        border-bottom: 1px solid var(--border-subtle);
+        background: rgba(255, 255, 255, 0.03);
     }
 
     .server-ident {
@@ -278,203 +102,295 @@ if (server.type === 'minecraft') {
         align-items: center;
         gap: 0.35rem;
         padding: 0.25rem 0.6rem;
-        border-radius: 6px;
+        border-radius: 99px;
         font-size: 0.7rem;
         font-weight: 800;
         color: white;
         letter-spacing: 0.05em;
+        transition: all 0.3s ease;
+        align-self: flex-start;
     }
 
-    .bg-online { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
-    .bg-offline { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
+    .bg-online { background: #10b981; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25); }
+    .bg-offline { background: #ef4444; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2); }
+    .bg-loading { background: var(--bg-surface-hover); color: var(--text-muted); border: 1px solid var(--border-subtle); }
+
+    .loader-spinner {
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--text-muted);
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
 
     .server-title {
         font-size: 1.25rem;
         font-weight: 800;
         color: var(--text-main);
         margin: 0;
+        line-height: 1.2;
     }
 
     .server-type-pill {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 700;
         text-transform: uppercase;
-        padding: 0.25rem 0.5rem;
-        background: var(--accent-soft);
-        color: var(--accent-primary);
-        border-radius: 4px;
+        padding: 0.2rem 0.5rem;
+        background: var(--bg-surface-hover);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-muted);
+        border-radius: 6px;
         letter-spacing: 0.05em;
+        height: fit-content;
     }
 
-    /* Body & Stats */
-    .motd-container {
+    .server-body {
+        padding: 1.5rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    /* Skeleton */
+    .skeleton-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        animation: pulse 1.5s infinite ease-in-out;
+    }
+    .skeleton-line { height: 1rem; background: var(--bg-surface-hover); border-radius: 4px; }
+    .w-3_4 { width: 75%; }
+    .skeleton-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .skeleton-box { height: 3.5rem; background: var(--bg-surface-hover); border-radius: 12px; }
+
+    @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 0.3; } 100% { opacity: 0.6; } }
+
+    /* Dynamic Content Styles (Scoped via :global) */
+    .server-card :global(.motd-container) {
+        background: var(--bg-surface-hover);
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        border-left: 3px solid var(--accent-secondary);
+        font-family: 'Noto Sans JP', sans-serif;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        color: var(--text-main);
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        margin-bottom: 1rem;
+    }
+
+    .server-card :global(.motd-line) { margin: 0; }
+
+    .server-card :global(.server-stats-grid) {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 1rem;
+    }
+
+    .server-card :global(.server-stat) {
+        display: flex;
+        flex-direction: column;
         background: var(--bg-surface-hover);
         padding: 0.85rem;
         border-radius: 12px;
-        margin-bottom: 1.25rem;
         border: 1px solid var(--border-subtle);
+        position: relative;
+        overflow: hidden;
     }
 
-    :global([data-theme="dark"]) .motd-container {
-        background: rgba(0, 0, 0, 0.3);
-    }
-
-    .motd-line {
-        font-size: 0.85rem;
-        color: var(--text-main);
-        margin: 0;
-        font-family: 'Noto Sans JP', sans-serif;
-        line-height: 1.5;
-        font-weight: 500;
-    }
-
-    :global([data-theme="dark"]) .motd-line {
-        color: #e2e8f0;
-    }
-
-    .server-stats-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        margin-bottom: 1.25rem;
-    }
-
-    .server-stat {
+    .server-card :global(.stat-header) {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        background: var(--bg-surface-hover);
-        padding: 0.75rem;
-        border-radius: 12px;
-    }
-
-    .stat-icon {
-        width: 1.25rem;
-        height: 1.25rem;
-        color: var(--accent-primary);
-        opacity: 0.8;
-    }
-
-    .stat-info {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .stat-label {
-        font-size: 0.65rem;
-        text-transform: uppercase;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
         color: var(--text-muted);
-        font-weight: 600;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
-    .stat-value {
-        font-size: 0.95rem;
+    .server-card :global(.stat-icon) {
+        width: 1rem;
+        height: 1rem;
+        opacity: 0.7;
+    }
+
+    .server-card :global(.stat-value) {
+        font-size: 1.1rem;
         font-weight: 800;
         color: var(--text-main);
+        z-index: 1;
     }
+
+    .server-card :global(.stat-sub) {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 500;
+        margin-left: 0.2rem;
+    }
+
+    .server-card :global(.stat-divider) {
+        color: var(--border-subtle);
+        margin: 0 0.2rem;
+        font-weight: 400;
+    }
+
+    .server-card :global(.ping-meta) {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .server-card :global(.sparkline) {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 100%;
+        height: 40px;
+        opacity: 0.15;
+        pointer-events: none;
+        z-index: 0;
+        color: var(--accent-primary);
+    }
+    
+    .server-card :global(.bg-stat-online) { color: #10b981; }
 
     /* Player List */
-    .player-list-section {
+    .server-card :global(.player-list-section) {
         display: flex;
         flex-direction: column;
-        gap: 0.6rem;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
     }
 
-    .mini-label {
+    .server-card :global(.mini-label) {
         font-size: 0.7rem;
         font-weight: 700;
         color: var(--text-muted);
         text-transform: uppercase;
     }
 
-    .player-avatars {
+    .server-card :global(.player-avatars) {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.5rem;
-    }
-
-    .player-chip {
-        display: flex;
-        align-items: center;
         gap: 0.4rem;
-        background: var(--bg-surface-solid);
-        padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+    }
+
+    .server-card :global(.player-chip) {
+        width: 28px;
+        height: 28px;
         border-radius: 6px;
+        overflow: hidden;
         border: 1px solid var(--border-subtle);
+        transition: transform 0.2s;
+        position: relative;
+    }
+    
+    .server-card :global(.player-chip:hover) {
+        transform: scale(1.2);
+        z-index: 10;
+        border-color: var(--accent-primary);
     }
 
-    .player-head {
-        width: 18px;
-        height: 18px;
-        border-radius: 2px;
+    .server-card :global(.player-head) {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
-
-    .player-name-text {
+    
+    .server-card :global(.more-players) {
         font-size: 0.75rem;
-        font-weight: 500;
-        color: var(--text-main);
-    }
-
-    .more-players {
-        font-size: 0.75rem;
-        font-weight: 700;
         color: var(--text-muted);
-        align-self: center;
-    }
-
-    .server-ip-display {
+        background: var(--bg-surface-hover);
+        padding: 0 0.5rem;
+        border-radius: 4px;
         display: flex;
         align-items: center;
+        height: 28px;
+        font-weight: 600;
+    }
+
+    /* Offline/Error States */
+    .server-card :global(.offline-placeholder) {
+        text-align: center;
+        padding: 2rem 1rem;
+        background: var(--bg-surface-hover);
+        border-radius: 12px;
+        border: 1px dashed var(--border-subtle);
+    }
+
+    .server-card :global(.server-ip-display) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         gap: 0.5rem;
-        font-size: 0.9rem;
+        font-family: 'Outfit', monospace;
+        color: var(--text-main);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .server-card :global(.offline-msg) {
+        font-size: 0.85rem;
         color: var(--text-muted);
-        font-family: 'Outfit', sans-serif;
+        margin: 0;
     }
 
     .server-desc {
         font-size: 0.9rem;
         color: var(--text-muted);
-        line-height: 1.5;
-        margin-top: 0.5rem;
+        line-height: 1.6;
+        margin-top: auto;
     }
 
-    /* Footer / Copy */
+    /* Footer */
     .server-footer {
-        margin-top: auto;
-        padding-top: 1rem;
+        padding: 1rem 1.5rem;
         border-top: 1px solid var(--border-subtle);
+        background: rgba(255, 255, 255, 0.02);
     }
 
     .copy-ip {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: var(--bg-surface-hover);
-        padding: 0.5rem 0.75rem;
+        background: var(--bg-surface-solid);
+        padding: 0.4rem 0.5rem 0.4rem 1rem;
         border-radius: 8px;
-        font-family: 'Outfit', sans-serif;
+        border: 1px solid var(--border-subtle);
+        font-family: 'Outfit', monospace;
     }
 
     .ip-text {
         font-size: 0.85rem;
         color: var(--text-main);
-        font-weight: 500;
+        font-weight: 600;
     }
 
     .copy-btn {
-        background: var(--accent-primary);
-        color: white;
-        border: none;
-        padding: 0.25rem 0.6rem;
-        border-radius: 4px;
+        background: var(--bg-surface-hover);
+        color: var(--text-muted);
+        border: 1px solid var(--border-subtle);
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
         font-size: 0.7rem;
         font-weight: 700;
         cursor: pointer;
-        transition: opacity 0.2s;
+        transition: all 0.2s;
     }
 
     .copy-btn:hover {
-        opacity: 0.8;
+        background: var(--accent-primary);
+        color: white;
+        border-color: var(--accent-primary);
     }
 
     .visit-btn {
@@ -500,34 +416,201 @@ if (server.type === 'minecraft') {
     }
 
     .icon-xs { width: 1rem; height: 1rem; }
-
-    .ping-meta {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .sparkline {
-        color: #10b981;
-        opacity: 0.8;
-    }
 </style>
 
 <script>
-    // Copy to clipboard logic
-    document.querySelectorAll('.copy-ip').forEach(container => {
-        const btn = container.querySelector('.copy-btn');
-        const ip = container.getAttribute('data-ip');
-        
-        btn?.addEventListener('click', () => {
-            if (ip) {
+    class ServerCardElement extends HTMLElement {
+        constructor() {
+            super();
+            this.init();
+        }
+
+        async init() {
+            let serverData: any = {};
+            try {
+                const rawData = this.getAttribute('data-server'); 
+                serverData = rawData ? JSON.parse(rawData) : {};
+            } catch (e) {
+                console.error('Failed to parse server data', e);
+                return;
+            }
+
+            if (!serverData.ip) {
+                this.renderError();
+                return;
+            }
+
+            const isBedrock = this.getAttribute('data-is-bedrock') === 'true';
+            
+            try {
+                const query = new URLSearchParams({
+                    type: serverData.type,
+                    ip: serverData.ip,
+                    port: String(serverData.port || ''),
+                    bedrock: String(isBedrock)
+                });
+
+                const res = await fetch(`/api/server-status?${query}`);
+                if (!res.ok) throw new Error('API Error');
+                const data = await res.json();
+                
+                this.render(data, serverData);
+            } catch (e) {
+                console.error('Failed to load server status', e);
+                this.renderError();
+            }
+        }
+
+        renderError() {
+            this.classList.remove('loading');
+            this.classList.add('offline');
+            const statusText = this.querySelector('.status-text');
+            if (statusText) {
+                statusText.textContent = '不明';
+                statusText.parentElement?.classList.remove('bg-loading');
+                statusText.parentElement?.classList.add('bg-offline');
+                const spinner = statusText.parentElement?.querySelector('.loader-spinner');
+                if (spinner) spinner.remove();
+            }
+            
+            this.toggleContent(false);
+            
+            const liveContent = this.querySelector('.live-content');
+            if (liveContent) {
+                liveContent.innerHTML = `<div class="offline-placeholder"><p class="offline-msg">ステータス取得失敗</p></div>`;
+            }
+        }
+
+        toggleContent(showLive: boolean) {
+            const skeleton = this.querySelector('.skeleton-content') as HTMLElement;
+            const live = this.querySelector('.live-content') as HTMLElement;
+            if (skeleton) skeleton.style.display = showLive ? 'none' : 'flex';
+            if (live) live.style.display = showLive ? 'block' : 'none';
+        }
+
+        render(data: any, serverData: any) {
+             this.classList.remove('loading');
+             const isOnline = data.online;
+             const statusBadge = this.querySelector('.status-badge');
+             
+             // Update Status Badge
+             if (statusBadge) {
+                 statusBadge.className = `status-badge ${isOnline ? 'bg-online' : 'bg-offline'}`;
+                 statusBadge.innerHTML = isOnline 
+                    ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> <span>ONLINE</span>`
+                    : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> <span>OFFLINE</span>`;
+             }
+            
+            const liveContent = this.querySelector('.live-content');
+            if (!liveContent) return;
+
+            if (isOnline) {
+                this.classList.add('online');
+                
+                let html = '';
+                
+                // MOTD
+                 if (data.motd?.clean && data.motd.clean.length > 0) {
+                    html += `<div class="motd-container">
+                        ${data.motd.clean.map((line: string) => `<p class="motd-line">${line}</p>`).join('')}
+                    </div>`;
+                }
+
+                // Stats Grid
+                html += `<div class="server-stats-grid">`;
+                
+                // Players
+                if (serverData.type === 'minecraft') {
+                    html += `
+                        <div class="server-stat">
+                            <div class="stat-header">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                <span>Players</span>
+                            </div>
+                            <div class="stat-value">
+                                ${data.players?.online || 0}<span class="stat-divider">/</span><span class="stat-sub">${data.players?.max || 0}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Availability
+                 html += `
+                    <div class="server-stat">
+                        <div class="stat-header">
+                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                             <span>Uptime</span>
+                        </div>
+                        <div class="stat-value ${data.availability > 99 ? 'bg-stat-online' : ''}">${data.availability ?? 100}<span class="stat-sub">%</span></div>
+                    </div>`;
+                
+                // Ping / Sparkline
+                html += `
+                    <div class="server-stat">
+                        <div class="stat-header">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon"><path d="M2 12h5"/><path d="M12 2v10"/><path d="m19 5-7 7-7-7"/></svg>
+                            <span>Ping</span>
+                        </div>
+                        <div class="ping-meta">
+                            <span class="stat-value">${data.avgPing}<span class="stat-sub">ms</span></span>
+                        </div>
+                        ${data.sparklinePath ? `
+                            <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                                <path d="${data.sparklinePath}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        ` : ''}
+                    </div>
+                </div>`;
+                
+                // Player List
+                if (data.players?.list && data.players.list.length > 0) {
+                     html += `<div class="player-list-section">
+                        <span class="mini-label">Online</span>
+                        <div class="player-avatars">
+                            ${data.players.list.slice(0, 10).map((p: any) => `
+                                <div class="player-chip" title="${p.name}">
+                                    <img src="https://minotar.net/avatar/${p.uuid || p.name}/28" class="player-head" onerror="this.src='https://minotar.net/avatar/steve/28'">
+                                </div>
+                            `).join('')}
+                            ${data.players.list.length > 10 ? `<div class="more-players">+${data.players.list.length - 10}</div>` : ''}
+                        </div>
+                    </div>`;
+                }
+
+                liveContent.innerHTML = html;
+            } else {
+                this.classList.add('offline');
+                liveContent.innerHTML = `
+                    <div class="offline-placeholder">
+                        <div class="server-ip-display">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-xs"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> 
+                            ${serverData.ip}:${serverData.port}
+                        </div>
+                        <p class="offline-msg">サーバーは現在オフラインです</p>
+                    </div>`;
+            }
+
+            this.toggleContent(true);
+        }
+    }
+
+    if (!customElements.get('server-card')) {
+        customElements.define('server-card', ServerCardElement);
+    }
+    
+    // Copy Logic
+    document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('.copy-btn')) {
+             const container = target.closest('.copy-ip');
+             const ip = container?.getAttribute('data-ip');
+             const btn = target.closest('.copy-btn');
+             if (ip && btn) {
                 navigator.clipboard.writeText(ip);
                 const originalText = btn.textContent;
-                btn.textContent = 'コピー済み!';
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                }, 2000);
-            }
-        });
+                btn.textContent = 'COPIED';
+                setTimeout(() => btn.textContent = originalText, 2000);
+             }
+        }
     });
 </script>
