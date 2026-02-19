@@ -8,6 +8,7 @@ import {
     MessageCircle,
 } from "lucide-astro";
 import { marked } from "marked";
+import { lexicalToPlainText } from "../lib/richtext";
 import { getMediaUrl, type Post } from "../lib/payload";
 
 interface Props {
@@ -39,16 +40,10 @@ const formatDate = (dateStr: string) => {
     });
 };
 
-/* Payload richText is complex JSON, for now assume content is not easily excerpt-able without a parser.
-   If content is HTML string (from richText-lexical -> HTML converter), we can strip tags. 
-   But Payload's richText field returns JSON structure by default.
-   For simplicity in this initial migration, we might skip excerpt or implement a basic text extractor later.
-   OR, if user uses HTML converter on backend, it might be string. 
-   Let's check type. Post["content"] in payload-types is { root: ... } object. 
-   So we can't just marked.parse() it.
-   We will leave excerpt blank for now or add a TODO.
-*/
-const excerpt = ""; // Placeholder as content is Lexical JSON
+let excerpt = "";
+if (post.content) {
+    excerpt = lexicalToPlainText(post.content).substring(0, 120);
+}
 
 // Function to safely get author info
 const authorName =

@@ -47,8 +47,10 @@ RUN mkdir -p /app/.cache
 VOLUME ["/app/.cache"]
 
 # Expose Astro's default port (or Dokploy's PORT env)
+ARG PUBLIC_PAYLOAD_URL
 ENV HOST=0.0.0.0
 ENV PORT=4321
+ENV PUBLIC_PAYLOAD_URL=${PUBLIC_PAYLOAD_URL}
 EXPOSE 4321
 
 # Start SSR server and monitor concurrently

@@ -251,10 +251,6 @@ export interface Post {
     };
     [k: string]: unknown;
   } | null;
-  /**
-   * Raw HTML/Markdown content migrated from Directus
-   */
-  content_html?: string | null;
   author?: (number | null) | Author;
   published_date?: string | null;
   category: 'tech' | 'game' | 'misc';
@@ -291,10 +287,6 @@ export interface Announcement {
     };
     [k: string]: unknown;
   } | null;
-  /**
-   * Raw HTML/Markdown content migrated from Directus
-   */
-  content_html?: string | null;
   published_date?: string | null;
   status?: ('draft' | 'published') | null;
   updatedAt: string;
@@ -496,7 +488,6 @@ export interface PostsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   content?: T;
-  content_html?: T;
   author?: T;
   published_date?: T;
   category?: T;
@@ -518,7 +509,6 @@ export interface PostsSelect<T extends boolean = true> {
 export interface AnnouncementsSelect<T extends boolean = true> {
   title?: T;
   content?: T;
-  content_html?: T;
   published_date?: T;
   status?: T;
   updatedAt?: T;

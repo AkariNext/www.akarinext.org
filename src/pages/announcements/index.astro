@@ -2,17 +2,19 @@
 import Layout from "../../layouts/Layout.astro";
 import { payloadClient, type Announcement } from "../../lib/payload";
 import { processContentHtml } from "../../lib/content";
+import { lexicalToHtml } from "../../lib/richtext";
 import { Megaphone, Calendar, Clock, BellRing, Sparkles } from "lucide-astro";
 
 export const prerender = false;
 
 let announcements: Announcement[] = [];
+let processedAnnouncements: any[] = [];
 
 try {
     const res = await payloadClient
         .items<Announcement>("announcements")
         .readByQuery({
-            sort: "-published_date",
+            sort: ["-published_date", "-createdAt"],
             where: {
                 status: { equals: "published" },
             },
@@ -23,17 +25,17 @@ try {
     // Process content (if string)
     // Note: Payload richText is JSON. If data migrated as string, this works.
     // If not, we need a serializer.
-    announcements = await Promise.all(
+    processedAnnouncements = await Promise.all(
         announcements.map(async (ann) => {
             let content = "";
-            if (typeof ann.content === "string") {
-                content = await processContentHtml(ann.content);
-            } else if (ann.content) {
-                content = "<p><i>(Rich Text Content)</i></p>";
+            if (ann.content) {
+                // @ts-ignore
+                const rawHtml = await lexicalToHtml(ann.content);
+                content = await processContentHtml(rawHtml);
             }
             return {
                 ...ann,
-                content: content,
+                processedContent: content,
             };
         })
     );
@@ -82,15 +84,13 @@ const formatDate = (dateVal: string | null | undefined) => {
 
     <div class="container container-narrow content-wrapper">
         {
-            announcements.length > 0 ? (
+            processedAnnouncements.length > 0 ? (
                 <div class="timeline-container">
-                    {announcements.map((ann) => {
+                    {processedAnnouncements.map((ann) => {
                         const annDate =
                             ann.published_date || new Date().toISOString();
                         const dateObj = new Date(annDate);
-                        // content is already processed to string in the map above, but type definition says richText
-                        // We cast to any or string to satisfy ts in template
-                        const htmlContent = ann.content as unknown as string;
+                        const htmlContent = ann.processedContent;
 
                         return (
                             <article id={`ann-${ann.id}`} class="timeline-item">

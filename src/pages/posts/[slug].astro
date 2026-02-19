@@ -2,6 +2,7 @@
 import Layout from "../../layouts/Layout.astro";
 import { payloadClient, getMediaUrl, type Post } from "../../lib/payload";
 import { processContentHtml } from "../../lib/content";
+import { lexicalToHtml } from "../../lib/richtext";
 import {
     Calendar,
     User,
@@ -48,8 +49,10 @@ try {
         query.where.slug = { equals: slug };
     }
 
+    console.log(`[slug.astro] Requesting slug: ${slug}`);
     const posts = await payloadClient.items<Post>("posts").readByQuery(query);
     post = posts[0] || null;
+    console.log(`[slug.astro] Fetched post: ${post?.id} - ${post?.slug}`);
 
     if (post) {
         // Author Handling
@@ -64,15 +67,11 @@ try {
         }
 
         // Content Processing
-        if (post.content && typeof post.content === "string") {
-            const contentWithCode = post.content.replace(
-                /`([^`]+)`/g,
-                "<code>$1</code>"
-            );
-            processedContent = await processContentHtml(contentWithCode);
-        } else if (post.content) {
-            processedContent =
-                "<p>Content is in Rich Text format. Renderer needed.</p>";
+        if (post.content) {
+            // New Lexical content (Supports alignment, indentation, etc.)
+            // @ts-ignore
+            const rawHtml = await lexicalToHtml(post.content);
+            processedContent = await processContentHtml(rawHtml);
         }
     }
 } catch (e) {
@@ -207,7 +206,7 @@ const getSocialIcon = (platform: string) => {
                         />
                     </div>
                 ) : (
-                    <div class="hero-image-placeholder container"></div>
+                    <div class="hero-image-placeholder container" />
                 )
             }
         </header>

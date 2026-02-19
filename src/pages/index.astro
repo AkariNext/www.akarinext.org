@@ -53,7 +53,7 @@ try {
         payloadClient
             .items<Post>("posts")
             .readByQuery({
-                sort: "-published_date,-id",
+                sort: ["-published_date", "-createdAt", "-id"],
                 limit: 6,
                 where: { status: { equals: "published" } },
             })
@@ -61,7 +61,7 @@ try {
         payloadClient
             .items<Game>("games")
             .readByQuery({
-                sort: "-id",
+                sort: ["-createdAt", "-id"],
                 limit: 4,
             })
             .catch(() => []),
@@ -108,7 +108,7 @@ const formatDate = (dateStr: string | null | undefined) => {
 };
 ---
 
-<Layout title={globalSettings.site_title}>
+<Layout title={globalSettings.site_title || "AkariNext"}>
     <!-- Community Hero -->
     <section class="hero-section">
         <div class="container hero-container">
@@ -300,12 +300,7 @@ const formatDate = (dateStr: string | null | undefined) => {
                                 game.cover_image ? (
                                     <div class="mini-game-cover">
                                         <img
-                                            src={`${
-                                                import.meta.env
-                                                    .PUBLIC_DIRECTUS_URL
-                                            }/assets/${
-                                                game.cover_image
-                                            }?width=360&height=480&fit=cover`}
+                                            src={getMediaUrl(game.cover_image)}
                                             alt={game.name}
                                         />
                                     </div>

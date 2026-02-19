@@ -19,14 +19,6 @@ export const Announcements: CollectionConfig = {
             type: 'richText',
         },
         {
-            name: 'content_html',
-            type: 'code',
-            admin: {
-                language: 'html',
-                description: 'Raw HTML/Markdown content migrated from Directus',
-            },
-        },
-        {
             name: 'published_date',
             type: 'date',
         },

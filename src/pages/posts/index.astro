@@ -27,7 +27,7 @@ try {
     }
 
     const fetchedPosts = await payloadClient.items<Post>("posts").readByQuery({
-        sort: "-published_date,-id",
+        sort: ["-published_date", "-createdAt", "-id"],
         where: where,
         limit: 100, // Adjust limit as needed
     });

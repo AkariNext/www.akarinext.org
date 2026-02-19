@@ -31,21 +31,30 @@ async function fetchPayload<T>(
     collection: string,
     query: Record<string, any> = {}
 ): Promise<PayloadResponse<T>> {
-    const queryString = new URLSearchParams();
+    const params: string[] = [];
 
-    // Convert query object to query string (simple implementation)
-    Object.entries(query).forEach(([key, value]) => {
-        if (typeof value === 'object') {
-            queryString.append(key, JSON.stringify(value));
-        } else {
-            queryString.append(key, String(value));
-        }
-    });
+    const buildQuery = (obj: any, prefix = '') => {
+        Object.entries(obj).forEach(([key, value]) => {
+            const fullKey = prefix ? `${prefix}[${key}]` : key;
+            if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+                buildQuery(value, fullKey);
+            } else if (Array.isArray(value)) {
+                value.forEach(v => {
+                    params.push(`${fullKey}=${encodeURIComponent(String(v))}`);
+                });
+            } else {
+                params.push(`${fullKey}=${encodeURIComponent(String(value))}`);
+            }
+        });
+    };
 
-    const url = `${PAYLOAD_URL}/api/${collection}?${queryString.toString()}`;
+    buildQuery(query);
+    const queryString = params.join('&');
+    const url = `${PAYLOAD_URL}/api/${collection}${queryString ? `?${queryString}` : ''}`;
 
     try {
-        const res = await fetch(url);
+        console.log(`[fetchPayload] Requesting: ${url}`);
+        const res = await fetch(url, { cache: 'no-store' }); // Disable caching for SSR
         if (!res.ok) {
             throw new Error(`Payload API Error: ${res.status} ${res.statusText}`);
         }
