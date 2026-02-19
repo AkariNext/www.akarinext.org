@@ -48,18 +48,12 @@ ENV NODE_ENV production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Remove this line if you do not have this folder
+# COPY --from=builder /app/public ./public
+
 # Set the correct permission for prerender cache
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
-
-# Copy migrations and source for payload CLI to work
-COPY --from=builder /app/src/migrations ./src/migrations
-COPY --from=builder /app/src/payload.config.ts ./src/payload.config.ts
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
-COPY --from=builder /app/package.json ./package.json
-
-# Need full install to run payload CLI (typescript etc)
-RUN corepack enable pnpm && pnpm install
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
@@ -72,5 +66,6 @@ EXPOSE 3000
 
 ENV PORT 3000
 
-# Run migrations before starting the server
-CMD ["sh", "-c", "pnpm payload migrate && node server.js"]
+# server.js is created by next build from the standalone output
+# https://nextjs.org/docs/pages/api-reference/next-config-js/output
+CMD HOSTNAME="0.0.0.0" node server.js
