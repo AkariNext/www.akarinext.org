@@ -1,4 +1,3 @@
-import { createDirectus, rest, readItems } from '@directus/sdk';
 import { InfluxDB, Point } from '@influxdata/influxdb-client';
 import ping from 'ping';
 import dotenv from 'dotenv';
@@ -11,7 +10,7 @@ const INFLUX_URL = process.env.INFLUX_URL || 'http://localhost:8086';
 const INFLUX_TOKEN = process.env.INFLUX_TOKEN;
 const INFLUX_ORG = process.env.INFLUX_ORG || 'akarinext';
 const INFLUX_BUCKET = process.env.INFLUX_BUCKET || 'server_metrics';
-const DIRECTUS_URL = process.env.PUBLIC_DIRECTUS_URL || 'http://localhost:8055';
+const PAYLOAD_URL = process.env.PUBLIC_PAYLOAD_URL || 'http://localhost:3000';
 
 let writeApi: any;
 
@@ -22,9 +21,6 @@ if (!INFLUX_TOKEN) {
     const influxDB = new InfluxDB({ url: INFLUX_URL, token: INFLUX_TOKEN });
     writeApi = influxDB.getWriteApi(INFLUX_ORG, INFLUX_BUCKET);
 }
-
-// Directus Setup
-const directus = createDirectus(DIRECTUS_URL).with(rest());
 
 interface MonitoredServer {
     name: string;
@@ -45,7 +41,7 @@ const probeTcp = (host: string, port: number): Promise<{ alive: boolean, avg: nu
             if (success.length === 0) {
                 resolve({ alive: false, avg: 0 });
             } else {
-                resolve({ alive: true, avg: data.avg });
+                resolve({ alive: true, avg: data.avg || 0 });
             }
         });
     });
@@ -56,15 +52,10 @@ async function monitorServers() {
     if (!writeApi) return; // Skip if no write API
 
     try {
-        const servers = await directus.request(readItems('game_servers', {
-            fields: ['name', 'ip', 'port', 'type'],
-            filter: {
-                _and: [
-                   { ip: { _nnull: true } },
-                   { ip: { _nempty: true } }
-                ]
-            }
-        })) as unknown as MonitoredServer[];
+        const res = await fetch(`${PAYLOAD_URL}/api/game-servers?limit=100&where[status][equals]=published`);
+        if (!res.ok) throw new Error(`Payload Error: ${res.status}`);
+        const data = await res.json() as any;
+        const servers = data.docs as MonitoredServer[];
 
         if (!servers || servers.length === 0) {
             console.log(`[${new Date().toISOString()}] No servers found to monitor.`);
@@ -74,7 +65,7 @@ async function monitorServers() {
         console.log(`[${new Date().toISOString()}] Monitoring ${servers.length} servers...`);
 
         for (const server of servers) {
-            const host = server.ip.trim();
+            const host = server.ip?.trim();
             if (!host) continue;
 
             let alive = false;
@@ -91,8 +82,8 @@ async function monitorServers() {
                 try {
                     const res = await ping.promise.probe(host, { timeout: 2 });
                     alive = res.alive;
-                    avg = res.avg === 'unknown' ? 0 : parseFloat(String(res.avg));
-                    loss = res.packetLoss === 'unknown' ? 100 : parseFloat(String(res.packetLoss));
+                    avg = (res.avg as any) === 'unknown' ? 0 : parseFloat(String(res.avg));
+                    loss = (res.packetLoss as any) === 'unknown' ? 100 : parseFloat(String(res.packetLoss));
                 } catch (e) {
                     console.error(`ICMP failed for ${host}:`, e);
                 }
@@ -113,7 +104,7 @@ async function monitorServers() {
             writeApi.writePoint(point);
             console.log(`  > ${host}:${server.port || '(ICMP)'} : ${alive ? 'OK' : 'FAIL'} (${Math.round(avg)}ms)`);
         }
-        
+
         await writeApi.flush();
 
     } catch (e) {
@@ -122,12 +113,12 @@ async function monitorServers() {
 }
 
 // Start only if configured
-console.log("Starting server monitor agent...", process.env.INFLUX_URL, process.env.PUBLIC_DIRECTUS_URL);
+console.log("Starting server monitor agent...", INFLUX_URL, PAYLOAD_URL);
 if (writeApi) {
     monitorServers();
     setInterval(monitorServers, 10000);
 } else {
     console.log("Monitoring disabled due to missing configuration.");
     // Keep process alive but idle (for container health check/concurrently stability)
-    setInterval(() => {}, 60000); 
+    setInterval(() => { }, 60000);
 }
