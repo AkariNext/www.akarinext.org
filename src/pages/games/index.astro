@@ -1,119 +1,128 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { directus, readItems, skipDirectusFetch, type Author, type GamePlayer } from "../../lib/directus";
-import { Users, Gamepad2, Search, ArrowRight, Shield, Play, HelpCircle, GraduationCap, MessageSquare } from "lucide-astro";
-
-interface Game {
-  id: number;
-  name: string;
-  slug: string;
-  description?: string;
-  cover_image?: string | { id: string };
-}
+import {
+    payloadClient,
+    getMediaUrl,
+    type Game,
+    type Author,
+} from "../../lib/payload";
+import { Users, Gamepad2, Search } from "lucide-astro";
 
 // Data Handling
 let games: Game[] = [];
 // Group players
-const playersByGame = new Map<number, GamePlayer[]>();
+// Using a simpler structure for internal usage
+interface PlayerData {
+    user: Author;
+    skill_level?: string;
+    impression?: string;
+    recruitment?: string;
+}
+const playersByGame = new Map<number, PlayerData[]>();
 
-if (!skipDirectusFetch) {
-  try {
-    games = (await directus.request(
-      readItems("games", {
-        fields: ["id", "name", "slug", "description", "cover_image"],
-        sort: ["name"],
-      })
-    )) ?? [];
+try {
+    // Fetch Games
+    const gamesRes = await payloadClient.items<Game>("games").readByQuery({
+        limit: 100,
+        sort: "name",
+    });
+    games = gamesRes;
 
-    // Fetch Users and their playing games
-    const authors = (await directus.request(
-      readItems("authors", {
-        fields: [
-          "id",
-          "name",
-          "avatar",
-          "playing_games.games_id.id", // Fetch ID of the game
-          "playing_games.skill_level",
-          "playing_games.impression",
-          "playing_games.recruitment",
-        ],
-        filter: {
-             // Only fetch authors who are playing at least one game (optional optimization)
-             // playing_games: { _nnull: true } 
-        } as any,
-      })
-    )) ?? [];
+    // Fetch Authors and their playing games
+    // We need depth to get avatar url
+    const authorsRes = await payloadClient
+        .items<Author>("authors")
+        .readByQuery({
+            limit: 100,
+            depth: 1,
+        });
+    const authors = authorsRes;
 
     // Map players to games
-    authors.forEach((author: any) => {
+    authors.forEach((author) => {
         if (author.playing_games && Array.isArray(author.playing_games)) {
-            author.playing_games.forEach((relation: any) => {
-                const gameId = relation.games_id?.id;
+            author.playing_games.forEach((playInfo) => {
+                // game might be an ID or an object depending on depth
+                const gameObj = playInfo.game;
+                let gameId: number | undefined;
+
+                if (typeof gameObj === "number") {
+                    gameId = gameObj;
+                } else if (gameObj && typeof gameObj === "object") {
+                    gameId = gameObj.id;
+                }
+
                 if (gameId) {
                     const list = playersByGame.get(gameId) || [];
                     list.push({
-                        id: 0, // Dummy ID
-                        user: { id: author.id, name: author.name, avatar: author.avatar },
-                        game: { id: gameId, name: '', slug: '' }, // Name/Slug not needed here
-                        started_at: '',
-                        status: 'playing',
-                        skill_level: relation.skill_level,
-                        impression: relation.impression,
-                        recruitment: relation.recruitment
+                        user: author,
+                        skill_level: playInfo.skill_level || undefined,
+                        impression: playInfo.impression || undefined,
+                        recruitment: playInfo.recruitment || undefined,
                     });
-                     playersByGame.set(gameId, list);
+                    playersByGame.set(gameId, list);
                 }
             });
         }
     });
-
-  } catch (e) {
-    // Silent fail
-  }
-}
-
-const directusUrl = import.meta.env.PUBLIC_DIRECTUS_URL || "http://localhost:8055";
-
-const getCoverUrl = (cover: Game['cover_image']) => {
-    if (!cover) return null;
-    const id = typeof cover === 'string' ? cover : cover?.id;
-  return `${directusUrl}/assets/${id}?preset=card-thumb`;
+} catch (e) {
+    console.error("Error fetching games data:", e);
 }
 
 const getSkillLabel = (level?: string) => {
     switch (level) {
-        case 'casual': return 'カジュアル';
-        case 'intermediate': return '中級';
-        case 'expert': return 'エキスパート';
-        case 'better_than_you': return 'あなたより上手';
-        default: return null;
+        case "casual":
+            return "カジュアル";
+        case "intermediate":
+            return "中級";
+        case "expert":
+            return "エキスパート";
+        case "better_than_you":
+            return "あなたより上手";
+        default:
+            return null;
     }
-}
+};
 
 const getImpressionLabel = (imp?: string) => {
     switch (imp) {
-        case 'obsessed': return '夢中';
-        case 'love': return '大好き';
-        case 'like': return 'わりと好き';
-        case 'meh': return 'ビミョーかも';
-        case 'give_up': return 'ギブアップ';
-        default: return null;
+        case "obsessed":
+            return "夢中";
+        case "love":
+            return "大好き";
+        case "like":
+            return "わりと好き";
+        case "meh":
+            return "ビミョーかも";
+        case "give_up":
+            return "ギブアップ";
+        default:
+            return null;
     }
-}
+};
 
-const getRecruitmentLabel = (val: string) => {
+const getRecruitmentLabel = (val?: string) => {
     switch (val) {
-        case 'looking_for_group': return 'グループ探してます';
-        case 'invite_anytime': return 'いつでも誘って';
-        case 'need_hints': return 'ヒントを教えて';
-        case 'can_teach': return '教えられるよ';
-        case 'discussion_welcome': return '議論大歓迎';
-        default: return null;
+        case "looking_for_group":
+            return "グループ探してます";
+        case "invite_anytime":
+            return "いつでも誘って";
+        case "need_hints":
+            return "ヒントを教えて";
+        case "can_teach":
+            return "教えられるよ";
+        case "discussion_welcome":
+            return "議論大歓迎";
+        default:
+            return null;
     }
-}
+};
 ---
 
-<Layout title="Games" description="Current games being played by the community.">
+<Layout
+    title="Games"
+    description="Current games being played by the community."
+>
     <div class="hero-section">
         <div class="hero-bg">
             <div class="orb orb-1"></div>
@@ -130,7 +139,9 @@ const getRecruitmentLabel = (val: string) => {
                 <span class="gradient-text">ライブラリ</span>
             </h1>
             <p class="hero-desc">
-                コミュニティメンバーが所有・プレイしている<br class="desktop-break"/>
+                コミュニティメンバーが所有・プレイしている<br
+                    class="desktop-break"
+                />
                 ゲームのコレクションを探索しましょう。
             </p>
         </div>
@@ -141,7 +152,11 @@ const getRecruitmentLabel = (val: string) => {
         <div class="search-section">
             <div class="search-bar-glass">
                 <Users class="search-icon" />
-                <input type="text" id="gameSearch" placeholder="タイトルやユーザー名で検索..." />
+                <input
+                    type="text"
+                    id="gameSearch"
+                    placeholder="タイトルやユーザー名で検索..."
+                />
                 <div class="stats-pill">
                     <span class="count">{games.length}</span>
                     <span class="label">タイトル</span>
@@ -150,110 +165,190 @@ const getRecruitmentLabel = (val: string) => {
         </div>
 
         <!-- Games Gallery -->
-        {games.length > 0 ? (
-            <div class="games-gallery" id="gamesGrid">
-                {games.map((game) => {
-                    const players = playersByGame.get(game.id) || [];
-                    const coverUrl = getCoverUrl(game.cover_image);
-                    const playerNames = players.map(p => p.user?.name).join(' ').toLowerCase();
-                    
-                    return (
-                        <div class="game-item" data-name={game.name.toLowerCase()} data-players={playerNames}>
-                            <div class="poster-card">
-                                <div class="poster-image-area">
-                                    {coverUrl ? (
-                                        <img src={coverUrl} alt={game.name} class="poster-img" loading="lazy" />
-                                    ) : (
-                                        <div class="poster-empty">
-                                            <Gamepad2 class="empty-icon" />
-                                        </div>
-                                    )}
-                                    <div class="poster-glow"></div>
-                                </div>
-                                
-                                <div class="poster-info-glass">
-                                    <div class="info-top">
-                                        <h3 class="game-name-title">{game.name}</h3>
-                                        <div class="community-count">
-                                            <Users class="icon-xxs" />
-                                            <span>{players.length}</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="owner-reveal">
-                                        {players.length > 0 ? (
-                                            <>
-                                                <div class="avatar-stack">
-                                                    {players.slice(0, 4).map(p => {
-                                                        const skill = getSkillLabel(p.skill_level);
-                                                        const imp = getImpressionLabel(p.impression);
-                                                        const rec = p.recruitment ? getRecruitmentLabel(p.recruitment as string) : null;
-                                                        const details = [skill, imp, rec].filter(Boolean).join(' / ');
-                                                        const title = details ? `${p.user?.name} (${details})` : p.user?.name;
-                                                        
-                                                        return (
-                                                            <div class="stack-avatar" title={title}>
-                                                                {p.user?.avatar ? (
-                                                                    <img src={`${directusUrl}/assets/${p.user.avatar}?width=48&height=48&fit=cover`} alt="" />
-                                                                ) : (
-                                                                    <div class="stack-placeholder">{p.user?.name?.charAt(0)}</div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                    {players.length > 4 && <div class="stack-more">+{players.length - 4}</div>}
-                                                </div>
-                                                <div class="owner-names-mini">
-                                                    {players.map(p => p.user?.name).join(', ')}
-                                                </div>
-                                            </>
+        {
+            games.length > 0 ? (
+                <div class="games-gallery" id="gamesGrid">
+                    {games.map((game) => {
+                        const players = playersByGame.get(game.id) || [];
+                        const coverUrl = getMediaUrl(game.cover_image);
+                        const playerNames = players
+                            .map((p) => p.user.name)
+                            .join(" ")
+                            .toLowerCase();
+
+                        return (
+                            <div
+                                class="game-item"
+                                data-name={game.name.toLowerCase()}
+                                data-players={playerNames}
+                            >
+                                <div class="poster-card">
+                                    <div class="poster-image-area">
+                                        {coverUrl ? (
+                                            <img
+                                                src={coverUrl}
+                                                alt={game.name}
+                                                class="poster-img"
+                                                loading="lazy"
+                                            />
                                         ) : (
-                                            <p class="owner-empty">プレイヤーはまだいません</p>
+                                            <div class="poster-empty">
+                                                <Gamepad2 class="empty-icon" />
+                                            </div>
                                         )}
+                                        <div class="poster-glow" />
+                                    </div>
+
+                                    <div class="poster-info-glass">
+                                        <div class="info-top">
+                                            <h3 class="game-name-title">
+                                                {game.name}
+                                            </h3>
+                                            <div class="community-count">
+                                                <Users class="icon-xxs" />
+                                                <span>{players.length}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="owner-reveal">
+                                            {players.length > 0 ? (
+                                                <>
+                                                    <div class="avatar-stack">
+                                                        {players
+                                                            .slice(0, 4)
+                                                            .map((p) => {
+                                                                const pUser =
+                                                                    p.user;
+                                                                const userAvatarUrl =
+                                                                    getMediaUrl(
+                                                                        pUser.avatar
+                                                                    );
+                                                                const skill =
+                                                                    getSkillLabel(
+                                                                        p.skill_level
+                                                                    );
+                                                                const imp =
+                                                                    getImpressionLabel(
+                                                                        p.impression
+                                                                    );
+                                                                const rec =
+                                                                    getRecruitmentLabel(
+                                                                        p.recruitment
+                                                                    );
+                                                                const details =
+                                                                    [
+                                                                        skill,
+                                                                        imp,
+                                                                        rec,
+                                                                    ]
+                                                                        .filter(
+                                                                            Boolean
+                                                                        )
+                                                                        .join(
+                                                                            " / "
+                                                                        );
+                                                                const title =
+                                                                    details
+                                                                        ? `${pUser.name} (${details})`
+                                                                        : pUser.name;
+
+                                                                return (
+                                                                    <div
+                                                                        class="stack-avatar"
+                                                                        title={
+                                                                            title
+                                                                        }
+                                                                    >
+                                                                        {userAvatarUrl ? (
+                                                                            <img
+                                                                                src={
+                                                                                    userAvatarUrl
+                                                                                }
+                                                                                alt={
+                                                                                    pUser.name
+                                                                                }
+                                                                            />
+                                                                        ) : (
+                                                                            <div class="stack-placeholder">
+                                                                                {pUser.name.charAt(
+                                                                                    0
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        {players.length > 4 && (
+                                                            <div class="stack-more">
+                                                                +
+                                                                {players.length -
+                                                                    4}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div class="owner-names-mini">
+                                                        {players
+                                                            .map(
+                                                                (p) =>
+                                                                    p.user.name
+                                                            )
+                                                            .join(", ")}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <p class="owner-empty">
+                                                    プレイヤーはまだいません
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    );
-                })}
-            </div>
-        ) : (
-            <div class="empty-gallery">
-                <Gamepad2 class="empty-icon-lg" />
-                <h2>該当するゲームが見つかりません</h2>
-                <p>別のキーワードで検索してみてください。</p>
-            </div>
-        )}
+                        );
+                    })}
+                </div>
+            ) : (
+                <div class="empty-gallery">
+                    <Gamepad2 class="empty-icon-lg" />
+                    <h2>該当するゲームが見つかりません</h2>
+                    <p>別のキーワードで検索してみてください。</p>
+                </div>
+            )
+        }
     </div>
 
     <script>
-        const searchInput = document.getElementById('gameSearch') as HTMLInputElement;
-        const items = document.querySelectorAll('.game-item');
+        const searchInput = document.getElementById(
+            "gameSearch"
+        ) as HTMLInputElement;
+        const items = document.querySelectorAll(".game-item");
 
-        searchInput?.addEventListener('input', (e) => {
+        searchInput?.addEventListener("input", (e) => {
             const query = (e.target as HTMLInputElement).value.toLowerCase();
-            
-            items.forEach(item => {
-                const name = (item as HTMLElement).dataset.name || '';
-                const players = (item as HTMLElement).dataset.players || '';
-                
+
+            items.forEach((item) => {
+                const name = (item as HTMLElement).dataset.name || "";
+                const players = (item as HTMLElement).dataset.players || "";
+
                 if (name.includes(query) || players.includes(query)) {
-                    (item as HTMLElement).style.display = 'block';
+                    (item as HTMLElement).style.display = "block";
                 } else {
-                    (item as HTMLElement).style.display = 'none';
+                    (item as HTMLElement).style.display = "none";
                 }
             });
         });
 
         // スマホ: タップでプレイヤー一覧を表示
-        const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
-        items.forEach(item => {
-            item.addEventListener('click', () => {
+        const isMobile = () => window.matchMedia("(max-width: 768px)").matches;
+        items.forEach((item) => {
+            item.addEventListener("click", () => {
                 if (!isMobile()) return;
                 const el = item as HTMLElement;
-                const wasExpanded = el.classList.contains('is-expanded');
-                items.forEach(i => (i as HTMLElement).classList.remove('is-expanded'));
-                if (!wasExpanded) el.classList.add('is-expanded');
+                const wasExpanded = el.classList.contains("is-expanded");
+                items.forEach((i) =>
+                    (i as HTMLElement).classList.remove("is-expanded")
+                );
+                if (!wasExpanded) el.classList.add("is-expanded");
             });
         });
     </script>
@@ -290,7 +385,11 @@ const getRecruitmentLabel = (val: string) => {
         left: 20%;
         width: 300px;
         height: 300px;
-        background: radial-gradient(circle, var(--accent-secondary) 0%, transparent 70%);
+        background: radial-gradient(
+            circle,
+            var(--accent-secondary) 0%,
+            transparent 70%
+        );
         animation: float 10s ease-in-out infinite;
     }
 
@@ -299,13 +398,22 @@ const getRecruitmentLabel = (val: string) => {
         right: 20%;
         width: 400px;
         height: 400px;
-        background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%);
+        background: radial-gradient(
+            circle,
+            var(--accent-primary) 0%,
+            transparent 70%
+        );
         animation: float 12s ease-in-out infinite reverse;
     }
 
     @keyframes float {
-        0%, 100% { transform: translate(0, 0); }
-        50% { transform: translate(20px, -20px); }
+        0%,
+        100% {
+            transform: translate(0, 0);
+        }
+        50% {
+            transform: translate(20px, -20px);
+        }
     }
 
     .hero-content {
@@ -344,7 +452,11 @@ const getRecruitmentLabel = (val: string) => {
     }
 
     .gradient-text {
-        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        background: linear-gradient(
+            135deg,
+            var(--accent-primary),
+            var(--accent-secondary)
+        );
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -359,8 +471,13 @@ const getRecruitmentLabel = (val: string) => {
         margin: 0 auto;
     }
 
-    .icon-sm { width: 1rem; height: 1rem; }
-    .mobile-break { display: none; }
+    .icon-sm {
+        width: 1rem;
+        height: 1rem;
+    }
+    .mobile-break {
+        display: none;
+    }
 
     @media (max-width: 768px) {
         .hero-section {
@@ -369,10 +486,14 @@ const getRecruitmentLabel = (val: string) => {
         .hero-title {
             font-size: 2.25rem;
         }
-        .mobile-break { display: block; }
-        .desktop-break { display: none; }
+        .mobile-break {
+            display: block;
+        }
+        .desktop-break {
+            display: none;
+        }
     }
-  
+
     .main-content {
         padding-top: 0;
         padding-bottom: 8rem;
@@ -398,7 +519,7 @@ const getRecruitmentLabel = (val: string) => {
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid var(--border-glass);
         border-radius: 100px;
-        box-shadow: var(--shadow-glass), 0 10px 40px -10px rgba(0,0,0,0.1);
+        box-shadow: var(--shadow-glass), 0 10px 40px -10px rgba(0, 0, 0, 0.1);
         width: 100%;
         max-width: 500px;
         transition: all 0.3s cubic-bezier(0.2, 1, 0.2, 1);
@@ -406,7 +527,7 @@ const getRecruitmentLabel = (val: string) => {
 
     .search-bar-glass:focus-within {
         transform: translateY(-2px);
-        box-shadow: var(--shadow-hover), 0 20px 50px -15px rgba(0,0,0,0.15);
+        box-shadow: var(--shadow-hover), 0 20px 50px -15px rgba(0, 0, 0, 0.15);
         border-color: var(--accent-primary);
         max-width: 560px;
     }
@@ -456,26 +577,26 @@ const getRecruitmentLabel = (val: string) => {
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 3rem;
     }
-    
+
     .game-item {
         transition: transform 0.4s cubic-bezier(0.2, 1, 0.2, 1);
     }
-    
+
     .poster-card {
         background: var(--bg-surface-solid);
         border-radius: 20px;
         overflow: hidden;
         position: relative;
-        box-shadow: 0 15px 35px -10px rgba(0,0,0,0.15);
+        box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.15);
         border: 1px solid var(--border-subtle);
         transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
         display: flex;
         flex-direction: column;
     }
-    
+
     .game-item:hover .poster-card {
         transform: translateY(-12px);
-        box-shadow: 0 30px 60px -20px rgba(0,0,0,0.3);
+        box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.3);
         border-color: var(--accent-primary);
     }
 
@@ -501,7 +622,11 @@ const getRecruitmentLabel = (val: string) => {
     .poster-glow {
         position: absolute;
         inset: 0;
-        background: radial-gradient(circle at 50% 50%, var(--accent-primary) 0%, transparent 70%);
+        background: radial-gradient(
+            circle at 50% 50%,
+            var(--accent-primary) 0%,
+            transparent 70%
+        );
         opacity: 0;
         transition: opacity 0.4s ease;
         mix-blend-mode: soft-light;
@@ -521,7 +646,11 @@ const getRecruitmentLabel = (val: string) => {
         color: var(--text-muted);
     }
 
-    .empty-icon { width: 4rem; height: 4rem; opacity: 0.2; }
+    .empty-icon {
+        width: 4rem;
+        height: 4rem;
+        opacity: 0.2;
+    }
 
     /* Glass Info Panel */
     .poster-info-glass {
@@ -537,7 +666,7 @@ const getRecruitmentLabel = (val: string) => {
         padding: 1rem;
         transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
         z-index: 10;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
 
     :global([data-theme="dark"]) .poster-info-glass {
@@ -584,7 +713,10 @@ const getRecruitmentLabel = (val: string) => {
         flex-shrink: 0;
     }
 
-    .icon-xxs { width: 0.8rem; height: 0.8rem; }
+    .icon-xxs {
+        width: 0.8rem;
+        height: 0.8rem;
+    }
 
     /* Revealed Owners */
     .owner-reveal {
@@ -617,12 +749,18 @@ const getRecruitmentLabel = (val: string) => {
         overflow: hidden;
         margin-left: -10px;
         background: var(--bg-surface-hover);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
 
-    .stack-avatar:first-child { margin-left: 0; }
+    .stack-avatar:first-child {
+        margin-left: 0;
+    }
 
-    .stack-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .stack-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
 
     .stack-placeholder {
         width: 100%;
@@ -674,30 +812,55 @@ const getRecruitmentLabel = (val: string) => {
         margin-bottom: 2rem;
     }
 
-    .empty-gallery h2 { margin-bottom: 1rem; opacity: 0.8; }
-    .empty-gallery p { color: var(--text-muted); }
+    .empty-gallery h2 {
+        margin-bottom: 1rem;
+        opacity: 0.8;
+    }
+    .empty-gallery p {
+        color: var(--text-muted);
+    }
 
     @media (max-width: 640px) {
-        .games-gallery { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2rem; }
-        .search-section { margin-bottom: 3rem; margin-top: -1.5rem; }
+        .games-gallery {
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 2rem;
+        }
+        .search-section {
+            margin-bottom: 3rem;
+            margin-top: -1.5rem;
+        }
         .search-bar-glass {
             max-width: 100%;
             gap: 0.75rem;
             padding: 0.5rem 0.75rem 0.5rem 1rem;
         }
-        .search-bar-glass:focus-within { max-width: 100%; }
+        .search-bar-glass:focus-within {
+            max-width: 100%;
+        }
         .stats-pill {
             padding: 0.4rem 0.75rem;
             flex-shrink: 0;
         }
-        .stats-pill .label { display: none; }
-        .stats-pill .count::after { content: '件'; font-weight: 500; margin-left: 0.15em; }
-        .poster-info-glass { bottom: 8px; left: 8px; right: 8px; }
+        .stats-pill .label {
+            display: none;
+        }
+        .stats-pill .count::after {
+            content: "件";
+            font-weight: 500;
+            margin-left: 0.15em;
+        }
+        .poster-info-glass {
+            bottom: 8px;
+            left: 8px;
+            right: 8px;
+        }
     }
 
     /* スマホ: タップでプレイヤー一覧を表示（ホバーが効かないため） */
     @media (max-width: 768px) {
-        .game-item { cursor: pointer; }
+        .game-item {
+            cursor: pointer;
+        }
         .game-item .owner-reveal {
             height: 0;
             opacity: 0;

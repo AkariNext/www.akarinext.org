@@ -1,26 +1,26 @@
 ---
+import type { GameServer } from "../lib/payload";
+
 interface Props {
-  server: {
-    id: number;
-    name: string;
-    status: "published" | "draft";
-    type: "minecraft" | "other" | "web";
-    ip: string;
-    port: number;
-    protocol: string;
-    description?: string;
-  };
+    server: GameServer;
 }
 
 const { server } = Astro.props;
-const isWeb = server.type === 'web';
-const isBedrock = server.type === 'minecraft' && (server.protocol?.toLowerCase().includes('bedrock') || server.port === 19132);
+const isWeb = server.type === "web";
+const isBedrock =
+    server.type === "minecraft" &&
+    (server.protocol?.toLowerCase().includes("bedrock") ||
+        server.port === 19132);
 
 // Initial placeholder values
 const address = server.ip;
 ---
 
-<server-card data-server={JSON.stringify(server)} data-is-bedrock={String(isBedrock)} class="server-card glass-card loading">
+<server-card
+    data-server={JSON.stringify(server)}
+    data-is-bedrock={String(isBedrock)}
+    class="server-card glass-card loading"
+>
     <div class="server-header">
         <div class="server-ident">
             <div class="status-badge bg-loading">
@@ -30,39 +30,74 @@ const address = server.ip;
             <h3 class="server-title">{server.name}</h3>
         </div>
         <div class="server-type-pill">
-            {server.type === 'minecraft' 
-                ? (isBedrock ? 'Minecraft (BE)' : 'Minecraft') 
-                : (server.type === 'web' ? 'Web Service' : (server.protocol || 'Service'))}
+            {
+                server.type === "minecraft"
+                    ? isBedrock
+                        ? "Minecraft (BE)"
+                        : "Minecraft"
+                    : server.type === "web"
+                    ? "Web Service"
+                    : server.protocol || "Service"
+            }
         </div>
     </div>
 
     <div class="server-body">
         <div class="skeleton-content">
-             <div class="skeleton-line w-3_4"></div>
-             <div class="skeleton-grid">
-                 <div class="skeleton-box"></div>
-                 <div class="skeleton-box"></div>
-             </div>
+            <div class="skeleton-line w-3_4"></div>
+            <div class="skeleton-grid">
+                <div class="skeleton-box"></div>
+                <div class="skeleton-box"></div>
+            </div>
         </div>
-        
+
         <div class="live-content" style="display: none;">
-             <!-- Content will be injected via JS -->
+            <!-- Content will be injected via JS -->
         </div>
 
         {server.description && <p class="server-desc">{server.description}</p>}
     </div>
 
     <div class="server-footer">
-        {isWeb ? (
-            <a href={server.ip.startsWith('http') ? server.ip : `https://${server.ip}`} target="_blank" rel="noopener noreferrer" class="visit-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-xs"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> サイトを開く
-            </a>
-        ) : (
-             <div class="copy-ip" data-ip={`${server.ip}:${server.port}`}>
-                <span class="ip-text">{server.ip}:{server.port}</span>
-                <button class="copy-btn">コピー</button>
-            </div>
-        )}
+        {
+            isWeb ? (
+                <a
+                    href={
+                        server.ip.startsWith("http")
+                            ? server.ip
+                            : `https://${server.ip}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="visit-btn"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="icon-xs"
+                    >
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                        <path d="M2 12h20" />
+                    </svg>{" "}
+                    サイトを開く
+                </a>
+            ) : (
+                <div class="copy-ip" data-ip={`${server.ip}:${server.port}`}>
+                    <span class="ip-text">
+                        {server.ip}:{server.port}
+                    </span>
+                    <button class="copy-btn">コピー</button>
+                </div>
+            )
+        }
     </div>
 </server-card>
 
@@ -78,9 +113,15 @@ const address = server.ip;
         position: relative;
     }
 
-    .server-card.online { border-top: 4px solid #10b981; }
-    .server-card.offline { border-top: 4px solid #ef4444; }
-    .server-card.loading { border-top: 4px solid var(--border-subtle); }
+    .server-card.online {
+        border-top: 4px solid #10b981;
+    }
+    .server-card.offline {
+        border-top: 4px solid #ef4444;
+    }
+    .server-card.loading {
+        border-top: 4px solid var(--border-subtle);
+    }
 
     .server-header {
         padding: 1.5rem 1.5rem 1rem;
@@ -111,9 +152,19 @@ const address = server.ip;
         align-self: flex-start;
     }
 
-    .bg-online { background: #10b981; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25); }
-    .bg-offline { background: #ef4444; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2); }
-    .bg-loading { background: var(--bg-surface-hover); color: var(--text-muted); border: 1px solid var(--border-subtle); }
+    .bg-online {
+        background: #10b981;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+    }
+    .bg-offline {
+        background: #ef4444;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+    }
+    .bg-loading {
+        background: var(--bg-surface-hover);
+        color: var(--text-muted);
+        border: 1px solid var(--border-subtle);
+    }
 
     .loader-spinner {
         width: 12px;
@@ -124,7 +175,11 @@ const address = server.ip;
         animation: spin 1s linear infinite;
     }
 
-    @keyframes spin { 100% { transform: rotate(360deg); } }
+    @keyframes spin {
+        100% {
+            transform: rotate(360deg);
+        }
+    }
 
     .server-title {
         font-size: 1.25rem;
@@ -162,12 +217,36 @@ const address = server.ip;
         gap: 1rem;
         animation: pulse 1.5s infinite ease-in-out;
     }
-    .skeleton-line { height: 1rem; background: var(--bg-surface-hover); border-radius: 4px; }
-    .w-3_4 { width: 75%; }
-    .skeleton-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    .skeleton-box { height: 3.5rem; background: var(--bg-surface-hover); border-radius: 12px; }
+    .skeleton-line {
+        height: 1rem;
+        background: var(--bg-surface-hover);
+        border-radius: 4px;
+    }
+    .w-3_4 {
+        width: 75%;
+    }
+    .skeleton-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    .skeleton-box {
+        height: 3.5rem;
+        background: var(--bg-surface-hover);
+        border-radius: 12px;
+    }
 
-    @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 0.3; } 100% { opacity: 0.6; } }
+    @keyframes pulse {
+        0% {
+            opacity: 0.6;
+        }
+        50% {
+            opacity: 0.3;
+        }
+        100% {
+            opacity: 0.6;
+        }
+    }
 
     /* Dynamic Content Styles (Scoped via :global) */
     .server-card :global(.motd-container) {
@@ -175,7 +254,7 @@ const address = server.ip;
         padding: 0.75rem 1rem;
         border-radius: 8px;
         border-left: 3px solid var(--accent-secondary);
-        font-family: 'Noto Sans JP', sans-serif;
+        font-family: "Noto Sans JP", sans-serif;
         font-size: 0.85rem;
         line-height: 1.5;
         color: var(--text-main);
@@ -185,7 +264,9 @@ const address = server.ip;
         margin-bottom: 1rem;
     }
 
-    .server-card :global(.motd-line) { margin: 0; }
+    .server-card :global(.motd-line) {
+        margin: 0;
+    }
 
     .server-card :global(.server-stats-grid) {
         display: grid;
@@ -260,8 +341,10 @@ const address = server.ip;
         z-index: 0;
         color: var(--accent-primary);
     }
-    
-    .server-card :global(.bg-stat-online) { color: #10b981; }
+
+    .server-card :global(.bg-stat-online) {
+        color: #10b981;
+    }
 
     /* Player List */
     .server-card :global(.player-list-section) {
@@ -293,7 +376,7 @@ const address = server.ip;
         transition: transform 0.2s;
         position: relative;
     }
-    
+
     .server-card :global(.player-chip:hover) {
         transform: scale(1.2);
         z-index: 10;
@@ -305,7 +388,7 @@ const address = server.ip;
         height: 100%;
         object-fit: cover;
     }
-    
+
     .server-card :global(.more-players) {
         font-size: 0.75rem;
         color: var(--text-muted);
@@ -332,7 +415,7 @@ const address = server.ip;
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
-        font-family: 'Outfit', monospace;
+        font-family: "Outfit", monospace;
         color: var(--text-main);
         font-weight: 600;
         margin-bottom: 0.5rem;
@@ -366,7 +449,7 @@ const address = server.ip;
         padding: 0.4rem 0.5rem 0.4rem 1rem;
         border-radius: 8px;
         border: 1px solid var(--border-subtle);
-        font-family: 'Outfit', monospace;
+        font-family: "Outfit", monospace;
     }
 
     .ip-text {
@@ -415,7 +498,10 @@ const address = server.ip;
         box-shadow: var(--shadow-sm);
     }
 
-    .icon-xs { width: 1rem; height: 1rem; }
+    .icon-xs {
+        width: 1rem;
+        height: 1rem;
+    }
 </style>
 
 <script>
@@ -428,10 +514,10 @@ const address = server.ip;
         async init() {
             let serverData: any = {};
             try {
-                const rawData = this.getAttribute('data-server'); 
+                const rawData = this.getAttribute("data-server");
                 serverData = rawData ? JSON.parse(rawData) : {};
             } catch (e) {
-                console.error('Failed to parse server data', e);
+                console.error("Failed to parse server data", e);
                 return;
             }
 
@@ -440,87 +526,97 @@ const address = server.ip;
                 return;
             }
 
-            const isBedrock = this.getAttribute('data-is-bedrock') === 'true';
-            
+            const isBedrock = this.getAttribute("data-is-bedrock") === "true";
+
             try {
                 const query = new URLSearchParams({
                     type: serverData.type,
                     ip: serverData.ip,
-                    port: String(serverData.port || ''),
-                    bedrock: String(isBedrock)
+                    port: String(serverData.port || ""),
+                    bedrock: String(isBedrock),
                 });
 
                 const res = await fetch(`/api/server-status?${query}`);
-                if (!res.ok) throw new Error('API Error');
+                if (!res.ok) throw new Error("API Error");
                 const data = await res.json();
-                
+
                 this.render(data, serverData);
             } catch (e) {
-                console.error('Failed to load server status', e);
+                console.error("Failed to load server status", e);
                 this.renderError();
             }
         }
 
         renderError() {
-            this.classList.remove('loading');
-            this.classList.add('offline');
-            const statusText = this.querySelector('.status-text');
+            this.classList.remove("loading");
+            this.classList.add("offline");
+            const statusText = this.querySelector(".status-text");
             if (statusText) {
-                statusText.textContent = '不明';
-                statusText.parentElement?.classList.remove('bg-loading');
-                statusText.parentElement?.classList.add('bg-offline');
-                const spinner = statusText.parentElement?.querySelector('.loader-spinner');
+                statusText.textContent = "不明";
+                statusText.parentElement?.classList.remove("bg-loading");
+                statusText.parentElement?.classList.add("bg-offline");
+                const spinner =
+                    statusText.parentElement?.querySelector(".loader-spinner");
                 if (spinner) spinner.remove();
             }
-            
+
             this.toggleContent(false);
-            
-            const liveContent = this.querySelector('.live-content');
+
+            const liveContent = this.querySelector(".live-content");
             if (liveContent) {
                 liveContent.innerHTML = `<div class="offline-placeholder"><p class="offline-msg">ステータス取得失敗</p></div>`;
             }
         }
 
         toggleContent(showLive: boolean) {
-            const skeleton = this.querySelector('.skeleton-content') as HTMLElement;
-            const live = this.querySelector('.live-content') as HTMLElement;
-            if (skeleton) skeleton.style.display = showLive ? 'none' : 'flex';
-            if (live) live.style.display = showLive ? 'block' : 'none';
+            const skeleton = this.querySelector(
+                ".skeleton-content"
+            ) as HTMLElement;
+            const live = this.querySelector(".live-content") as HTMLElement;
+            if (skeleton) skeleton.style.display = showLive ? "none" : "flex";
+            if (live) live.style.display = showLive ? "block" : "none";
         }
 
         render(data: any, serverData: any) {
-             this.classList.remove('loading');
-             const isOnline = data.online;
-             const statusBadge = this.querySelector('.status-badge');
-             
-             // Update Status Badge
-             if (statusBadge) {
-                 statusBadge.className = `status-badge ${isOnline ? 'bg-online' : 'bg-offline'}`;
-                 statusBadge.innerHTML = isOnline 
+            this.classList.remove("loading");
+            const isOnline = data.online;
+            const statusBadge = this.querySelector(".status-badge");
+
+            // Update Status Badge
+            if (statusBadge) {
+                statusBadge.className = `status-badge ${
+                    isOnline ? "bg-online" : "bg-offline"
+                }`;
+                statusBadge.innerHTML = isOnline
                     ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> <span>ONLINE</span>`
                     : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> <span>OFFLINE</span>`;
-             }
-            
-            const liveContent = this.querySelector('.live-content');
+            }
+
+            const liveContent = this.querySelector(".live-content");
             if (!liveContent) return;
 
             if (isOnline) {
-                this.classList.add('online');
-                
-                let html = '';
-                
+                this.classList.add("online");
+
+                let html = "";
+
                 // MOTD
-                 if (data.motd?.clean && data.motd.clean.length > 0) {
+                if (data.motd?.clean && data.motd.clean.length > 0) {
                     html += `<div class="motd-container">
-                        ${data.motd.clean.map((line: string) => `<p class="motd-line">${line}</p>`).join('')}
+                        ${data.motd.clean
+                            .map(
+                                (line: string) =>
+                                    `<p class="motd-line">${line}</p>`
+                            )
+                            .join("")}
                     </div>`;
                 }
 
                 // Stats Grid
                 html += `<div class="server-stats-grid">`;
-                
+
                 // Players
-                if (serverData.type === 'minecraft') {
+                if (serverData.type === "minecraft") {
                     html += `
                         <div class="server-stat">
                             <div class="stat-header">
@@ -528,22 +624,30 @@ const address = server.ip;
                                 <span>Players</span>
                             </div>
                             <div class="stat-value">
-                                ${data.players?.online || 0}<span class="stat-divider">/</span><span class="stat-sub">${data.players?.max || 0}</span>
+                                ${
+                                    data.players?.online || 0
+                                }<span class="stat-divider">/</span><span class="stat-sub">${
+                        data.players?.max || 0
+                    }</span>
                             </div>
                         </div>
                     `;
                 }
-                
+
                 // Availability
-                 html += `
+                html += `
                     <div class="server-stat">
                         <div class="stat-header">
                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
                              <span>Uptime</span>
                         </div>
-                        <div class="stat-value ${data.availability > 99 ? 'bg-stat-online' : ''}">${data.availability ?? 100}<span class="stat-sub">%</span></div>
+                        <div class="stat-value ${
+                            data.availability > 99 ? "bg-stat-online" : ""
+                        }">${
+                    data.availability ?? 100
+                }<span class="stat-sub">%</span></div>
                     </div>`;
-                
+
                 // Ping / Sparkline
                 html += `
                     <div class="server-stat">
@@ -552,34 +656,53 @@ const address = server.ip;
                             <span>Ping</span>
                         </div>
                         <div class="ping-meta">
-                            <span class="stat-value">${data.avgPing}<span class="stat-sub">ms</span></span>
+                            <span class="stat-value">${
+                                data.avgPing
+                            }<span class="stat-sub">ms</span></span>
                         </div>
-                        ${data.sparklinePath ? `
+                        ${
+                            data.sparklinePath
+                                ? `
                             <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
                                 <path d="${data.sparklinePath}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
-                        ` : ''}
+                        `
+                                : ""
+                        }
                     </div>
                 </div>`;
-                
+
                 // Player List
                 if (data.players?.list && data.players.list.length > 0) {
-                     html += `<div class="player-list-section">
+                    html += `<div class="player-list-section">
                         <span class="mini-label">Online</span>
                         <div class="player-avatars">
-                            ${data.players.list.slice(0, 10).map((p: any) => `
+                            ${data.players.list
+                                .slice(0, 10)
+                                .map(
+                                    (p: any) => `
                                 <div class="player-chip" title="${p.name}">
-                                    <img src="https://minotar.net/avatar/${p.uuid || p.name}/28" class="player-head" onerror="this.src='https://minotar.net/avatar/steve/28'">
+                                    <img src="https://minotar.net/avatar/${
+                                        p.uuid || p.name
+                                    }/28" class="player-head" onerror="this.src='https://minotar.net/avatar/steve/28'">
                                 </div>
-                            `).join('')}
-                            ${data.players.list.length > 10 ? `<div class="more-players">+${data.players.list.length - 10}</div>` : ''}
+                            `
+                                )
+                                .join("")}
+                            ${
+                                data.players.list.length > 10
+                                    ? `<div class="more-players">+${
+                                          data.players.list.length - 10
+                                      }</div>`
+                                    : ""
+                            }
                         </div>
                     </div>`;
                 }
 
                 liveContent.innerHTML = html;
             } else {
-                this.classList.add('offline');
+                this.classList.add("offline");
                 liveContent.innerHTML = `
                     <div class="offline-placeholder">
                         <div class="server-ip-display">
@@ -594,23 +717,23 @@ const address = server.ip;
         }
     }
 
-    if (!customElements.get('server-card')) {
-        customElements.define('server-card', ServerCardElement);
+    if (!customElements.get("server-card")) {
+        customElements.define("server-card", ServerCardElement);
     }
-    
+
     // Copy Logic
-    document.addEventListener('click', (e) => {
+    document.addEventListener("click", (e) => {
         const target = e.target as HTMLElement;
-        if (target.closest('.copy-btn')) {
-             const container = target.closest('.copy-ip');
-             const ip = container?.getAttribute('data-ip');
-             const btn = target.closest('.copy-btn');
-             if (ip && btn) {
+        if (target.closest(".copy-btn")) {
+            const container = target.closest(".copy-ip");
+            const ip = container?.getAttribute("data-ip");
+            const btn = target.closest(".copy-btn");
+            if (ip && btn) {
                 navigator.clipboard.writeText(ip);
                 const originalText = btn.textContent;
-                btn.textContent = 'COPIED';
-                setTimeout(() => btn.textContent = originalText, 2000);
-             }
+                btn.textContent = "COPIED";
+                setTimeout(() => (btn.textContent = originalText), 2000);
+            }
         }
     });
 </script>

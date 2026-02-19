@@ -1,109 +1,138 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { directus, readItem, readItems, skipDirectusFetch, type Author, type GamePlayer, type Post } from "../../lib/directus";
-import { Twitter, Github, Globe, Twitch, Youtube, Gamepad2, Play, CheckCircle, MessageSquare, BookOpen, Clock, ArrowRight, Shield, Users, UserSearch, HelpCircle, GraduationCap, MessagesSquare } from "lucide-astro";
+import {
+    payloadClient,
+    getMediaUrl,
+    type Author,
+    type Post,
+    type Game,
+} from "../../lib/payload";
+import {
+    Twitter,
+    Github,
+    Globe,
+    Twitch,
+    Youtube,
+    Gamepad2,
+    MessageSquare,
+    BookOpen,
+    Clock,
+    ArrowRight,
+    Shield,
+    Users,
+    UserSearch,
+    HelpCircle,
+    GraduationCap,
+} from "lucide-astro";
 import PostCard from "../../components/PostCard.astro";
 
 const { id } = Astro.params;
 
 if (!id) {
-    return Astro.redirect('/404');
+    return Astro.redirect("/404");
+}
+
+// Local GamePlayer Interface for View
+interface GamePlayer {
+    id: number; // Placeholder
+    game: Game;
+    started_at: string;
+    status: "playing" | "finished";
+    skill_level?: string;
+    impression?: string;
+    recruitment?: string;
 }
 
 let user: Author | null = null;
 let allGames: GamePlayer[] = [];
 let userPosts: Post[] = [];
+let avatarUrl: string | undefined = undefined;
 
-if (!skipDirectusFetch) {
-    try {
-        const userId = parseInt(id);
-        if (Number.isNaN(userId)) {
-             return Astro.redirect('/404');
-        }
-
-        // Fetch User and their Games (M2M)
-        user = await directus.request(readItem('authors', userId, {
-            fields: [
-                '*',
-                'playing_games.games_id.id',
-                'playing_games.games_id.name',
-                'playing_games.games_id.slug',
-                'playing_games.games_id.cover_image',
-                'playing_games.skill_level',
-                'playing_games.impression',
-                'playing_games.recruitment',
-                'finished_games.games_id.id',
-                'finished_games.games_id.name',
-                'finished_games.games_id.slug',
-                'finished_games.games_id.cover_image',
-                'finished_games.skill_level',
-                'finished_games.impression',
-                'finished_games.recruitment',
-            ]
-        }));
-
-        // Transform M2M to GamePlayer structure
-        if (user.playing_games) {
-            user.playing_games.forEach((g: any) => {
-                if (g.games_id) {
-                    allGames.push({
-                        id: 0,
-                        user: user!,
-                        game: g.games_id,
-                        started_at: '',
-                        status: 'playing',
-                        skill_level: g.skill_level,
-                        impression: g.impression,
-                        recruitment: g.recruitment
-                    });
-                }
-            });
-        }
-
-        if (user.finished_games) {
-            user.finished_games.forEach((g: any) => {
-                if (g.games_id) {
-                    allGames.push({
-                        id: 0,
-                        user: user!,
-                        game: g.games_id,
-                        started_at: '',
-                        status: 'finished',
-                        skill_level: g.skill_level,
-                        impression: g.impression,
-                        recruitment: g.recruitment
-                    });
-                }
-            });
-        }
-
-        const posts = await directus.request(readItems('posts', {
-            filter: {
-                author: { id: { _eq: userId } },
-                status: { _eq: 'published' }
-            } as any,
-            fields: ['id', 'title', 'slug', 'published_date', 'category', 'image', { author: ['id', 'name', 'avatar'] }],
-            sort: ['-published_date'],
-        })) as unknown as Post[];
-
-        if (posts) {
-            userPosts = posts;
-        }
-
-    } catch (e) {
-        console.error("Error fetching user profile:", e);
+try {
+    const userId = parseInt(id);
+    if (Number.isNaN(userId)) {
+        return Astro.redirect("/404");
     }
+
+    // Fetch User and their Games
+    // depth: 2 to get game details AND game cover image
+    const usersRes = await payloadClient.items<Author>("authors").readByQuery({
+        where: { id: { equals: userId } },
+        limit: 1,
+        depth: 2,
+    });
+
+    if (usersRes.length > 0) {
+        user = usersRes[0];
+
+        avatarUrl = getMediaUrl(user.avatar);
+
+        // Transform Playing Games
+        if (user.playing_games && Array.isArray(user.playing_games)) {
+            user.playing_games.forEach((g: any) => {
+                const gameObj = g.game; // Should be expanded object due to depth: 2
+                if (gameObj && typeof gameObj === "object") {
+                    allGames.push({
+                        id: 0,
+                        game: gameObj as Game,
+                        started_at: "",
+                        status: "playing",
+                        skill_level: g.skill_level,
+                        impression: g.impression,
+                        recruitment: g.recruitment,
+                    });
+                }
+            });
+        }
+
+        // Transform Finished Games
+        if (user.finished_games && Array.isArray(user.finished_games)) {
+            user.finished_games.forEach((g: any) => {
+                const gameObj = g.game;
+                if (gameObj && typeof gameObj === "object") {
+                    allGames.push({
+                        id: 0,
+                        game: gameObj as Game,
+                        started_at: "",
+                        status: "finished",
+                        skill_level: g.skill_level,
+                        impression: g.impression,
+                        recruitment: g.recruitment,
+                    });
+                }
+            });
+        }
+    }
+
+    // Fetch Authored Posts
+    const postsRes = await payloadClient.items<Post>("posts").readByQuery({
+        where: {
+            // Check if user.id works directly or we need relationship query
+            // Usually 'author' field in Post stores the ID or relationship
+            author: { equals: userId },
+            status: { equals: "published" },
+        },
+        sort: "-published_date",
+        limit: 20,
+    });
+    userPosts = postsRes;
+} catch (e) {
+    console.error("Error fetching user profile:", e);
+}
+
+if (!user) {
+    return Astro.redirect("/404");
 }
 
 // Contribution Graph Logic
 const generateContributionData = () => {
     const data: Record<string, number> = {};
     const today = new Date();
-    
+
     // Combine activity dates from posts
-    userPosts.forEach(p => {
+    userPosts.forEach((p) => {
         if (p.published_date) {
-            const date = new Date(p.published_date).toISOString().split('T')[0];
+            const date = new Date(p.published_date).toISOString().split("T")[0];
             data[date] = (data[date] || 0) + 1;
         }
     });
@@ -113,9 +142,9 @@ const generateContributionData = () => {
     for (let i = 364; i >= 0; i--) {
         const d = new Date();
         d.setDate(today.getDate() - i);
-        const dateStr = d.toISOString().split('T')[0];
+        const dateStr = d.toISOString().split("T")[0];
         const count = data[dateStr] || 0;
-        
+
         // Level 0-4
         let level = 0;
         if (count > 0) level = 1;
@@ -129,95 +158,130 @@ const generateContributionData = () => {
 };
 
 const activityDays = generateContributionData();
-const totalContributions = Object.values(activityDays).reduce((sum, day) => sum + day.count, 0);
-
-if (!user) {
-    return Astro.redirect('/404');
-}
-
-const directusUrl = import.meta.env.PUBLIC_DIRECTUS_URL || "http://localhost:8055";
-const avatarUrl = user.avatar ? `${directusUrl}/assets/${user.avatar}` : null;
+const totalContributions = Object.values(activityDays).reduce(
+    (sum, day) => sum + day.count,
+    0
+);
 
 const getSocialIcon = (platform: string) => {
     switch (platform?.toLowerCase()) {
-        case 'twitter': return Twitter;
-        case 'x': return Twitter;
-        case 'x (twitter)': return Twitter;
-        case 'github': return Github;
-        case 'twitch': return Twitch;
-        case 'youtube': return Youtube;
-        case 'discord': return MessageSquare;
-        default: return Globe;
+        case "twitter":
+            return Twitter;
+        case "x":
+            return Twitter;
+        case "x (twitter)":
+            return Twitter;
+        case "github":
+            return Github;
+        case "twitch":
+            return Twitch;
+        case "youtube":
+            return Youtube;
+        case "discord":
+            return MessageSquare;
+        default:
+            return Globe;
     }
 };
 
-const getCoverUrl = (cover: string | { id: string } | null | undefined) => {
-    if (!cover) return null;
-    const id = typeof cover === 'string' ? cover : cover.id;
-    return `${directusUrl}/assets/${id}?width=360&height=480&fit=cover`;
-}
-
 const getStatusLabel = (status: string) => {
     switch (status) {
-        case 'playing': return 'プレイ中';
-        case 'finished': return 'プレイ終了';
-        default: return status;
+        case "playing":
+            return "プレイ中";
+        case "finished":
+            return "プレイ終了";
+        default:
+            return status;
     }
-}
+};
 
 const getSkillLabel = (level?: string) => {
     switch (level) {
-        case 'casual': return 'カジュアル';
-        case 'intermediate': return '中級';
-        case 'expert': return 'エキスパート';
-        case 'better_than_you': return 'あなたより上手';
-        default: return null;
+        case "casual":
+            return "カジュアル";
+        case "intermediate":
+            return "中級";
+        case "expert":
+            return "エキスパート";
+        case "better_than_you":
+            return "あなたより上手";
+        default:
+            return null;
     }
-}
+};
 
 const getImpressionLabel = (imp?: string) => {
     switch (imp) {
-        case 'obsessed': return '夢中';
-        case 'love': return '大好き';
-        case 'like': return 'わりと好き';
-        case 'meh': return 'ビミョーかも';
-        case 'give_up': return 'ギブアップ';
-        default: return null;
+        case "obsessed":
+            return "夢中";
+        case "love":
+            return "大好き";
+        case "like":
+            return "わりと好き";
+        case "meh":
+            return "ビミョーかも";
+        case "give_up":
+            return "ギブアップ";
+        default:
+            return null;
     }
-}
+};
 
-const getRecruitmentLabel = (val: string) => {
+const getRecruitmentLabel = (val?: string) => {
     switch (val) {
-        case 'looking_for_group': return { label: 'グループ探してます', icon: UserSearch };
-        case 'invite_anytime': return { label: 'いつでも誘って', icon: Users };
-        case 'need_hints': return { label: 'ヒントを教えて', icon: HelpCircle };
-        case 'can_teach': return { label: '教えられるよ', icon: GraduationCap };
-        case 'discussion_welcome': return { label: '議論大歓迎', icon: MessageSquare };
-        default: return null;
+        case "looking_for_group":
+            return { label: "グループ探してます", icon: UserSearch };
+        case "invite_anytime":
+            return { label: "いつでも誘って", icon: Users };
+        case "need_hints":
+            return { label: "ヒントを教えて", icon: HelpCircle };
+        case "can_teach":
+            return { label: "教えられるよ", icon: GraduationCap };
+        case "discussion_welcome":
+            return { label: "議論大歓迎", icon: MessageSquare };
+        default:
+            return null;
     }
-}
+};
 ---
 
-<Layout title={user.name} description={`${user.name}さんのプロフィールとゲームコレクション。`}>
+<Layout
+    title={user.name}
+    description={`${user.name}さんのプロフィールとゲームコレクション。`}
+>
     <div class="profile-header">
         <div class="container profile-container">
             <div class="profile-avatar-wrapper">
-                {avatarUrl ? (
-                    <img src={avatarUrl} alt={user.name} class="profile-avatar" />
-                ) : (
-                    <div class="profile-avatar-placeholder">
-                        <span class="avatar-initial">{user.name.charAt(0).toUpperCase()}</span>
-                    </div>
-                )}
+                {
+                    avatarUrl ? (
+                        <img
+                            src={avatarUrl}
+                            alt={user.name}
+                            class="profile-avatar"
+                        />
+                    ) : (
+                        <div class="profile-avatar-placeholder">
+                            <span class="avatar-initial">
+                                {user.name.charAt(0).toUpperCase()}
+                            </span>
+                        </div>
+                    )
+                }
             </div>
-            
+
             <div class="profile-info">
                 <div class="profile-title-row">
                     <h1 class="profile-name">{user.name}</h1>
-                    {user.is_staff && <span class="staff-tag-premium"><Shield class="icon-tiny" /> STAFF</span>}
+                    {
+                        user.is_staff && (
+                            <span class="staff-tag-premium">
+                                <Shield class="icon-tiny" /> STAFF
+                            </span>
+                        )
+                    }
                 </div>
                 {user.bio && <p class="profile-bio">{user.bio}</p>}
-                
+
                 <div class="profile-meta-row">
                     <div class="profile-stats-card">
                         <div class="stat-item">
@@ -231,18 +295,26 @@ const getRecruitmentLabel = (val: string) => {
                         </div>
                     </div>
 
-                    {user.social_links && user.social_links.length > 0 && (
-                        <div class="social-links-premium">
-                            {user.social_links.map((link: { platform: string; url: string }) => {
-                                const Icon = getSocialIcon(link.platform);
-                                return (
-                                    <a href={link.url} target="_blank" rel="noopener noreferrer" class="social-link-btn" title={link.platform}>
-                                        <Icon class="social-icon-sm" />
-                                    </a>
-                                );
-                            })}
-                        </div>
-                    )}
+                    {
+                        user.social_links && user.social_links.length > 0 && (
+                            <div class="social-links-premium">
+                                {user.social_links.map((link: any) => {
+                                    const Icon = getSocialIcon(link.platform);
+                                    return (
+                                        <a
+                                            href={link.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="social-link-btn"
+                                            title={link.platform}
+                                        >
+                                            <Icon class="social-icon-sm" />
+                                        </a>
+                                    );
+                                })}
+                            </div>
+                        )
+                    }
                 </div>
             </div>
         </div>
@@ -253,22 +325,26 @@ const getRecruitmentLabel = (val: string) => {
         <section class="activity-section">
             <div class="section-header-row">
                 <h2 class="section-title-premium">
-                    <BookOpen class="title-icon" /> 
+                    <BookOpen class="title-icon" />
                     執筆アクティビティ
                 </h2>
-                <span class="total-activity">{totalContributions} articles published in the last year</span>
+                <span class="total-activity"
+                    >{totalContributions} articles published in the last year</span
+                >
             </div>
-            
+
             <div class="contribution-card-premium">
                 <div class="graph-wrapper">
                     <div class="graph-scroll">
                         <div class="contribution-grid">
-                            {activityDays.map(day => (
-                                <div 
-                                    class={`day-cell level-${day.level}`} 
-                                    title={`${day.date}: ${day.count} activities`}
-                                ></div>
-                            ))}
+                            {
+                                activityDays.map((day) => (
+                                    <div
+                                        class={`day-cell level-${day.level}`}
+                                        title={`${day.date}: ${day.count} activities`}
+                                    />
+                                ))
+                            }
                         </div>
                     </div>
                 </div>
@@ -287,88 +363,125 @@ const getRecruitmentLabel = (val: string) => {
         </section>
 
         <!-- Authored Posts Section -->
-        {userPosts.length > 0 && (
-            <section class="authored-posts-section">
-                <div class="section-header-row">
-                    <h2 class="section-title-premium">
-                        <BookOpen class="title-icon" /> 
-                        執筆した記事
-                    </h2>
-                    <a href="/posts" class="view-all-link">
-                        すべて見る <ArrowRight class="icon-tiny" />
-                    </a>
-                </div>
+        {
+            userPosts.length > 0 && (
+                <section class="authored-posts-section">
+                    <div class="section-header-row">
+                        <h2 class="section-title-premium">
+                            <BookOpen class="title-icon" />
+                            執筆した記事
+                        </h2>
+                        <a href="/posts" class="view-all-link">
+                            すべて見る <ArrowRight class="icon-tiny" />
+                        </a>
+                    </div>
 
-                <div class="posts-grid-compact">
-                    {userPosts.map((post) => (
-                        <PostCard post={post as any} />
-                    ))}
-                </div>
-            </section>
-        )}
+                    <div class="posts-grid-compact">
+                        {userPosts.map((post) => (
+                            <PostCard post={post} />
+                        ))}
+                    </div>
+                </section>
+            )
+        }
 
         <!-- Game Collection Gallery -->
-        {allGames.length > 0 ? (
-            <section class="game-section">
-                <div class="section-header-row">
-                    <h2 class="section-title-premium">
-                        <Gamepad2 class="title-icon" /> 
-                        ゲームコレクション
-                    </h2>
-                    <span class="collection-count">{allGames.length} タイトル</span>
-                </div>
+        {
+            allGames.length > 0 ? (
+                <section class="game-section">
+                    <div class="section-header-row">
+                        <h2 class="section-title-premium">
+                            <Gamepad2 class="title-icon" />
+                            ゲームコレクション
+                        </h2>
+                        <span class="collection-count">
+                            {allGames.length} タイトル
+                        </span>
+                    </div>
 
-                <div class="games-gallery-grid">
-                    {allGames.map((p) => {
-                        const coverUrl = getCoverUrl(p.game.cover_image);
-                        return (
+                    <div class="games-gallery-grid">
+                        {allGames.map((p) => {
+                            const coverUrl = getMediaUrl(p.game.cover_image);
+                            return (
                                 <div class="game-poster-wrapper">
                                     <div class="poster-card-premium">
                                         <div class="poster-image-box">
                                             {coverUrl ? (
-                                                <img src={coverUrl} alt={p.game.name} class="poster-img-fluid" loading="lazy" />
+                                                <img
+                                                    src={coverUrl}
+                                                    alt={p.game.name}
+                                                    class="poster-img-fluid"
+                                                    loading="lazy"
+                                                />
                                             ) : (
                                                 <div class="poster-placeholder-premium">
                                                     <Gamepad2 class="placeholder-icon-lg" />
                                                 </div>
                                             )}
-                                            <div class="poster-overlay-gradient"></div>
+                                            <div class="poster-overlay-gradient" />
                                         </div>
-                                        
+
                                         <div class="info-overlay-panel">
                                             <div class="info-top-content">
                                                 <div class="title-status-row">
-                                                    <h3 class="game-name-display">{p.game.name}</h3>
-                                                    {p.status === 'playing' && <div class="playing-indicator-dot" title="Currently Playing"></div>}
+                                                    <h3 class="game-name-display">
+                                                        {p.game.name}
+                                                    </h3>
+                                                    {p.status === "playing" && (
+                                                        <div
+                                                            class="playing-indicator-dot"
+                                                            title="Currently Playing"
+                                                        />
+                                                    )}
                                                 </div>
                                             </div>
 
                                             <div class="expand-details">
-                                                {(p.skill_level || p.impression || p.recruitment) && (
+                                                {(p.skill_level ||
+                                                    p.impression ||
+                                                    p.recruitment) && (
                                                     <div class="game-status-details">
                                                         {p.skill_level && (
                                                             <div class="pill-mini skill">
                                                                 <Shield class="icon-nano" />
-                                                                <span>{getSkillLabel(p.skill_level)}</span>
+                                                                <span>
+                                                                    {getSkillLabel(
+                                                                        p.skill_level
+                                                                    )}
+                                                                </span>
                                                             </div>
                                                         )}
                                                         {p.impression && (
                                                             <div class="pill-mini impression">
                                                                 <MessageSquare class="icon-nano" />
-                                                                <span>{getImpressionLabel(p.impression)}</span>
+                                                                <span>
+                                                                    {getImpressionLabel(
+                                                                        p.impression
+                                                                    )}
+                                                                </span>
                                                             </div>
                                                         )}
-                                                        {p.recruitment && (() => {
-                                                            const item = getRecruitmentLabel(p.recruitment);
-                                                            if (!item) return null;
-                                                            const Icon = item.icon;
-                                                            return (
-                                                                <div class="pill-mini recruitment">
-                                                                    <Icon class="icon-nano" />
-                                                                    <span>{item.label}</span>
-                                                                </div>
-                                                            );
-                                                        })()}
+                                                        {p.recruitment &&
+                                                            (() => {
+                                                                const item =
+                                                                    getRecruitmentLabel(
+                                                                        p.recruitment
+                                                                    );
+                                                                if (!item)
+                                                                    return null;
+                                                                const Icon =
+                                                                    item.icon;
+                                                                return (
+                                                                    <div class="pill-mini recruitment">
+                                                                        <Icon class="icon-nano" />
+                                                                        <span>
+                                                                            {
+                                                                                item.label
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })()}
                                                     </div>
                                                 )}
                                                 <div class="status-footer">
@@ -378,40 +491,41 @@ const getRecruitmentLabel = (val: string) => {
                                         </div>
                                     </div>
                                 </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
+                </section>
+            ) : (
+                <div class="profile-empty-state glass-card">
+                    <Gamepad2 class="empty-icon-fancy" />
+                    <p>登録されているゲームはまだありません。</p>
                 </div>
-            </section>
-        ) : (
-            <div class="profile-empty-state glass-card">
-                <Gamepad2 class="empty-icon-fancy" />
-                <p>登録されているゲームはまだありません。</p>
-            </div>
-        )}
+            )
+        }
     </div>
 
     <script>
-        const cards = document.querySelectorAll('.game-poster-wrapper');
-        cards.forEach(card => {
-            card.addEventListener('click', (e) => {
+        const cards = document.querySelectorAll(".game-poster-wrapper");
+        cards.forEach((card) => {
+            card.addEventListener("click", (e) => {
                 // Check if we are on a touch device or mobile
                 if (window.innerWidth <= 768) {
-                    const isActive = card.classList.contains('is-active');
-                    
+                    const isActive = card.classList.contains("is-active");
+
                     // Close other cards
-                    cards.forEach(c => c.classList.remove('is-active'));
-                    
+                    cards.forEach((c) => c.classList.remove("is-active"));
+
                     if (!isActive) {
-                        card.classList.add('is-active');
+                        card.classList.add("is-active");
                     }
                 }
             });
         });
 
         // Close when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!(e.target as HTMLElement).closest('.game-poster-wrapper')) {
-                cards.forEach(c => c.classList.remove('is-active'));
+        document.addEventListener("click", (e) => {
+            if (!(e.target as HTMLElement).closest(".game-poster-wrapper")) {
+                cards.forEach((c) => c.classList.remove("is-active"));
             }
         });
     </script>
@@ -428,13 +542,17 @@ const getRecruitmentLabel = (val: string) => {
     }
 
     .profile-header::before {
-        content: '';
+        content: "";
         position: absolute;
         top: -10%;
         right: -5%;
         width: 400px;
         height: 400px;
-        background: radial-gradient(circle, var(--accent-soft) 0%, transparent 70%);
+        background: radial-gradient(
+            circle,
+            var(--accent-soft) 0%,
+            transparent 70%
+        );
         opacity: 0.6;
         z-index: 0;
     }
@@ -448,7 +566,7 @@ const getRecruitmentLabel = (val: string) => {
         text-align: center;
         gap: 3.5rem;
     }
-    
+
     @media (min-width: 992px) {
         .profile-container {
             flex-direction: row;
@@ -463,13 +581,14 @@ const getRecruitmentLabel = (val: string) => {
         flex-shrink: 0;
     }
 
-    .profile-avatar, .profile-avatar-placeholder {
+    .profile-avatar,
+    .profile-avatar-placeholder {
         width: 180px;
         height: 180px;
         border-radius: 48px;
         object-fit: cover;
         border: 4px solid var(--bg-surface-solid);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
         background: var(--bg-surface-solid);
         transition: transform 0.5s cubic-bezier(0.2, 1, 0.2, 1);
     }
@@ -482,6 +601,10 @@ const getRecruitmentLabel = (val: string) => {
         font-size: 4rem;
         color: var(--accent-primary);
         font-weight: 900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
     }
 
     .profile-info {
@@ -494,6 +617,13 @@ const getRecruitmentLabel = (val: string) => {
         gap: 1.5rem;
         margin-bottom: 1rem;
         flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    @media (min-width: 992px) {
+        .profile-title-row {
+            justify-content: flex-start;
+        }
     }
 
     .profile-name {
@@ -530,6 +660,13 @@ const getRecruitmentLabel = (val: string) => {
         align-items: center;
         gap: 2.5rem;
         flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    @media (min-width: 992px) {
+        .profile-meta-row {
+            justify-content: flex-start;
+        }
     }
 
     .profile-stats-card {
@@ -644,23 +781,50 @@ const getRecruitmentLabel = (val: string) => {
         border: 1px solid rgba(0, 0, 0, 0.05);
     }
 
-    .level-0 { background: var(--bg-surface-hover); border-color: var(--border-subtle); }
-    .level-1 { background: #0e4429; border-color: rgba(0, 255, 0, 0.1); }
-    .level-2 { background: #006d32; border-color: rgba(0, 255, 0, 0.1); }
-    .level-3 { background: #26a641; border-color: rgba(0, 255, 0, 0.1); }
-    .level-4 { background: #39d353; border-color: rgba(0, 255, 0, 0.1); }
+    .level-0 {
+        background: var(--bg-surface-hover);
+        border-color: var(--border-subtle);
+    }
+    .level-1 {
+        background: #0e4429;
+        border-color: rgba(0, 255, 0, 0.1);
+    }
+    .level-2 {
+        background: #006d32;
+        border-color: rgba(0, 255, 0, 0.1);
+    }
+    .level-3 {
+        background: #26a641;
+        border-color: rgba(0, 255, 0, 0.1);
+    }
+    .level-4 {
+        background: #39d353;
+        border-color: rgba(0, 255, 0, 0.1);
+    }
 
     :global([data-theme="light"]) .day-cell {
         border-color: rgba(27, 31, 35, 0.06);
     }
 
-    :global([data-theme="light"]) .level-0 { background: #ebedf0; }
-    :global([data-theme="light"]) .level-1 { background: #9be9a8; }
-    :global([data-theme="light"]) .level-2 { background: #40c463; }
-    :global([data-theme="light"]) .level-3 { background: #30a14e; }
-    :global([data-theme="light"]) .level-4 { background: #216e39; }
+    :global([data-theme="light"]) .level-0 {
+        background: #ebedf0;
+    }
+    :global([data-theme="light"]) .level-1 {
+        background: #9be9a8;
+    }
+    :global([data-theme="light"]) .level-2 {
+        background: #40c463;
+    }
+    :global([data-theme="light"]) .level-3 {
+        background: #30a14e;
+    }
+    :global([data-theme="light"]) .level-4 {
+        background: #216e39;
+    }
 
-    :global([data-theme="dark"]) .level-0 { background: rgba(255, 255, 255, 0.05); }
+    :global([data-theme="dark"]) .level-0 {
+        background: rgba(255, 255, 255, 0.05);
+    }
 
     .day-cell:hover {
         transform: scale(1.3);
@@ -719,7 +883,7 @@ const getRecruitmentLabel = (val: string) => {
     .game-section {
         margin-bottom: 5rem;
     }
-    
+
     @media (max-width: 768px) {
         .posts-grid-compact {
             grid-template-columns: 1fr;
@@ -776,7 +940,7 @@ const getRecruitmentLabel = (val: string) => {
         overflow: hidden;
         background: var(--bg-surface-solid);
         border: 1px solid var(--border-subtle);
-        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
         transition: all 0.5s cubic-bezier(0.2, 1, 0.2, 1);
         display: flex;
         flex-direction: column;
@@ -785,7 +949,7 @@ const getRecruitmentLabel = (val: string) => {
     .game-poster-wrapper:hover .poster-card-premium,
     .game-poster-wrapper.is-active .poster-card-premium {
         transform: translateY(-10px) rotateX(4deg);
-        box-shadow: 0 30px 60px -15px rgba(0,0,0,0.5);
+        box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5);
         border-color: var(--accent-primary);
     }
 
@@ -799,268 +963,6 @@ const getRecruitmentLabel = (val: string) => {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 0.8s cubic-bezier(0.2, 1, 0.2, 1);
-    }
-
-    .game-poster-wrapper:hover .poster-img-fluid,
-    .game-poster-wrapper.is-active .poster-img-fluid {
-        transform: scale(1.1);
-    }
-
-    .poster-overlay-gradient {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(to top, 
-            rgba(0,0,0,0.7) 0%, 
-            rgba(0,0,0,0.2) 40%, 
-            transparent 100%
-        );
-        z-index: 2;
-    }
-
-    :global([data-theme="dark"]) .poster-overlay-gradient {
-        background: linear-gradient(to top, 
-            rgba(0,0,0,0.95) 0%, 
-            rgba(0,0,0,0.4) 40%, 
-            transparent 100%
-        );
-    }
-
-    /* Immersive Info Panel */
-    .info-overlay-panel {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        padding: 1.5rem;
-        z-index: 3;
-        color: var(--text-main);
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
-        border-top: 1px solid rgba(255, 255, 255, 0.3);
-    }
-
-    :global([data-theme="dark"]) .info-overlay-panel {
-        color: white;
-        background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-        backdrop-filter: blur(0px);
-        border-top: none;
-    }
-
-    .game-poster-wrapper:hover .info-overlay-panel,
-    .game-poster-wrapper.is-active .info-overlay-panel {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        padding-bottom: 2rem;
-    }
-
-    :global([data-theme="dark"]) .game-poster-wrapper:hover .info-overlay-panel,
-    :global([data-theme="dark"]) .game-poster-wrapper.is-active .info-overlay-panel {
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(15px);
-    }
-
-    .title-status-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.75rem;
-    }
-
-    .game-name-display {
-        font-size: 1.25rem;
-        font-weight: 800;
-        color: var(--text-main);
-        margin: 0;
-        line-height: 1.2;
-    }
-
-    :global([data-theme="dark"]) .game-name-display {
-        color: #fff;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
-
-    .playing-indicator-dot {
-        width: 10px;
-        height: 10px;
-        background: #10b981;
-        border-radius: 50%;
-        box-shadow: 0 0 12px #10b981;
-        flex-shrink: 0;
-    }
-
-    .expand-details {
-        max-height: 0;
-        opacity: 0;
-        overflow: hidden;
-        transition: all 0.4s ease;
-    }
-
-    .game-poster-wrapper:hover .expand-details,
-    .game-poster-wrapper.is-active .expand-details {
-        max-height: 200px;
-        opacity: 1;
-        margin-top: 1rem;
-    }
-
-    .game-status-details {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .pill-mini {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--text-muted);
-    }
-
-    :global([data-theme="dark"]) .pill-mini {
-        color: rgba(255,255,255,0.8);
-    }
-
-    .pill-mini .icon-nano {
-        width: 12px;
-        height: 12px;
-        color: var(--accent-primary);
-    }
-
-    .pill-mini.recruitment .icon-nano {
-        color: var(--accent-secondary);
-    }
-
-    .status-footer {
-        font-size: 0.7rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--accent-primary);
-        padding-top: 0.75rem;
-        border-top: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .status-badge.skill {
-        background: rgba(var(--accent-primary-rgb), 0.1);
-        color: var(--accent-primary);
-    }
-    .status-badge.recruitment { 
-        color: var(--accent-secondary);
-        border-color: rgba(var(--accent-secondary-rgb), 0.1);
-    }
-
-    .status-badge-compact.playing {
-        color: white;
-        background: var(--accent-primary);
-        border: none;
-        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
-    }
-
-    .status-badge-compact.playing .status-dot {
-        background: white;
-        box-shadow: 0 0 8px white;
-    }
-
-    .status-badge-compact.finished .status-dot {
-        background: var(--text-muted);
-        opacity: 0.5;
-    }
-
-    .status-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-    }
-    .reveal-content {
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
-        flex: 1;
-    }
-
-    .game-status-details {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-    }
-
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
-        font-size: 0.65rem;
-        padding: 0.15rem 0.4rem;
-        border-radius: 4px;
-        font-weight: 600;
-        letter-spacing: 0.01em;
-        line-height: 1;
-    }
-
-    .status-badge.skill {
-        background: rgba(var(--accent-primary-rgb), 0.1);
-        color: var(--accent-primary);
-        border: 1px solid rgba(var(--accent-primary-rgb), 0.15);
-    }
-
-    .status-badge.impression {
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--text-muted);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .status-badge.recruitment {
-        background: rgba(var(--accent-secondary-rgb), 0.1);
-        color: var(--accent-secondary);
-        border: 1px solid rgba(var(--accent-secondary-rgb), 0.15);
-    }
-
-    .status-badge .icon-tiny {
-        width: 10px;
-        height: 10px;
-        opacity: 0.8;
-    }
-
-    .status-indicator {
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-        margin-top: 0.6rem;
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .status-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--accent-primary);
-        box-shadow: 0 0 8px var(--accent-primary);
-    }
-
-    /* Status Color Variations */
-    .status-indicator.finished {
-        color: var(--text-muted);
-        opacity: 0.7;
-    }
-    .status-indicator.finished .status-dot {
-        background: var(--text-muted);
-        box-shadow: none;
-    }
-
-    .status-indicator.playing .status-dot {
-        background: #10b981; /* Green for playing */
-        box-shadow: 0 0 8px #10b981;
     }
 
     .poster-placeholder-premium {
@@ -1074,37 +976,146 @@ const getRecruitmentLabel = (val: string) => {
     }
 
     .placeholder-icon-lg {
-        width: 3.5rem;
-        height: 3.5rem;
+        width: 4rem;
+        height: 4rem;
         opacity: 0.2;
+    }
+
+    .poster-overlay-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.9) 0%,
+            transparent 60%
+        );
+        z-index: 2;
+    }
+
+    .info-overlay-panel {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 5;
+        padding: 1.5rem;
+        color: white;
+    }
+
+    .title-status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .game-name-display {
+        font-weight: 800;
+        font-size: 1.1rem;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        line-height: 1.2;
+    }
+
+    .playing-indicator-dot {
+        width: 10px;
+        height: 10px;
+        background: #00ff88;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #00ff88;
+        animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+        0% {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+        50% {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+    }
+
+    .expand-details {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
+    }
+
+    .game-poster-wrapper:hover .expand-details,
+    .game-poster-wrapper.is-active .expand-details {
+        max-height: 200px;
+        opacity: 1;
+        margin-top: 1rem;
+    }
+
+    .game-status-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .pill-mini {
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        backdrop-filter: blur(4px);
+    }
+
+    .pill-mini.skill {
+        background: rgba(14, 165, 233, 0.3);
+        color: #bae6fd;
+        border: 1px solid rgba(14, 165, 233, 0.4);
+    }
+    .pill-mini.impression {
+        background: rgba(236, 72, 153, 0.3);
+        color: #fbcfe8;
+        border: 1px solid rgba(236, 72, 153, 0.4);
+    }
+    .pill-mini.recruitment {
+        background: rgba(16, 185, 129, 0.3);
+        color: #a7f3d0;
+        border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .icon-nano {
+        width: 0.7rem;
+        height: 0.7rem;
+    }
+
+    .status-footer {
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding-top: 0.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .profile-empty-state {
         text-align: center;
-        padding: 6rem 2rem;
+        padding: 4rem;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 1.5rem;
+        color: var(--text-muted);
     }
 
     .empty-icon-fancy {
         width: 4rem;
         height: 4rem;
-        color: var(--accent-primary);
         opacity: 0.2;
-    }
-
-    @media (max-width: 640px) {
-        .games-gallery-grid {
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 1rem;
-        }
-        .info-overlay-panel { padding: 1rem; }
-        .game-name-display { font-size: 1rem; }
-        .expand-details { 
-            /* On mobile, keep hidden until tapped (handled by .is-active) */
-            transition: all 0.3s ease;
-        }
     }
 </style>

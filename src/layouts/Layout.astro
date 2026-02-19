@@ -1,7 +1,16 @@
 ---
 import "../styles/global.css";
-import { MessageSquare, LayoutGrid, Gamepad2, Megaphone, Home, Sun, Moon, BookOpen } from "lucide-astro";
-import { directus, readSingleton, skipDirectusFetch } from "../lib/directus";
+import {
+  MessageSquare,
+  LayoutGrid,
+  Gamepad2,
+  Megaphone,
+  Home,
+  Sun,
+  Moon,
+  BookOpen,
+} from "lucide-astro";
+import { payloadClient, getMediaUrl, type Setting } from "../lib/payload";
 
 interface Props {
   title: string;
@@ -11,52 +20,56 @@ interface Props {
 
 // Fetch Global Settings for Logo and Title
 let globalSettings = {
-    site_title: "AkariNext",
-    site_logo: null as string | null
+  site_title: "AkariNext",
+  site_logo: null as string | null,
 };
 
-if (!skipDirectusFetch) {
-    try {
-        const settings = await directus.request(readSingleton("global", {
-            fields: ["site_title", "site_logo"]
-        }));
-        if (settings) {
-             if (settings.site_title) globalSettings.site_title = settings.site_title;
-             if (settings.site_logo) globalSettings.site_logo = settings.site_logo;
-        }
-    } catch (e) {
-        // silent fail
-    }
+try {
+  const settings = await payloadClient.singleton<Setting>("settings").read();
+
+  if (settings) {
+    if (settings.site_title) globalSettings.site_title = settings.site_title;
+    const logoUrl = getMediaUrl(settings.site_logo);
+    if (logoUrl) globalSettings.site_logo = logoUrl;
+  }
+} catch (e) {
+  // silent fail
+  console.error("Failed to load global settings", e);
 }
 
-const { title, description = "コミュニティサイト", image = "/og-image.png" } = Astro.props;
+const { title, description: propDesc, image = "/og-image.png" } = Astro.props;
 // If a specific page title is provided, append the site title. Otherwise just use site title.
-const siteTitle = title ? `${title} | ${globalSettings.site_title}` : globalSettings.site_title;
+const siteTitle = title
+  ? `${title} | ${globalSettings.site_title}`
+  : globalSettings.site_title;
+const description =
+  propDesc || `${globalSettings.site_title} コミュニティサイト`;
 
-// Construct Logo URL
-const logoUrl = globalSettings.site_logo 
-    ? `${import.meta.env.PUBLIC_DIRECTUS_URL}/assets/${globalSettings.site_logo}` 
-    : null;
+// Logo URL is already processed above
+const logoUrl = globalSettings.site_logo;
 
 const currentPath = Astro.url.pathname;
 const isActive = (path: string) => {
-    if (path === '/') return currentPath === '/';
-    return currentPath === path || currentPath.startsWith(path + '/');
+  if (path === "/") return currentPath === "/";
+  return currentPath === path || currentPath.startsWith(path + "/");
 };
 
 const navItems = [
-    { label: 'ホーム', path: '/', icon: Home },
-    { label: 'ブログ', path: '/posts', icon: BookOpen },
-    { label: 'ゲーム', path: '/games', icon: Gamepad2 },
-    { label: 'ニュース', path: '/announcements', icon: Megaphone },
+  { label: "ホーム", path: "/", icon: Home },
+  { label: "ブログ", path: "/posts", icon: BookOpen },
+  { label: "ゲーム", path: "/games", icon: Gamepad2 },
+  { label: "ニュース", path: "/announcements", icon: Megaphone },
 ];
 ---
 
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
@@ -64,25 +77,31 @@ const navItems = [
     <meta property="og:description" content={description} />
     <meta property="og:image" content={image} />
     <title>{siteTitle}</title>
-    
+
     <!-- Premium Japanese Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
 
     <script is:inline>
       const getTheme = () => {
-        if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-          return localStorage.getItem('theme');
+        if (
+          typeof localStorage !== "undefined" &&
+          localStorage.getItem("theme")
+        ) {
+          return localStorage.getItem("theme");
         }
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          return 'dark';
+        if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          return "dark";
         }
-        return 'light';
+        return "light";
       };
-      
+
       const theme = getTheme();
-      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.setAttribute("data-theme", theme);
     </script>
   </head>
   <body>
@@ -90,25 +109,40 @@ const navItems = [
     <header class="site-header">
       <nav class="container nav-container">
         <a href="/" class="brand-logo">
-          {logoUrl ? (
-              <img src={logoUrl} alt={globalSettings.site_title} class="logo-img" />
-          ) : (
+          {
+            logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={globalSettings.site_title}
+                class="logo-img"
+              />
+            ) : (
               <Gamepad2 class="logo-icon" />
-          )}
+            )
+          }
           <span class="logo-text">{globalSettings.site_title}</span>
         </a>
         <div class="nav-wrapper">
           <div class="nav-links desktop-only">
-            {navItems.map(item => (
-                <a href={item.path} class={`nav-link ${isActive(item.path) ? 'active' : ''}`}>
-                    <item.icon class="nav-icon" /> 
-                    <span class="nav-label">{item.label}</span>
+            {
+              navItems.map((item) => (
+                <a
+                  href={item.path}
+                  class={`nav-link ${isActive(item.path) ? "active" : ""}`}
+                >
+                  <item.icon class="nav-icon" />
+                  <span class="nav-label">{item.label}</span>
                 </a>
-            ))}
+              ))
+            }
           </div>
-          <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Theme">
-              <Sun class="icon sun-icon" />
-              <Moon class="icon moon-icon" />
+          <button
+            id="theme-toggle"
+            class="theme-toggle"
+            aria-label="Toggle Theme"
+          >
+            <Sun class="icon sun-icon" />
+            <Moon class="icon moon-icon" />
           </button>
         </div>
       </nav>
@@ -121,7 +155,10 @@ const navItems = [
     <!-- Simple Footer -->
     <footer class="site-footer">
       <div class="container footer-content">
-        <p class="copyright">&copy; {new Date().getFullYear()} {globalSettings.site_title}.</p>
+        <p class="copyright">
+          &copy; {new Date().getFullYear()}
+          {globalSettings.site_title}.
+        </p>
         <div class="footer-links">
           <a href="/privacy">プライバシーポリシー</a>
           <a href="/terms">利用規約</a>
@@ -131,14 +168,19 @@ const navItems = [
 
     <!-- Mobile Bottom Navigation -->
     <nav class="mobile-bottom-nav">
-        {navItems.map(item => (
-            <a href={item.path} class={`mobile-nav-link ${isActive(item.path) ? 'active' : ''}`}>
-                <div class="icon-wrapper">
-                    <item.icon class="mobile-nav-icon" />
-                </div>
-                <span class="mobile-nav-label">{item.label}</span>
-            </a>
-        ))}
+      {
+        navItems.map((item) => (
+          <a
+            href={item.path}
+            class={`mobile-nav-link ${isActive(item.path) ? "active" : ""}`}
+          >
+            <div class="icon-wrapper">
+              <item.icon class="mobile-nav-icon" />
+            </div>
+            <span class="mobile-nav-label">{item.label}</span>
+          </a>
+        ))
+      }
     </nav>
 
     <style>
@@ -147,13 +189,13 @@ const navItems = [
         flex-direction: column;
         min-height: 100vh;
       }
-      
+
       .site-header {
         position: sticky;
         top: 0;
         z-index: 100;
         padding: 0.75rem 0;
-        
+
         /* Glass Effect */
         background: var(--bg-surface);
         backdrop-filter: blur(12px);
@@ -167,11 +209,11 @@ const navItems = [
         align-items: center;
         justify-content: space-between;
       }
-      
+
       .nav-wrapper {
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
       }
 
       .brand-logo {
@@ -184,19 +226,19 @@ const navItems = [
         letter-spacing: -0.02em;
         text-decoration: none;
       }
-      
+
       .logo-icon {
         width: 1.75rem;
         height: 1.75rem;
         color: var(--accent-secondary);
       }
-      
+
       .logo-img {
-          height: 2rem;
-          width: auto;
-          object-fit: contain;
+        height: 2rem;
+        width: auto;
+        object-fit: contain;
       }
-      
+
       .logo-text {
         color: var(--text-main);
       }
@@ -222,60 +264,72 @@ const navItems = [
         color: var(--accent-primary);
         background: rgba(14, 165, 233, 0.08); /* Soft blue hover */
       }
-      
+
       .nav-link.active {
-          color: var(--accent-primary);
-          background: rgba(14, 165, 233, 0.1);
-          font-weight: 600;
+        color: var(--accent-primary);
+        background: rgba(14, 165, 233, 0.1);
+        font-weight: 600;
       }
 
       .nav-icon {
         width: 1rem;
         height: 1rem;
       }
-      
+
       /* Theme Toggle */
       .theme-toggle {
-          appearance: none;
-          background: transparent;
-          border: 1px solid var(--border-light);
-          color: var(--text-muted);
-          width: 2.25rem;
-          height: 2.25rem;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s;
-          position: relative;
-          overflow: hidden;
-          padding: 0;
-          margin: 0;
+        appearance: none;
+        background: transparent;
+        border: 1px solid var(--border-light);
+        color: var(--text-muted);
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+        padding: 0;
+        margin: 0;
       }
-      
+
       .theme-toggle:hover {
-          background: var(--bg-surface-hover);
-          color: var(--accent-primary);
-          border-color: var(--accent-soft);
+        background: var(--bg-surface-hover);
+        color: var(--accent-primary);
+        border-color: var(--accent-soft);
       }
-      
+
       .theme-toggle .icon {
-          position: absolute;
-          transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s;
-          width: 1.25rem;
-          height: 1.25rem;
-          pointer-events: none;
+        position: absolute;
+        transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s;
+        width: 1.25rem;
+        height: 1.25rem;
+        pointer-events: none;
       }
-      
+
       /* Default state (Light mode) */
-      .sun-icon { opacity: 0; transform: rotate(90deg) scale(0.5); }
-      .moon-icon { opacity: 1; transform: rotate(0) scale(1); }
-      
+      .sun-icon {
+        opacity: 0;
+        transform: rotate(90deg) scale(0.5);
+      }
+      .moon-icon {
+        opacity: 1;
+        transform: rotate(0) scale(1);
+      }
+
       /* Dark mode state */
-      :global([data-theme="dark"]) .sun-icon { opacity: 1; transform: rotate(0) scale(1); }
-      :global([data-theme="dark"]) .moon-icon { opacity: 0; transform: rotate(-90deg) scale(0.5); }
-      
+      :global([data-theme="dark"]) .sun-icon {
+        opacity: 1;
+        transform: rotate(0) scale(1);
+      }
+      :global([data-theme="dark"]) .moon-icon {
+        opacity: 0;
+        transform: rotate(-90deg) scale(0.5);
+      }
+
       .site-main {
         flex: 1;
         width: 100%;
@@ -304,99 +358,102 @@ const navItems = [
 
       /* Mobile Navigation Styles */
       .mobile-bottom-nav {
-          display: none;
+        display: none;
       }
-      
+
       @media (max-width: 768px) {
         .desktop-only {
           display: none !important;
         }
 
         .site-header {
-            padding: 0.75rem 0;
+          padding: 0.75rem 0;
         }
 
         .site-main {
-            padding-bottom: 5rem; /* Space for bottom nav */
+          padding-bottom: 5rem; /* Space for bottom nav */
         }
 
         .site-footer {
-            padding-bottom: 6rem; /* Space for bottom nav */
+          padding-bottom: 6rem; /* Space for bottom nav */
         }
-        
+
         .mobile-bottom-nav {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--bg-surface);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-top: 1px solid var(--border-glass);
-            padding: 0.75rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px)) 1rem;
-            z-index: 1000;
-            box-shadow: 0 -4px 30px rgba(0,0,0,0.05);
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: var(--bg-surface);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-top: 1px solid var(--border-glass);
+          padding: 0.75rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px))
+            1rem;
+          z-index: 1000;
+          box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.05);
         }
 
         .mobile-nav-link {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 0.35rem;
-            color: var(--text-muted);
-            text-decoration: none;
-            width: 100%;
-            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 0.35rem;
+          color: var(--text-muted);
+          text-decoration: none;
+          width: 100%;
+          transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         .mobile-nav-link:active {
-            transform: scale(0.95);
+          transform: scale(0.95);
         }
 
         .mobile-nav-link.active {
-            color: var(--accent-primary);
+          color: var(--accent-primary);
         }
 
         .icon-wrapper {
-            position: relative;
-            padding: 0.25rem 1.25rem;
-            border-radius: 99px;
-            transition: all 0.3s ease;
+          position: relative;
+          padding: 0.25rem 1.25rem;
+          border-radius: 99px;
+          transition: all 0.3s ease;
         }
 
         .mobile-nav-link.active .icon-wrapper {
-            background: rgba(14, 165, 233, 0.15); /* Soft accent bg */
+          background: rgba(14, 165, 233, 0.15); /* Soft accent bg */
         }
-        
+
         .mobile-nav-icon {
-            width: 1.5rem;
-            height: 1.5rem;
-            stroke-width: 2px;
+          width: 1.5rem;
+          height: 1.5rem;
+          stroke-width: 2px;
         }
 
         .mobile-nav-label {
-            font-size: 0.65rem;
-            font-weight: 600;
-            letter-spacing: 0.02em;
+          font-size: 0.65rem;
+          font-weight: 600;
+          letter-spacing: 0.02em;
         }
       }
     </style>
-    
+
     <script>
-        const handleToggleClick = () => {
-          const element = document.documentElement;
-          const current = element.getAttribute("data-theme");
-          const isDark = current === "dark";
-          const next = isDark ? "light" : "dark";
-          
-          element.setAttribute("data-theme", next);
-          localStorage.setItem("theme", next);
-        };
-      
-        document.getElementById("theme-toggle")?.addEventListener("click", handleToggleClick);
+      const handleToggleClick = () => {
+        const element = document.documentElement;
+        const current = element.getAttribute("data-theme");
+        const isDark = current === "dark";
+        const next = isDark ? "light" : "dark";
+
+        element.setAttribute("data-theme", next);
+        localStorage.setItem("theme", next);
+      };
+
+      document
+        .getElementById("theme-toggle")
+        ?.addEventListener("click", handleToggleClick);
     </script>
   </body>
 </html>

@@ -1,24 +1,15 @@
-# ローカル開発用
-# Directus を起動: docker compose up -d directus
-# Astro は pnpm dev で別途起動
-
 services:
-  directus:
-    image: directus/directus:latest
-    ports:
-      - "8055:8055"
+  postgres:
+    image: postgres:16-alpine
+    restart: always
     environment:
-      KEY: "replace-with-random-key"
-      SECRET: "replace-with-random-secret"
-      ADMIN_EMAIL: "admin@example.com"
-      ADMIN_PASSWORD: "admin"
-      DB_CLIENT: "sqlite3"
-      DB_FILENAME: "/directus/database/database.sqlite"
-      WEBSOCKETS_ENABLED: "true"
-      ASSETS_TRANSFORM_IMAGE_MAX_DIMENSION: 12000
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: akarinext_password
+      POSTGRES_DB: akarinext_backend
+    ports:
+      - "5432:5432"
     volumes:
-      - directus_data:/directus/database
-      - directus_uploads:/directus/uploads
+      - postgres_data:/var/lib/postgresql/data
 
   influxdb:
     image: influxdb:2.7
@@ -34,6 +25,5 @@ services:
       - influxdb_data:/var/lib/influxdb2
 
 volumes:
-  directus_data:
-  directus_uploads:
+  postgres_data:
   influxdb_data:

@@ -1,963 +1,1150 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { Gamepad2, Code2, MessageCircle, ArrowRight, Zap, Trophy, Users, Shield, Megaphone } from "lucide-astro";
 import {
-  directus,
-  readItems,
-  readSingleton,
-  skipDirectusFetch,
-  type Post,
-  type Game,
-  type GameServer,
-  type GlobalSettings,
-  type Author
-} from "../lib/directus";
+    Gamepad2,
+    Code2,
+    MessageCircle,
+    ArrowRight,
+    Zap,
+    Trophy,
+    Users,
+    Shield,
+    Megaphone,
+} from "lucide-astro";
+import {
+    payloadClient,
+    getMediaUrl,
+    type Post,
+    type Game,
+    type GameServer,
+    type Setting,
+    type Author,
+    type Announcement,
+} from "../lib/payload";
 import ServerCard from "../components/ServerCard.astro";
 import PostCard from "../components/PostCard.astro";
 
 // Fetch data
-let globalSettings: GlobalSettings = {
-  site_title: "AkariNext",
-  site_description: "Connect, Play, and Share Your Journey.",
+let globalSettings: Setting = {
+    site_title: "AkariNext",
+    site_description: "Connect, Play, and Share Your Journey.",
+    id: 0,
 };
 
 let recentPosts: Post[] = [];
 let recentGames: Game[] = [];
 let gameServers: GameServer[] = [];
 let staffMembers: Author[] = [];
-let latestAnnouncement: { id: number; title: string } | null = null;
+let latestAnnouncement: Announcement | null = null;
 
-if (!skipDirectusFetch) {
-  try {
-    const [settingsData, postsData, gamesData, serversData, staffData, announcementData] = await Promise.all([
-      directus.request(readSingleton("global")).catch(() => null),
-      directus.request(
-        readItems("posts", {
-          fields: ["id", "title", "slug", "published_date", "category", "image", { author: ["id", "name", "avatar"] }],
-          filter: { status: { _eq: "published" } },
-          sort: ["-published_date", "-id"],
-          limit: 6,
-        })
-      ).catch(() => []),
-      directus.request(
-        readItems("games", {
-          fields: ["id", "name", "slug", "cover_image"],
-          limit: 4,
-          sort: ["-id"] // Just getting some games
-        })
-      ).catch(() => []),
-      directus.request(
-        readItems("game_servers", {
-          filter: { status: { _eq: "published" } },
-          fields: ["id", "name", "type", "ip", "port", "protocol", "description"]
-        })
-      ).catch(() => []),
-      directus.request(
-        readItems("authors", {
-          filter: { is_staff: { _eq: true } },
-          fields: ["id", "name", "avatar", "staff_title", "bio"]
-        })
-      ).catch(() => []),
-      directus.request(
-        readItems("announcements", {
-          fields: ["id", "title"],
-          filter: { status: { _eq: "published" } },
-          sort: ["-published_date", "-id"],
-          limit: 1,
-        })
-      ).catch(() => [])
+try {
+    const [
+        settingsData,
+        postsData,
+        gamesData,
+        serversData,
+        staffData,
+        announcementData,
+    ] = await Promise.all([
+        payloadClient
+            .singleton<Setting>("settings")
+            .read()
+            .catch(() => null),
+        payloadClient
+            .items<Post>("posts")
+            .readByQuery({
+                sort: "-published_date,-id",
+                limit: 6,
+                where: { status: { equals: "published" } },
+            })
+            .catch(() => []),
+        payloadClient
+            .items<Game>("games")
+            .readByQuery({
+                sort: "-id",
+                limit: 4,
+            })
+            .catch(() => []),
+        payloadClient
+            .items<GameServer>("game-servers")
+            .readByQuery({
+                where: { status: { equals: "published" } },
+            })
+            .catch(() => []),
+        payloadClient
+            .items<Author>("authors")
+            .readByQuery({
+                where: { is_staff: { equals: true } },
+            })
+            .catch(() => []),
+        payloadClient
+            .items<Announcement>("announcements")
+            .readByQuery({
+                sort: "-published_date,-id",
+                limit: 1,
+                where: { status: { equals: "published" } },
+            })
+            .catch(() => []),
     ]);
 
-    if (settingsData) globalSettings = settingsData as GlobalSettings;
-    if (postsData) {
-        const toTime = (d: string | null | undefined) => {
-            if (!d) return 0;
-            const t = new Date(d).getTime();
-            return Number.isNaN(t) ? 0 : t;
-        };
-        recentPosts = (postsData as Post[]).sort((a, b) => {
-            const diff = toTime(b.published_date) - toTime(a.published_date);
-            return diff !== 0 ? diff : (b.id - a.id);
-        });
-    }
-    if (gamesData) recentGames = gamesData as Game[];
-    if (serversData) gameServers = serversData as GameServer[];
-    if (staffData) staffMembers = staffData as Author[];
-    if (announcementData && announcementData.length > 0) latestAnnouncement = announcementData[0] as { id: number; title: string };
-
-  } catch (error) {
-    // Silent
-  }
+    if (settingsData) globalSettings = settingsData;
+    if (postsData) recentPosts = postsData;
+    if (gamesData) recentGames = gamesData;
+    if (serversData) gameServers = serversData;
+    if (staffData) staffMembers = staffData;
+    if (announcementData && announcementData.length > 0)
+        latestAnnouncement = announcementData[0];
+} catch (error) {
+    console.error("Data fetch failed:", error);
 }
 
-const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
+const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return "";
+    return new Date(dateStr).toLocaleDateString("ja-JP", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
     });
 };
 ---
 
 <Layout title={globalSettings.site_title}>
-  <!-- Community Hero -->
-  <section class="hero-section">
-      <div class="container hero-container">
-          <div class="hero-content">
-              {latestAnnouncement ? (
-                  <a href={`/announcements#ann-${latestAnnouncement.id}`} class="hero-badge announcement-badge">
-                      <Megaphone class="icon icon-xs" />
-                      <span class="badge-label">NEWS</span>
-                      <span class="badge-divider">|</span>
-                      <span class="announcement-title">{latestAnnouncement.title}</span>
-                      <ArrowRight class="icon icon-xs arrow-icon" />
-                  </a>
-              ) : (
-                  <span class="hero-badge"><Zap class="icon icon-xs" /> Official Community</span>
-              )}
-              <h1 class="hero-title">
-                  <span class="gradient-text">創る。</span>
-                  <span class="gradient-text delay-1">遊ぶ。</span>
-                  <span class="gradient-text delay-2">繋がる。</span>
-              </h1>
-              <p class="hero-desc">
-                  AkariNextは、開発・ゲーム・雑談を楽しむためのクリエイティブコミュニティ。
-                  技術の共有から深夜のゲーム大会まで、あなたの「好き」が広がる場所。
-              </p>
-              <div class="hero-stats">
-                  <div class="stat-item">
-                      <span class="stat-value">開発</span>
-                      <span class="stat-label">Engineering</span>
-                  </div>
-                  <div class="stat-divider"></div>
-                  <div class="stat-item">
-                      <span class="stat-value">ゲーム</span>
-                      <span class="stat-label">Entertainment</span>
-                  </div>
-                  <div class="stat-divider"></div>
-                  <div class="stat-item">
-                      <span class="stat-value">雑談</span>
-                      <span class="stat-label">Communication</span>
-                  </div>
-              </div>
-              <div class="hero-actions">
-                  <a href="/posts" class="btn btn-primary btn-lg">
-                      ストーリーを読む <ArrowRight class="icon" />
-                  </a>
-                  <a href="/games" class="btn btn-lg">
-                      ゲームを探す <Gamepad2 class="icon" />
-                  </a>
-              </div>
-          </div>
-          <div class="hero-visual">
-              <div class="floating-cards">
-                  <div class="glass-card float-card card-1">
-                      <Code2 class="float-icon text-blue" />
-                      <span>Tech Stack</span>
-                  </div>
-                  <div class="glass-card float-card card-2">
-                      <Gamepad2 class="float-icon text-green" />
-                      <span>Game Night</span>
-                  </div>
-                  <div class="glass-card float-card card-3">
-                      <MessageCircle class="float-icon text-amber" />
-                      <span>Random Chat</span>
-                  </div>
-              </div>
-          </div>
-      </div>
-  </section>
-
-  <!-- Features / Categories -->
-  <section class="features-section container">
-      <div class="features-grid">
-          <a href="/posts?tag=tech" class="feature-card glass-card hover-glow-blue">
-              <div class="feature-icon-box bg-blue-soft">
-                  <Code2 class="icon text-blue" />
-              </div>
-              <h3>技術と開発</h3>
-              <p>プログラミングや、新しい技術についての知見を共有しましょう。</p>
-          </a>
-          <a href="/games" class="feature-card glass-card hover-glow-green">
-              <div class="feature-icon-box bg-green-soft">
-                  <Gamepad2 class="icon text-green" />
-              </div>
-              <h3>ゲームライフ</h3>
-              <p>メンバーが熱中している最新タイトルの記録やレビューをチェック。</p>
-          </a>
-          <a href="/announcements" class="feature-card glass-card hover-glow-amber">
-              <div class="feature-icon-box bg-amber-soft">
-                  <Users class="icon text-amber" />
-              </div>
-              <h3>コミュニティ</h3>
-              <p>イベント情報や日々の雑談など、みんなとの交流の場。</p>
-          </a>
-      </div>
-  </section>
-
-  <!-- Server Status Section -->
-  <section class="servers-section container">
-      <div class="section-header">
-          <h2 class="section-title">サーバー稼働状況</h2>
-          <span class="view-all">Community Servers Status</span>
-      </div>
-      {gameServers.length > 0 ? (
-          <div class="servers-grid">
-              {gameServers.map(server => (
-                  <ServerCard server={server} />
-              ))}
-          </div>
-      ) : (
-          <div class="glass-card empty-servers-card">
-              <div class="empty-icon-box">
-                  <Gamepad2 class="icon icon-lg opacity-50" />
-              </div>
-              <p class="empty-text">現在、公開されているサーバー情報はありません。</p>
-              <p class="empty-hint">※ 管理者は Directus でサーバー情報を登録し、ステータスを「公開 (Published)」に設定してください。</p>
-          </div>
-      )}
-  </section>
-
-  <!-- Latest Activity Mix -->
-  <section class="activity-section container">
-      <div class="section-header">
-          <h2 class="section-title">最新のストーリー</h2>
-          <a href="/posts" class="view-all">すべて見る <ArrowRight class="icon icon-xs" /></a>
-      </div>
-
-      <div class="activity-grid">
-          {recentPosts.length > 0 ? (
-              recentPosts.map((post) => (
-                  <PostCard post={post as any} />
-              ))
-          ) : (
-              <div class="empty-state glass-card">
-                  <p>まだ投稿はありません。</p>
-              </div>
-          )}
-      </div>
-  </section>
-  
-   <!-- Games Showcase -->
-   {recentGames.length > 0 && (
-    <section class="games-showcase-section">
-        <div class="container">
-            <div class="games-banner glass-card">
-                <div class="banner-content">
-                    <h2><Trophy class="icon icon-lg text-yellow" /> 注目のゲーム</h2>
-                    <p>コミュニティが今注目しているタイトルをチェック</p>
-                    <a href="/games" class="btn btn-sm">ライブラリを見る <ArrowRight class="icon icon-xs" /></a>
+    <!-- Community Hero -->
+    <section class="hero-section">
+        <div class="container hero-container">
+            <div class="hero-content">
+                {
+                    latestAnnouncement ? (
+                        <a
+                            href={`/announcements#ann-${latestAnnouncement.id}`}
+                            class="hero-badge announcement-badge"
+                        >
+                            <Megaphone class="icon icon-xs" />
+                            <span class="badge-label">NEWS</span>
+                            <span class="badge-divider">|</span>
+                            <span class="announcement-title">
+                                {latestAnnouncement.title}
+                            </span>
+                            <ArrowRight class="icon icon-xs arrow-icon" />
+                        </a>
+                    ) : (
+                        <span class="hero-badge">
+                            <Zap class="icon icon-xs" /> Official Community
+                        </span>
+                    )
+                }
+                <h1 class="hero-title">
+                    <span class="gradient-text">創る。</span>
+                    <span class="gradient-text delay-1">遊ぶ。</span>
+                    <span class="gradient-text delay-2">繋がる。</span>
+                </h1>
+                <p class="hero-desc">
+                    AkariNextは、開発・ゲーム・雑談を楽しむためのクリエイティブコミュニティ。
+                    技術の共有から深夜のゲーム大会まで、あなたの「好き」が広がる場所。
+                </p>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">開発</span>
+                        <span class="stat-label">Engineering</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-value">ゲーム</span>
+                        <span class="stat-label">Entertainment</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-value">雑談</span>
+                        <span class="stat-label">Communication</span>
+                    </div>
                 </div>
-                <div class="banner-images">
-                    {recentGames.map(game => (
-                       game.cover_image ? (
-                           <div class="mini-game-cover">
-                               <img src={`${import.meta.env.PUBLIC_DIRECTUS_URL}/assets/${game.cover_image}?width=360&height=480&fit=cover`} alt={game.name} />
-                           </div>
-                       ) : <div class="mini-game-cover placeholder"></div>
-                    ))}
+                <div class="hero-actions">
+                    <a href="/posts" class="btn btn-primary btn-lg">
+                        ストーリーを読む <ArrowRight class="icon" />
+                    </a>
+                    <a href="/games" class="btn btn-lg">
+                        ゲームを探す <Gamepad2 class="icon" />
+                    </a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="floating-cards">
+                    <div class="glass-card float-card card-1">
+                        <Code2 class="float-icon text-blue" />
+                        <span>Tech Stack</span>
+                    </div>
+                    <div class="glass-card float-card card-2">
+                        <Gamepad2 class="float-icon text-green" />
+                        <span>Game Night</span>
+                    </div>
+                    <div class="glass-card float-card card-3">
+                        <MessageCircle class="float-icon text-amber" />
+                        <span>Random Chat</span>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
-  )}
 
-  <!-- Staff Section -->
-  {staffMembers.length > 0 && (
-      <section class="staff-section container">
-          <div class="section-header">
-              <h2 class="section-title">Community Staff</h2>
-              <span class="view-all">運営メンバー</span>
-          </div>
-          <div class="staff-grid">
-              {staffMembers.map(staff => (
-                  <a href={`/users/${staff.id}`} class="staff-card glass-card">
-                      <div class="staff-header-bg">
-                          <div class="staff-header-pattern"></div>
-                      </div>
-                      <div class="staff-avatar-wrapper">
-                          {staff.avatar ? (
-                              <img 
-                                  src={`${import.meta.env.PUBLIC_DIRECTUS_URL}/assets/${staff.avatar}?width=220&height=220&fit=cover`} 
-                                  alt={staff.name} 
-                                  class="staff-avatar"
-                              />
-                          ) : (
-                              <div class="staff-avatar-placeholder">
-                                  {staff.name.charAt(0)}
-                              </div>
-                          )}
-                          <div class="staff-badge">
-                              <Shield class="icon-xxs" />
-                          </div>
-                      </div>
-                      <div class="staff-info">
-                          <h3 class="staff-name">{staff.name}</h3>
-                          <p class="staff-role">{staff.staff_title || "Staff"}</p>
-                          {staff.bio && <p class="staff-bio">{staff.bio}</p>}
-                      </div>
-                  </a>
-              ))}
-          </div>
-      </section>
-  )}
+    <!-- Features / Categories -->
+    <section class="features-section container">
+        <div class="features-grid">
+            <a
+                href="/posts?tag=tech"
+                class="feature-card glass-card hover-glow-blue"
+            >
+                <div class="feature-icon-box bg-blue-soft">
+                    <Code2 class="icon text-blue" />
+                </div>
+                <h3>技術と開発</h3>
+                <p>
+                    プログラミングや、新しい技術についての知見を共有しましょう。
+                </p>
+            </a>
+            <a href="/games" class="feature-card glass-card hover-glow-green">
+                <div class="feature-icon-box bg-green-soft">
+                    <Gamepad2 class="icon text-green" />
+                </div>
+                <h3>ゲームライフ</h3>
+                <p>
+                    メンバーが熱中している最新タイトルの記録やレビューをチェック。
+                </p>
+            </a>
+            <a
+                href="/announcements"
+                class="feature-card glass-card hover-glow-amber"
+            >
+                <div class="feature-icon-box bg-amber-soft">
+                    <Users class="icon text-amber" />
+                </div>
+                <h3>コミュニティ</h3>
+                <p>イベント情報や日々の雑談など、みんなとの交流の場。</p>
+            </a>
+        </div>
+    </section>
 
+    <!-- Server Status Section -->
+    <section class="servers-section container">
+        <div class="section-header">
+            <h2 class="section-title">サーバー稼働状況</h2>
+            <span class="view-all">Community Servers Status</span>
+        </div>
+        {
+            gameServers.length > 0 ? (
+                <div class="servers-grid">
+                    {gameServers.map((server) => (
+                        <ServerCard server={server} />
+                    ))}
+                </div>
+            ) : (
+                <div class="glass-card empty-servers-card">
+                    <div class="empty-icon-box">
+                        <Gamepad2 class="icon icon-lg opacity-50" />
+                    </div>
+                    <p class="empty-text">
+                        現在、公開されているサーバー情報はありません。
+                    </p>
+                    <p class="empty-hint">
+                        ※ 管理者は Directus
+                        でサーバー情報を登録し、ステータスを「公開
+                        (Published)」に設定してください。
+                    </p>
+                </div>
+            )
+        }
+    </section>
+
+    <!-- Latest Activity Mix -->
+    <section class="activity-section container">
+        <div class="section-header">
+            <h2 class="section-title">最新のストーリー</h2>
+            <a href="/posts" class="view-all"
+                >すべて見る <ArrowRight class="icon icon-xs" />
+            </a>
+        </div>
+
+        <div class="activity-grid">
+            {
+                recentPosts.length > 0 ? (
+                    recentPosts.map((post) => <PostCard post={post as any} />)
+                ) : (
+                    <div class="empty-state glass-card">
+                        <p>まだ投稿はありません。</p>
+                    </div>
+                )
+            }
+        </div>
+    </section>
+
+    <!-- Games Showcase -->
+    {
+        recentGames.length > 0 && (
+            <section class="games-showcase-section">
+                <div class="container">
+                    <div class="games-banner glass-card">
+                        <div class="banner-content">
+                            <h2>
+                                <Trophy class="icon icon-lg text-yellow" />{" "}
+                                注目のゲーム
+                            </h2>
+                            <p>
+                                コミュニティが今注目しているタイトルをチェック
+                            </p>
+                            <a href="/games" class="btn btn-sm">
+                                ライブラリを見る{" "}
+                                <ArrowRight class="icon icon-xs" />
+                            </a>
+                        </div>
+                        <div class="banner-images">
+                            {recentGames.map((game) =>
+                                game.cover_image ? (
+                                    <div class="mini-game-cover">
+                                        <img
+                                            src={`${
+                                                import.meta.env
+                                                    .PUBLIC_DIRECTUS_URL
+                                            }/assets/${
+                                                game.cover_image
+                                            }?width=360&height=480&fit=cover`}
+                                            alt={game.name}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div class="mini-game-cover placeholder" />
+                                )
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </section>
+        )
+    }
+
+    <!-- Staff Section -->
+    {
+        staffMembers.length > 0 && (
+            <section class="staff-section container">
+                <div class="section-header">
+                    <h2 class="section-title">Community Staff</h2>
+                    <span class="view-all">運営メンバー</span>
+                </div>
+                <div class="staff-grid">
+                    {staffMembers.map((staff) => (
+                        <a
+                            href={`/users/${staff.id}`}
+                            class="staff-card glass-card"
+                        >
+                            <div class="staff-header-bg">
+                                <div class="staff-header-pattern" />
+                            </div>
+                            <div class="staff-avatar-wrapper">
+                                {staff.avatar ? (
+                                    <img
+                                        src={getMediaUrl(staff.avatar)}
+                                        alt={staff.name}
+                                        class="staff-avatar"
+                                    />
+                                ) : (
+                                    <div class="staff-avatar-placeholder">
+                                        {staff.name.charAt(0)}
+                                    </div>
+                                )}
+                                <div class="staff-badge">
+                                    <Shield class="icon-xxs" />
+                                </div>
+                            </div>
+                            <div class="staff-info">
+                                <h3 class="staff-name">{staff.name}</h3>
+                                <p class="staff-role">
+                                    {staff.staff_title || "Staff"}
+                                </p>
+                                {staff.bio && (
+                                    <p class="staff-bio">{staff.bio}</p>
+                                )}
+                            </div>
+                        </a>
+                    ))}
+                </div>
+            </section>
+        )
+    }
 </Layout>
 
 <style>
-  /* Hero */
-  .hero-section {
-      padding: 6rem 0 4rem;
-      overflow: hidden;
-      position: relative;
-  }
-  
-  .hero-container {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      gap: 3rem;
-      align-items: center;
-  }
+    /* Hero */
+    .hero-section {
+        padding: 6rem 0 4rem;
+        overflow: hidden;
+        position: relative;
+    }
 
-  .hero-content {
-      min-width: 0;
-  }
-  
-  .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 99px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--accent-primary);
-      margin-bottom: 1.5rem;
-      box-shadow: var(--shadow-sm);
-  }
+    .hero-container {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 3rem;
+        align-items: center;
+    }
 
-  .announcement-badge {
-      text-decoration: none;
-      transition: all 0.3s ease;
-      max-width: 100%;
-      overflow: hidden;
-  }
-  
-  .announcement-badge:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
-      border-color: var(--accent-primary);
-  }
+    .hero-content {
+        min-width: 0;
+    }
 
-  .badge-label {
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      color: var(--accent-primary);
-  }
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 99px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--accent-primary);
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow-sm);
+    }
 
-  .badge-divider {
-      color: var(--border-subtle);
-      margin: 0 0.1rem;
-  }
+    .announcement-badge {
+        text-decoration: none;
+        transition: all 0.3s ease;
+        max-width: 100%;
+        overflow: hidden;
+    }
 
-  .announcement-title {
-      color: var(--text-main);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 300px;
-  }
+    .announcement-badge:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--accent-primary);
+    }
 
-  .arrow-icon {
-      margin-left: 0.25rem;
-      opacity: 0.5;
-      transition: transform 0.3s ease;
-  }
+    .badge-label {
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        color: var(--accent-primary);
+    }
 
-  .announcement-badge:hover .arrow-icon {
-      transform: translateX(3px);
-      opacity: 1;
-  }
+    .badge-divider {
+        color: var(--border-subtle);
+        margin: 0 0.1rem;
+    }
 
-  @media (max-width: 640px) {
-      .announcement-title {
-          max-width: 180px;
-      }
-  }
-  
-  @media (max-width: 480px) {
-      .announcement-title {
-          max-width: 140px;
-      }
-  }
-  
-  .hero-title {
-      font-size: 4rem;
-      line-height: 1.1;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      margin-bottom: 1.5rem;
-      display: flex;
-      flex-direction: column;
-  }
-  
-  .gradient-text {
-      background: linear-gradient(90deg, var(--text-main) 0%, var(--text-muted) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      display: inline-block;
-  }
-  
-  .gradient-text:first-child {
-      background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-  }
-  
-  .hero-desc {
-      font-size: 1.15rem;
-      color: var(--text-muted);
-      line-height: 1.6;
-      max-width: 500px;
-      margin-bottom: 2.5rem;
-      width: 100%;
-  }
-  
-  .hero-stats {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      margin-bottom: 2.5rem;
-  }
-  
-  .stat-item {
-      display: flex;
-      flex-direction: column;
-  }
-  
-  .stat-value {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--text-main);
-  }
-  
-  .stat-label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-  }
-  
-  .stat-divider {
-      width: 1px;
-      height: 2rem;
-      background: var(--border-subtle);
-  }
-  
-  .hero-actions {
-      display: flex;
-      gap: 1rem;
-  }
-  
-  .btn-lg {
-      padding: 0.875rem 2rem;
-      font-size: 1rem;
-  }
-  
-  /* Hero Visual */
-  .hero-visual {
-      position: relative;
-      height: 400px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-  }
-  
-  .floating-cards {
-      position: relative;
-      width: 100%;
-      height: 100%;
-  }
-  
-  .float-card {
-      position: absolute;
-      padding: 1rem 1.5rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      font-weight: 600;
-      font-size: 1rem;
-      background: var(--bg-surface-hover);
-      backdrop-filter: blur(20px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-      border: 1px solid var(--border-glass);
-      animation: float 6s ease-in-out infinite;
-      color: var(--text-main);
-  }
-  
-  .card-1 { top: 20%; left: 10%; transform: rotate(-5deg); animation-delay: 0s; }
-  .card-2 { top: 50%; right: 10%; transform: rotate(10deg); animation-delay: 2s; }
-  .card-3 { bottom: 20%; left: 30%; transform: rotate(-3deg); animation-delay: 4s; }
-  
-  @keyframes float {
-      0%, 100% { transform: translateY(0) rotate(var(--rot)); }
-      50% { transform: translateY(-15px) rotate(var(--rot)); }
-  }
-  
-  .float-icon { width: 1.5rem; height: 1.5rem; }
-  .text-blue { color: var(--accent-primary); }
-  .text-green { color: #10b981; }
-  .text-amber { color: #f59e0b; }
-  .text-yellow { color: #eab308; }
-  .bg-blue-soft { background: rgba(14, 165, 233, 0.1); }
-  .bg-green-soft { background: rgba(16, 185, 129, 0.1); }
-  .bg-amber-soft { background: rgba(245, 158, 11, 0.1); }
+    .announcement-title {
+        color: var(--text-main);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 300px;
+    }
 
-  /* Features */
-  .features-section { margin-bottom: 5rem; }
-  
-  .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-  }
-  
-  .feature-card {
-      padding: 2rem;
-      text-decoration: none;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
-      transition: all 0.3s;
-  }
-  
-  .feature-icon-box {
-      width: 3rem;
-      height: 3rem;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-  }
-  
-  .feature-card h3 {
-      font-size: 1.25rem;
-      margin: 0;
-  }
-  
-  .feature-card p {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      margin: 0;
-      line-height: 1.5;
-  }
+    .arrow-icon {
+        margin-left: 0.25rem;
+        opacity: 0.5;
+        transition: transform 0.3s ease;
+    }
 
-  /* Activity */
-  .activity-section { margin-bottom: 5rem; }
-  
-  .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-  }
-  
-  .section-title { font-size: 2rem; }
-  
-  .activity-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 2rem;
-      align-items: stretch;
-      max-width: 100%;
-   }
-  
-  .activity-card {
-      max-width: 100%; 
-      padding: 0; /* Remove padding from card container for image flush */
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-      height: 100%;
-      text-decoration: none;
-      overflow: hidden; /* For image zoom */
-      border: 1px solid var(--border-glass);
-  }
+    .announcement-badge:hover .arrow-icon {
+        transform: translateX(3px);
+        opacity: 1;
+    }
 
-  .activity-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 15px 30px -10px rgba(0,0,0,0.1);
-  }
-  
-  .card-image-wrapper {
-      position: relative;
-      width: 100%;
-      height: 200px;
-      overflow: hidden;
-  }
+    @media (max-width: 640px) {
+        .announcement-title {
+            max-width: 180px;
+        }
+    }
 
-  .card-image {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.5s ease;
-  }
+    @media (max-width: 480px) {
+        .announcement-title {
+            max-width: 140px;
+        }
+    }
 
-  .activity-card:hover .card-image {
-      transform: scale(1.05);
-  }
-  
-  .card-image-placeholder {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-  }
+    .hero-title {
+        font-size: 4rem;
+        line-height: 1.1;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin-bottom: 1.5rem;
+        display: flex;
+        flex-direction: column;
+    }
 
-  .placeholder-icon {
-      width: 3rem;
-      height: 3rem;
-      opacity: 0.3;
-  }
+    .gradient-text {
+        background: linear-gradient(
+            90deg,
+            var(--text-main) 0%,
+            var(--text-muted) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+    }
 
-  .activity-content {
-      padding: 1.5rem;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-  }
-  
-  .activity-footer {
-      margin-top: auto;
-      padding-top: 1rem;
-      border-top: 1px solid var(--border-subtle);
-      margin-top: 1.5rem;
-  }
-  
-  .card-badge {
-      position: absolute;
-      top: 1rem;
-      left: 1rem;
-      padding: 0.35rem 0.85rem;
-      border-radius: 99px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-      backdrop-filter: blur(4px);
-      z-index: 2;
-  }
-  
-  .activity-date {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-bottom: 0.5rem;
-      display: block;
-  }
-  
-  .activity-title {
-      font-size: 1.25rem;
-      margin: 0;
-      line-height: 1.4;
-      font-weight: 700;
-      color: var(--text-main);
-  }
-  
-  .author-info {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-  }
-  
-  /* Games Banner */
-  /* Games Showcase */
-  .games-showcase-section {
-      margin-bottom: 6rem;
-  }
+    .gradient-text:first-child {
+        background: linear-gradient(
+            90deg,
+            var(--accent-primary) 0%,
+            var(--accent-secondary) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
 
-  .games-banner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 3rem;
-      background: radial-gradient(circle at right, var(--accent-soft), transparent 50%), var(--bg-surface);
-      gap: 2rem;
-      flex-wrap: wrap;
-      border: 1px solid var(--border-glass);
-  }
-  
-  .banner-content h2 { font-size: 1.75rem; display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; color: var(--text-main); }
-  .banner-content p { color: var(--text-muted); margin-bottom: 1.5rem; }
-  
-  .banner-images {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      justify-content: center;
-  }
-  
-  .mini-game-cover {
-      width: 90px;
-      height: 120px; /* 3:4 ratio to match 360x480 */
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      transform: rotate(3deg);
-      border: 2px solid var(--border-light);
-      background: var(--bg-surface-solid); /* Fallback background */
-      flex-shrink: 0;
-  }
-  
-  .mini-game-cover:nth-child(2) { transform: rotate(-2deg) translateY(-10px); }
-  .mini-game-cover:nth-child(3) { transform: rotate(5deg); }
-  
-  .mini-game-cover img { 
-      width: 100%; 
-      height: 100%; 
-      object-fit: cover; /* Ensure image covers the area, might crop */
-      display: block;
-  }
-  .placeholder { background: var(--border-subtle); }
-  
-  @media (max-width: 900px) {
-      .hero-container { grid-template-columns: 1fr; text-align: center; }
-      .hero-title { font-size: 3rem; align-items: center; }
-      .hero-stats { justify-content: center; flex-wrap: wrap; gap: 1rem; }
-      .hero-stats .stat-divider { display: none; }
-      .hero-actions { justify-content: center; flex-wrap: wrap; }
-      .hero-visual { display: none; }
-      .games-banner { flex-direction: column; text-align: center; }
-  }
+    .hero-desc {
+        font-size: 1.15rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+        max-width: 500px;
+        margin-bottom: 2.5rem;
+        width: 100%;
+    }
 
-  @media (max-width: 480px) {
-      .hero-title { font-size: 2.25rem; }
-      .hero-stats { gap: 0.75rem; }
-      .hero-actions { flex-direction: column; width: 100%; }
-      .hero-actions a { width: 100%; justify-content: center; }
-  }
+    .hero-stats {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
 
-  /* スマホ: 注目のゲーム画像の横ずれ防止 */
-  @media (max-width: 640px) {
-      .games-banner { padding: 2rem 1rem; }
-      .banner-images { gap: 0.5rem; }
-      .mini-game-cover {
-          width: 56px;
-          height: 75px;
-          transform: none;
-      }
-      .mini-game-cover:nth-child(2) { transform: translateY(-6px); }
-      .mini-game-cover:nth-child(3) { transform: none; }
-  }
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+    }
 
-  /* Server Section Styles */
-  .servers-section {
-      margin-bottom: 5rem;
-  }
-  .servers-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 2rem;
-  }
-  .card-tags {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 0.75rem;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-  }
+    .stat-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-main);
+    }
 
-  .mini-tag {
-      font-size: 0.65rem;
-      color: var(--accent-primary);
-      font-weight: 700;
-      padding: 0.15rem 0.5rem;
-      background: var(--accent-soft);
-      border-radius: 4px;
-      letter-spacing: 0.02em;
-  }
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
 
-  .activity-card:hover .mini-tag {
-      background: var(--accent-primary);
-      color: white;
-  }
-  .empty-servers-card {
-      padding: 4rem;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-      border: 1px dashed var(--border-subtle);
-  }
+    .stat-divider {
+        width: 1px;
+        height: 2rem;
+        background: var(--border-subtle);
+    }
 
-  .empty-icon-box {
-      margin-bottom: 0.5rem;
-      color: var(--accent-primary);
-  }
+    .hero-actions {
+        display: flex;
+        gap: 1rem;
+    }
 
-  .empty-text {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--text-main);
-  }
+    .btn-lg {
+        padding: 0.875rem 2rem;
+        font-size: 1rem;
+    }
 
-  .empty-hint {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      max-width: 500px;
-  }
+    /* Hero Visual */
+    .hero-visual {
+        position: relative;
+        height: 400px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-  /* Staff Section Styles */
-  .staff-section {
-      margin-bottom: 8rem;
-  }
+    .floating-cards {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
 
-  .staff-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 2.5rem;
-  }
+    .float-card {
+        position: absolute;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 600;
+        font-size: 1rem;
+        background: var(--bg-surface-hover);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border-glass);
+        animation: float 6s ease-in-out infinite;
+        color: var(--text-main);
+    }
 
-  .staff-card {
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
-      overflow: visible;
-      background: var(--bg-surface);
-      border: 1px solid var(--border-glass);
-      border-radius: 24px;
-      position: relative;
-      text-decoration: none;
-  }
+    .card-1 {
+        top: 20%;
+        left: 10%;
+        transform: rotate(-5deg);
+        animation-delay: 0s;
+    }
+    .card-2 {
+        top: 50%;
+        right: 10%;
+        transform: rotate(10deg);
+        animation-delay: 2s;
+    }
+    .card-3 {
+        bottom: 20%;
+        left: 30%;
+        transform: rotate(-3deg);
+        animation-delay: 4s;
+    }
 
-  .staff-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15);
-      border-color: var(--accent-primary);
-  }
+    @keyframes float {
+        0%,
+        100% {
+            transform: translateY(0) rotate(var(--rot));
+        }
+        50% {
+            transform: translateY(-15px) rotate(var(--rot));
+        }
+    }
 
-  .staff-header-bg {
-      width: 100%;
-      height: 100px;
-      background: linear-gradient(135deg, var(--accent-soft), var(--bg-surface-hover));
-      border-radius: 24px 24px 0 0;
-      margin-bottom: -50px;
-      border-bottom: 1px solid var(--border-subtle);
-      position: relative;
-      overflow: hidden;
-  }
-  
-  .staff-header-pattern {
-      position: absolute;
-      inset: 0;
-      opacity: 0.1;
-      background-image: radial-gradient(circle at 2px 2px, var(--accent-primary) 1px, transparent 0);
-      background-size: 16px 16px;
-  }
+    .float-icon {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+    .text-blue {
+        color: var(--accent-primary);
+    }
+    .text-green {
+        color: #10b981;
+    }
+    .text-amber {
+        color: #f59e0b;
+    }
+    .text-yellow {
+        color: #eab308;
+    }
+    .bg-blue-soft {
+        background: rgba(14, 165, 233, 0.1);
+    }
+    .bg-green-soft {
+        background: rgba(16, 185, 129, 0.1);
+    }
+    .bg-amber-soft {
+        background: rgba(245, 158, 11, 0.1);
+    }
 
-  .staff-avatar-wrapper {
-      position: relative;
-      margin-bottom: 1rem;
-      z-index: 2;
-  }
+    /* Features */
+    .features-section {
+        margin-bottom: 5rem;
+    }
 
-  .staff-avatar {
-      width: 110px;
-      height: 110px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 4px solid var(--bg-surface);
-      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-      background: var(--bg-surface);
-      transition: transform 0.4s cubic-bezier(0.2, 1, 0.2, 1);
-  }
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
 
-  .staff-card:hover .staff-avatar {
-      transform: scale(1.05);
-      box-shadow: 0 12px 24px rgba(14, 165, 233, 0.2);
-      border-color: var(--bg-surface);
-  }
+    .feature-card {
+        padding: 2rem;
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        transition: all 0.3s;
+    }
 
-  .staff-avatar-placeholder {
-      width: 110px;
-      height: 110px;
-      border-radius: 50%;
-      background: var(--accent-primary);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 3rem;
-      font-weight: 800;
-      border: 4px solid var(--bg-surface);
-      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-  }
+    .feature-icon-box {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-  .staff-badge {
-      position: absolute;
-      bottom: 5px;
-      right: 5px;
-      background: var(--bg-surface);
-      color: var(--accent-primary);
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid var(--border-subtle);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  }
+    .feature-card h3 {
+        font-size: 1.25rem;
+        margin: 0;
+    }
 
-  .staff-info {
-      width: 100%;
-      padding: 0 1.5rem 2rem;
-      z-index: 1;
-  }
+    .feature-card p {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        margin: 0;
+        line-height: 1.5;
+    }
 
-  .staff-name {
-      font-size: 1.4rem;
-      font-weight: 800;
-      margin: 0.5rem 0 0.5rem 0;
-      color: var(--text-main);
-      background: linear-gradient(90deg, var(--text-main), var(--text-muted));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-  }
+    /* Activity */
+    .activity-section {
+        margin-bottom: 5rem;
+    }
 
-  .staff-role {
-      display: inline-block;
-      font-size: 0.75rem;
-      color: var(--accent-primary);
-      font-weight: 700;
-      margin-bottom: 1rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      padding: 0.35rem 0.85rem;
-      background: var(--accent-soft);
-      border-radius: 99px;
-      border: 1px solid rgba(14, 165, 233, 0.1);
-  }
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
 
-  .staff-bio {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      line-height: 1.6;
-      margin: 0;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-  }
+    .section-title {
+        font-size: 2rem;
+    }
 
-  .icon-xxs { width: 0.8rem; height: 0.8rem; }
+    .activity-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+        align-items: stretch;
+        max-width: 100%;
+    }
+
+    .activity-card {
+        max-width: 100%;
+        padding: 0; /* Remove padding from card container for image flush */
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        height: 100%;
+        text-decoration: none;
+        overflow: hidden; /* For image zoom */
+        border: 1px solid var(--border-glass);
+    }
+
+    .activity-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-image-wrapper {
+        position: relative;
+        width: 100%;
+        height: 200px;
+        overflow: hidden;
+    }
+
+    .card-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+
+    .activity-card:hover .card-image {
+        transform: scale(1.05);
+    }
+
+    .card-image-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .placeholder-icon {
+        width: 3rem;
+        height: 3rem;
+        opacity: 0.3;
+    }
+
+    .activity-content {
+        padding: 1.5rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .activity-footer {
+        margin-top: auto;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-subtle);
+        margin-top: 1.5rem;
+    }
+
+    .card-badge {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        padding: 0.35rem 0.85rem;
+        border-radius: 99px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        backdrop-filter: blur(4px);
+        z-index: 2;
+    }
+
+    .activity-date {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .activity-title {
+        font-size: 1.25rem;
+        margin: 0;
+        line-height: 1.4;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .author-info {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    /* Games Banner */
+    /* Games Showcase */
+    .games-showcase-section {
+        margin-bottom: 6rem;
+    }
+
+    .games-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 3rem;
+        background: radial-gradient(
+                circle at right,
+                var(--accent-soft),
+                transparent 50%
+            ),
+            var(--bg-surface);
+        gap: 2rem;
+        flex-wrap: wrap;
+        border: 1px solid var(--border-glass);
+    }
+
+    .banner-content h2 {
+        font-size: 1.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-main);
+    }
+    .banner-content p {
+        color: var(--text-muted);
+        margin-bottom: 1.5rem;
+    }
+
+    .banner-images {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .mini-game-cover {
+        width: 90px;
+        height: 120px; /* 3:4 ratio to match 360x480 */
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        transform: rotate(3deg);
+        border: 2px solid var(--border-light);
+        background: var(--bg-surface-solid); /* Fallback background */
+        flex-shrink: 0;
+    }
+
+    .mini-game-cover:nth-child(2) {
+        transform: rotate(-2deg) translateY(-10px);
+    }
+    .mini-game-cover:nth-child(3) {
+        transform: rotate(5deg);
+    }
+
+    .mini-game-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Ensure image covers the area, might crop */
+        display: block;
+    }
+    .placeholder {
+        background: var(--border-subtle);
+    }
+
+    @media (max-width: 900px) {
+        .hero-container {
+            grid-template-columns: 1fr;
+            text-align: center;
+        }
+        .hero-title {
+            font-size: 3rem;
+            align-items: center;
+        }
+        .hero-stats {
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .hero-stats .stat-divider {
+            display: none;
+        }
+        .hero-actions {
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .hero-visual {
+            display: none;
+        }
+        .games-banner {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .hero-title {
+            font-size: 2.25rem;
+        }
+        .hero-stats {
+            gap: 0.75rem;
+        }
+        .hero-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+        .hero-actions a {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* スマホ: 注目のゲーム画像の横ずれ防止 */
+    @media (max-width: 640px) {
+        .games-banner {
+            padding: 2rem 1rem;
+        }
+        .banner-images {
+            gap: 0.5rem;
+        }
+        .mini-game-cover {
+            width: 56px;
+            height: 75px;
+            transform: none;
+        }
+        .mini-game-cover:nth-child(2) {
+            transform: translateY(-6px);
+        }
+        .mini-game-cover:nth-child(3) {
+            transform: none;
+        }
+    }
+
+    /* Server Section Styles */
+    .servers-section {
+        margin-bottom: 5rem;
+    }
+    .servers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 2rem;
+    }
+    .card-tags {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .mini-tag {
+        font-size: 0.65rem;
+        color: var(--accent-primary);
+        font-weight: 700;
+        padding: 0.15rem 0.5rem;
+        background: var(--accent-soft);
+        border-radius: 4px;
+        letter-spacing: 0.02em;
+    }
+
+    .activity-card:hover .mini-tag {
+        background: var(--accent-primary);
+        color: white;
+    }
+    .empty-servers-card {
+        padding: 4rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        border: 1px dashed var(--border-subtle);
+    }
+
+    .empty-icon-box {
+        margin-bottom: 0.5rem;
+        color: var(--accent-primary);
+    }
+
+    .empty-text {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .empty-hint {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        max-width: 500px;
+    }
+
+    /* Staff Section Styles */
+    .staff-section {
+        margin-bottom: 8rem;
+    }
+
+    .staff-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 2.5rem;
+    }
+
+    .staff-card {
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
+        overflow: visible;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-glass);
+        border-radius: 24px;
+        position: relative;
+        text-decoration: none;
+    }
+
+    .staff-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+        border-color: var(--accent-primary);
+    }
+
+    .staff-header-bg {
+        width: 100%;
+        height: 100px;
+        background: linear-gradient(
+            135deg,
+            var(--accent-soft),
+            var(--bg-surface-hover)
+        );
+        border-radius: 24px 24px 0 0;
+        margin-bottom: -50px;
+        border-bottom: 1px solid var(--border-subtle);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .staff-header-pattern {
+        position: absolute;
+        inset: 0;
+        opacity: 0.1;
+        background-image: radial-gradient(
+            circle at 2px 2px,
+            var(--accent-primary) 1px,
+            transparent 0
+        );
+        background-size: 16px 16px;
+    }
+
+    .staff-avatar-wrapper {
+        position: relative;
+        margin-bottom: 1rem;
+        z-index: 2;
+    }
+
+    .staff-avatar {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--bg-surface);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        background: var(--bg-surface);
+        transition: transform 0.4s cubic-bezier(0.2, 1, 0.2, 1);
+    }
+
+    .staff-card:hover .staff-avatar {
+        transform: scale(1.05);
+        box-shadow: 0 12px 24px rgba(14, 165, 233, 0.2);
+        border-color: var(--bg-surface);
+    }
+
+    .staff-avatar-placeholder {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: var(--accent-primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: 800;
+        border: 4px solid var(--bg-surface);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .staff-badge {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        background: var(--bg-surface);
+        color: var(--accent-primary);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--border-subtle);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .staff-info {
+        width: 100%;
+        padding: 0 1.5rem 2rem;
+        z-index: 1;
+    }
+
+    .staff-name {
+        font-size: 1.4rem;
+        font-weight: 800;
+        margin: 0.5rem 0 0.5rem 0;
+        color: var(--text-main);
+        background: linear-gradient(90deg, var(--text-main), var(--text-muted));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .staff-role {
+        display: inline-block;
+        font-size: 0.75rem;
+        color: var(--accent-primary);
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 0.35rem 0.85rem;
+        background: var(--accent-soft);
+        border-radius: 99px;
+        border: 1px solid rgba(14, 165, 233, 0.1);
+    }
+
+    .staff-bio {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .icon-xxs {
+        width: 0.8rem;
+        height: 0.8rem;
+    }
 </style>

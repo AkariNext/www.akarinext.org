@@ -1,79 +1,51 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { directus, readItems, skipDirectusFetch } from "../../lib/directus";
-import { Image, User, Calendar, ArrowRight, MessageSquare, Tag, Sparkles } from "lucide-astro";
+import { payloadClient, type Post } from "../../lib/payload";
+
+import {
+    Image,
+    User,
+    Calendar,
+    ArrowRight,
+    MessageSquare,
+    Tag,
+    Sparkles,
+} from "lucide-astro";
 import PostCard from "../../components/PostCard.astro";
 
-let posts: Array<{
-  id: number;
-  title: string;
-  slug: string;
-  content: string;
-  published_date: string;
-  category: "tech" | "game" | "misc" | string;
-  author?: { id: number; name: string; avatar?: string };
-  image?: string;
-  tags?: string[];
-}> = [];
+let posts: Post[] = [];
 
 const tag = Astro.url.searchParams.get("tag");
 
-// Safely fetch data
-if (!skipDirectusFetch) {
-  try {
-    // Fetch all published posts and filter client-side to avoid JSON operator errors
-    const fetchedPosts = await directus.request(
-        readItems("posts", {
-          fields: [
-            "id",
-            "title",
-            "slug",
-            "content",
-            "published_date",
-            "category",
-            { author: ["id", "name", "avatar"] },
-            "image",
-            "tags",
-          ],
-          filter: { status: { _eq: "published" } },
-          sort: ["-published_date", "-id"],
-        })
-      );
-    
-    let allPosts = (fetchedPosts ?? []) as typeof posts;
-    // 公開日でソート（新しい順）
-    const toTime = (d: string | null | undefined) => {
-        if (!d) return 0;
-        const t = new Date(d).getTime();
-        return Number.isNaN(t) ? 0 : t;
+try {
+    const where: any = {
+        status: { equals: "published" },
     };
-    allPosts.sort((a, b) => {
-        const diff = toTime(b.published_date) - toTime(a.published_date);
-        return diff !== 0 ? diff : (b.id - a.id);
-    });
-    
-    // Filter by tag in memory if needed
+
     if (tag) {
-        const targetTag = tag.toLowerCase();
-        posts = allPosts.filter(p => 
-            p.tags?.some(t => t.toLowerCase() === targetTag)
-        );
-    } else {
-        posts = allPosts;
+        where["tags.tag"] = { equals: tag };
     }
-    
-    console.log(`[Posts] Loaded ${posts.length} items (Total: ${allPosts.length}). Tag selector: ${tag || 'none'}`);
-  } catch (e) {
+
+    const fetchedPosts = await payloadClient.items<Post>("posts").readByQuery({
+        sort: "-published_date,-id",
+        where: where,
+        limit: 100, // Adjust limit as needed
+    });
+
+    posts = fetchedPosts;
+    console.log(
+        `[Posts] Loaded ${posts.length} items. Tag selector: ${tag || "none"}`
+    );
+} catch (e) {
     console.error("[Posts] Error fetching data:", e);
     posts = [];
-  }
 }
 
 const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
+    return new Date(dateStr).toLocaleDateString("ja-JP", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
     });
 };
 ---
@@ -95,37 +67,47 @@ const formatDate = (dateStr: string) => {
                 <span class="gradient-text">ブログ</span>
             </h1>
             <p class="hero-desc">
-                コミュニティメンバーの活動日記、ゲームプレイの記録、<br class="desktop-break"/>
+                コミュニティメンバーの活動日記、ゲームプレイの記録、<br
+                    class="desktop-break"
+                />
                 その他の雑記などを紹介します。
             </p>
 
-            {tag && (
-                <div class="filter-indicator-glass">
-                  <span class="filter-label">タグ:</span>
-                  <span class="active-tag">#{tag}</span>
-                  <a href="/posts" class="clear-filter">
-                      <span class="clear-text">解除</span>
-                      <span class="clear-icon">×</span>
-                  </a>
-                </div>
-            )}
+            {
+                tag && (
+                    <div class="filter-indicator-glass">
+                        <span class="filter-label">タグ:</span>
+                        <span class="active-tag">#{tag}</span>
+                        <a href="/posts" class="clear-filter">
+                            <span class="clear-text">解除</span>
+                            <span class="clear-icon">×</span>
+                        </a>
+                    </div>
+                )
+            }
         </div>
     </div>
 
-  <div class="container main-content">
-    {posts.length > 0 ? (
-      <div class="clean-grid">
-        {posts.map((post) => (
-          <PostCard post={post} />
-        ))}
-      </div>
-    ) : (
-      <div class="glass-card empty-state">
-        <p>記事が見つかりませんでした。</p>
-        {tag && <a href="/posts" class="btn btn-sm">すべての記事を表示</a>}
-      </div>
-    )}
-  </div>
+    <div class="container main-content">
+        {
+            posts.length > 0 ? (
+                <div class="clean-grid">
+                    {posts.map((post) => (
+                        <PostCard post={post} />
+                    ))}
+                </div>
+            ) : (
+                <div class="glass-card empty-state">
+                    <p>記事が見つかりませんでした。</p>
+                    {tag && (
+                        <a href="/posts" class="btn btn-sm">
+                            すべての記事を表示
+                        </a>
+                    )}
+                </div>
+            )
+        }
+    </div>
 </Layout>
 
 <style>
@@ -159,7 +141,11 @@ const formatDate = (dateStr: string) => {
         left: 20%;
         width: 300px;
         height: 300px;
-        background: radial-gradient(circle, var(--accent-secondary) 0%, transparent 70%);
+        background: radial-gradient(
+            circle,
+            var(--accent-secondary) 0%,
+            transparent 70%
+        );
         animation: float 10s ease-in-out infinite;
     }
 
@@ -168,13 +154,22 @@ const formatDate = (dateStr: string) => {
         right: 20%;
         width: 400px;
         height: 400px;
-        background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%);
+        background: radial-gradient(
+            circle,
+            var(--accent-primary) 0%,
+            transparent 70%
+        );
         animation: float 12s ease-in-out infinite reverse;
     }
 
     @keyframes float {
-        0%, 100% { transform: translate(0, 0); }
-        50% { transform: translate(20px, -20px); }
+        0%,
+        100% {
+            transform: translate(0, 0);
+        }
+        50% {
+            transform: translate(20px, -20px);
+        }
     }
 
     .hero-content {
@@ -213,7 +208,11 @@ const formatDate = (dateStr: string) => {
     }
 
     .gradient-text {
-        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        background: linear-gradient(
+            135deg,
+            var(--accent-primary),
+            var(--accent-secondary)
+        );
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -228,8 +227,13 @@ const formatDate = (dateStr: string) => {
         margin: 0 auto;
     }
 
-    .icon-sm { width: 1rem; height: 1rem; }
-    .mobile-break { display: none; }
+    .icon-sm {
+        width: 1rem;
+        height: 1rem;
+    }
+    .mobile-break {
+        display: none;
+    }
 
     @media (max-width: 768px) {
         .hero-section {
@@ -238,77 +242,84 @@ const formatDate = (dateStr: string) => {
         .hero-title {
             font-size: 2.25rem;
         }
-        .mobile-break { display: block; }
-        .desktop-break { display: none; }
+        .mobile-break {
+            display: block;
+        }
+        .desktop-break {
+            display: none;
+        }
     }
 
-  /* Content */
-  .main-content {
-      padding-bottom: 8rem;
-      position: relative;
-      z-index: 2;
-  }
+    /* Content */
+    .main-content {
+        padding-bottom: 8rem;
+        position: relative;
+        z-index: 2;
+    }
 
-  .clean-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 2.5rem;
-  }
+    .clean-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 2.5rem;
+    }
 
-  .empty-state {
-      text-align: center;
-      padding: 8rem 2rem;
-      color: var(--text-muted);
-  }
+    .empty-state {
+        text-align: center;
+        padding: 8rem 2rem;
+        color: var(--text-muted);
+    }
 
-  /* Filter Indicator */
-  .filter-indicator-glass {
-      margin-top: 2rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.5rem 1rem 0.5rem 1.25rem;
-      background: var(--bg-surface);
-      backdrop-filter: blur(12px);
-      border-radius: 100px;
-      border: 1px solid var(--border-glass);
-      font-size: 0.95rem;
-      box-shadow: var(--shadow-sm);
-  }
+    /* Filter Indicator */
+    .filter-indicator-glass {
+        margin-top: 2rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 1rem 0.5rem 1.25rem;
+        background: var(--bg-surface);
+        backdrop-filter: blur(12px);
+        border-radius: 100px;
+        border: 1px solid var(--border-glass);
+        font-size: 0.95rem;
+        box-shadow: var(--shadow-sm);
+    }
 
-  .active-tag {
-      color: var(--accent-primary);
-      font-weight: 700;
-  }
+    .active-tag {
+        color: var(--accent-primary);
+        font-weight: 700;
+    }
 
-  .clear-filter {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      background: var(--bg-surface-hover);
-      padding: 0.25rem 0.75rem;
-      border-radius: 100px;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.2s;
-      border: 1px solid var(--border-subtle);
-  }
+    .clear-filter {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: var(--bg-surface-hover);
+        padding: 0.25rem 0.75rem;
+        border-radius: 100px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid var(--border-subtle);
+    }
 
-  .clear-filter:hover {
-      background: var(--accent-soft);
-      color: var(--accent-primary);
-      border-color: var(--accent-soft);
-  }
+    .clear-filter:hover {
+        background: var(--accent-soft);
+        color: var(--accent-primary);
+        border-color: var(--accent-soft);
+    }
 
-  .btn-sm {
-      margin-top: 2rem;
-      padding: 0.75rem 2rem;
-      font-size: 1rem;
-      border-radius: 100px;
-  }
+    .btn-sm {
+        margin-top: 2rem;
+        padding: 0.75rem 2rem;
+        font-size: 1rem;
+        border-radius: 100px;
+    }
 
-  @media (max-width: 768px) {
-      .clean-grid { grid-template-columns: 1fr; gap: 2rem; }
-  }
+    @media (max-width: 768px) {
+        .clean-grid {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+    }
 </style>

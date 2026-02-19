@@ -1,98 +1,140 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { directus, readItems, skipDirectusFetch } from "../../lib/directus";
+import { payloadClient, getMediaUrl, type Post } from "../../lib/payload";
 import { processContentHtml } from "../../lib/content";
-import { Calendar, User, ArrowLeft, Image as ImageIcon, Gamepad2, Code2, MessageCircle, MessageSquare, Zap, Tag as TagIcon, Twitter, Github, Globe, Twitch, Youtube, Shield } from "lucide-astro";
+import {
+    Calendar,
+    User,
+    ArrowLeft,
+    Gamepad2,
+    Code2,
+    MessageCircle,
+    MessageSquare,
+    Zap,
+    Tag as TagIcon,
+    Twitter,
+    Github,
+    Globe,
+    Twitch,
+    Youtube,
+    Shield,
+} from "lucide-astro";
 
 export const prerender = false;
 
 const { slug } = Astro.params;
-let post = null;
+let post: Post | null = null;
+let authorAvatarUrl: string | undefined = undefined;
+let authorName: string = "Unknown";
+let authorId: string | number = "#";
+let authorBio: string = "";
+let authorIsStaff: boolean = false;
+let authorStaffTitle: string | null | undefined = "";
+let authorSocials: any[] = [];
+let processedContent = "";
 
-if (!skipDirectusFetch) {
-	try {
-        // slug が数値なら id で検索、そうでなければ slug で検索
-        const isNumeric = /^\d+$/.test(slug || "");
-        const filter = isNumeric
-            ? { id: { _eq: parseInt(slug!, 10) } }
-            : { slug: { _eq: slug } };
-        const result = await directus.request(
-            readItems("posts", {
-                fields: [
-                    "title",
-                    "content",
-                    "published_date",
-                    "category",
-                    "tags",
-                    { author: ["id", "name", "avatar", "bio", "social_links", "is_staff", "staff_title"] },
-                    "image",
-                ],
-                filter: { ...filter, status: { _eq: "published" } },
-                limit: 1,
-            })
-        );
-        post = result?.[0] || null;
-	} catch (e) {
-		// Silent error
-	}
+try {
+    const isNumeric = /^\d+$/.test(slug || "");
+    const query: any = {
+        limit: 1,
+        where: {
+            status: { equals: "published" },
+        },
+    };
+
+    if (isNumeric) {
+        query.where.id = { equals: parseInt(slug!, 10) };
+    } else {
+        query.where.slug = { equals: slug };
+    }
+
+    const posts = await payloadClient.items<Post>("posts").readByQuery(query);
+    post = posts[0] || null;
+
+    if (post) {
+        // Author Handling
+        if (post.author && typeof post.author === "object") {
+            authorName = post.author.name;
+            authorId = post.author.id;
+            authorAvatarUrl = getMediaUrl(post.author.avatar);
+            authorBio = post.author.bio || "";
+            authorIsStaff = post.author.is_staff || false;
+            authorStaffTitle = post.author.staff_title;
+            authorSocials = post.author.social_links || [];
+        }
+
+        // Content Processing
+        if (post.content && typeof post.content === "string") {
+            const contentWithCode = post.content.replace(
+                /`([^`]+)`/g,
+                "<code>$1</code>"
+            );
+            processedContent = await processContentHtml(contentWithCode);
+        } else if (post.content) {
+            processedContent =
+                "<p>Content is in Rich Text format. Renderer needed.</p>";
+        }
+    }
+} catch (e) {
+    console.error("Error fetching post:", e);
 }
 
 if (!post) {
-	return Astro.redirect("/posts");
+    return Astro.redirect("/posts");
 }
 
-const directusUrl =
-	import.meta.env.PUBLIC_DIRECTUS_URL || "http://localhost:8055";
-
-const getImageUrl = (imageVal: string | { id: string } | null | undefined) => {
-    if (!imageVal) return null;
-    const id = typeof imageVal === 'string' ? imageVal : imageVal.id;
-    return `${directusUrl}/assets/${id}`;
-}
-
-const imageUrl = getImageUrl(post.image);
-const avatarUrl = getImageUrl(post.author?.avatar);
-
+const imageUrl = getMediaUrl(post.image);
 const displayDate = post.published_date || new Date().toISOString();
 
 const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('ja-JP', {
-       year: 'numeric',
-       month: 'long',
-       day: 'numeric' 
+    return new Date(date).toLocaleDateString("ja-JP", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
     });
 };
 
 const getCategoryIcon = (cat: string) => {
-    switch(cat) {
-        case 'tech': return Code2;
-        case 'game': return Gamepad2;
-        case 'misc': return MessageCircle;
-        default: return MessageCircle;
+    switch (cat) {
+        case "tech":
+            return Code2;
+        case "game":
+            return Gamepad2;
+        case "misc":
+            return MessageCircle;
+        default:
+            return MessageCircle;
     }
-}
+};
 const CategoryIcon = getCategoryIcon(post.category);
 
 const getSocialIcon = (platform: string) => {
     switch (platform?.toLowerCase()) {
-        case 'twitter': return Twitter;
-        case 'x': return Twitter;
-        case 'github': return Github;
-        case 'twitch': return Twitch;
-        case 'youtube': return Youtube;
-        case 'discord': return MessageSquare;
-        default: return Globe;
+        case "twitter":
+            return Twitter;
+        case "x":
+            return Twitter;
+        case "github":
+            return Github;
+        case "twitch":
+            return Twitch;
+        case "youtube":
+            return Youtube;
+        case "discord":
+            return MessageSquare;
+        default:
+            return Globe;
     }
 };
-
-let processedContent = '';
-if (post.content) {
-    const contentWithCode = post.content.replace(/`([^`]+)`/g, '<code>$1</code>');
-    processedContent = await processContentHtml(contentWithCode);
-}
 ---
 
-<Layout title={post.title} description={post.content?.replace(/<[^>]*>/g, '').substring(0, 160) || ''} image={imageUrl || undefined}>
+<Layout
+    title={post.title}
+    description={typeof post.content === "string"
+        ? post.content.replace(/<[^>]*>/g, "").substring(0, 160)
+        : ""}
+    image={imageUrl || undefined}
+>
     <!-- Reading Progress Bar -->
     <div id="progress-bar" class="progress-bar-container">
         <div class="progress-bar-fill"></div>
@@ -113,126 +155,175 @@ if (post.content) {
                         </div>
                     </div>
                     <div class="meta-right">
-                        <span class="read-time"><Zap class="icon icon-xs text-yellow" /> 読了目安: {Math.max(1, Math.ceil(post.content?.length / 500))}分</span>
+                        <span class="read-time">
+                            <Zap class="icon icon-xs text-yellow" /> 読了目安: {
+                                typeof post.content === "string"
+                                    ? Math.max(
+                                          1,
+                                          Math.ceil(post.content.length / 500)
+                                      )
+                                    : 1
+                            }分
+                        </span>
                     </div>
                 </div>
-                
+
                 <h1 class="post-title-giant">{post.title}</h1>
-                
-                {post.author && (
-                    <div class="header-author-row">
-                        <a href={`/users/${post.author.id}`} class="author-pill">
-                            {avatarUrl ? (
-                                <img src={`${avatarUrl}?width=64&height=64&fit=cover`} alt={post.author.name} class="author-pill-img" />
-                            ) : (
-                                <div class="author-pill-placeholder"><User class="icon" /></div>
-                            )}
-                            <div class="author-pill-text">
-                                <span class="pill-label">著者</span>
-                                <span class="pill-name">{post.author.name}</span>
-                            </div>
-                        </a>
-                    </div>
-                )}
+
+                {
+                    post.author && (
+                        <div class="header-author-row">
+                            <a href={`/users/${authorId}`} class="author-pill">
+                                {authorAvatarUrl ? (
+                                    <img
+                                        src={authorAvatarUrl}
+                                        alt={authorName}
+                                        class="author-pill-img"
+                                    />
+                                ) : (
+                                    <div class="author-pill-placeholder">
+                                        <User class="icon" />
+                                    </div>
+                                )}
+                                <div class="author-pill-text">
+                                    <span class="pill-label">著者</span>
+                                    <span class="pill-name">{authorName}</span>
+                                </div>
+                            </a>
+                        </div>
+                    )
+                }
             </div>
-            
-            {imageUrl ? (
-                <div class="hero-image-wrapper container">
-                    <img 
-                        src={`${imageUrl}?width=1280&format=webp&quality=80`} 
-                        srcset={`
-                            ${imageUrl}?width=640&format=webp&quality=80 640w,
-                            ${imageUrl}?width=1280&format=webp&quality=80 1280w,
-                            ${imageUrl}?width=1920&format=webp&quality=80 1920w
-                        `}
-                        sizes="(max-width: 768px) 100vw, 1100px"
-                        alt={post.title} 
-                        class="hero-image" 
-                        loading="eager"
-                        decoding="async"
-                    />
-                </div>
-            ) : (
-                <div class="hero-image-placeholder container">
-                </div>
-            )}
+
+            {
+                imageUrl ? (
+                    <div class="hero-image-wrapper container">
+                        <img
+                            src={imageUrl}
+                            alt={post.title}
+                            class="hero-image"
+                            loading="eager"
+                            decoding="async"
+                        />
+                    </div>
+                ) : (
+                    <div class="hero-image-placeholder container"></div>
+                )
+            }
         </header>
 
         <div class="container container-medium content-container">
             <div class="glass-card content-card">
-                <div class="prose" set:html={processedContent} />
-                
-                {post.tags && post.tags.length > 0 && (
-                    <div class="tags-section reveal-fade">
-                        <h4 class="tags-title">関連タグ</h4>
-                        <div class="tags-list">
-                            {post.tags.map((tag: string) => (
-                                <a href={`/posts?tag=${tag}`} class="tag-premium">
-                                    <TagIcon class="icon-tag" />
-                                    <span>{tag}</span>
-                                </a>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
+                <div class="prose" set:html={processedContent}></div>
 
-            {post.author && (
-                <div class="author-bio-card reveal-fade">
-                    <div class="card-glow"></div>
-                    <div class="bio-content-horizontal">
-                        <div class="bio-visual">
-                            <div class="author-avatar-group">
-                                {avatarUrl ? (
-                                    <img src={`${avatarUrl}?width=160&height=160&fit=cover`} alt={post.author.name} class="bio-img-premium" />
-                                ) : (
-                                    <div class="bio-img-placeholder-premium"><User class="icon icon-lg" /></div>
-                                )}
-                                {post.author.is_staff && (
-                                    <div class="staff-avatar-badge" title="Official Staff">
-                                        <Shield class="icon-tiny" />
-                                    </div>
-                                )}
+                {
+                    post.tags && post.tags.length > 0 && (
+                        <div class="tags-section reveal-fade">
+                            <h4 class="tags-title">関連タグ</h4>
+                            <div class="tags-list">
+                                {post.tags.map((tagObj) => (
+                                    <a
+                                        href={`/posts?tag=${tagObj.tag}`}
+                                        class="tag-premium"
+                                    >
+                                        <TagIcon class="icon-tag" />
+                                        <span>{tagObj.tag}</span>
+                                    </a>
+                                ))}
                             </div>
                         </div>
-                        <div class="bio-details">
-                            <header class="bio-header">
-                                <div class="name-box">
-                                    <div class="name-badge-row">
-                                        <h3 class="bio-name-clean">{post.author.name}</h3>
-                                        {post.author.is_staff && (
-                                            <span class="staff-chip">
-                                                STAFF
+                    )
+                }
+            </div>
+
+            {
+                post.author && (
+                    <div class="author-bio-card reveal-fade">
+                        <div class="card-glow" />
+                        <div class="bio-content-horizontal">
+                            <div class="bio-visual">
+                                <div class="author-avatar-group">
+                                    {authorAvatarUrl ? (
+                                        <img
+                                            src={authorAvatarUrl}
+                                            alt={authorName}
+                                            class="bio-img-premium"
+                                        />
+                                    ) : (
+                                        <div class="bio-img-placeholder-premium">
+                                            <User class="icon icon-lg" />
+                                        </div>
+                                    )}
+                                    {authorIsStaff && (
+                                        <div
+                                            class="staff-avatar-badge"
+                                            title="Official Staff"
+                                        >
+                                            <Shield class="icon-tiny" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div class="bio-details">
+                                <header class="bio-header">
+                                    <div class="name-box">
+                                        <div class="name-badge-row">
+                                            <h3 class="bio-name-clean">
+                                                {authorName}
+                                            </h3>
+                                            {authorIsStaff && (
+                                                <span class="staff-chip">
+                                                    STAFF
+                                                </span>
+                                            )}
+                                        </div>
+                                        {authorStaffTitle && (
+                                            <span class="author-role-text">
+                                                {authorStaffTitle}
                                             </span>
                                         )}
                                     </div>
-                                    {post.author.staff_title && <span class="author-role-text">{post.author.staff_title}</span>}
+                                    {authorSocials && authorSocials.length > 0 && (
+                                        <div class="author-socials">
+                                            {authorSocials.map((link: any) => {
+                                                const SocialIcon =
+                                                    getSocialIcon(
+                                                        link.platform
+                                                    );
+                                                return (
+                                                    <a
+                                                        href={link.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="social-icon-btn"
+                                                        title={link.platform}
+                                                    >
+                                                        <SocialIcon class="icon-xs" />
+                                                    </a>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </header>
+                                <p class="bio-text-modern">
+                                    {authorBio ||
+                                        "この著者のプロフィールはまだ登録されていません。"}
+                                </p>
+                                <div class="bio-footer">
+                                    <a
+                                        href={`/users/${authorId}`}
+                                        class="btn-profile-premium"
+                                    >
+                                        <span>すべての記事を見る</span>
+                                        <ArrowLeft class="icon icon-xs rotate-180" />
+                                    </a>
                                 </div>
-                                {post.author.social_links && post.author.social_links.length > 0 && (
-                                    <div class="author-socials">
-                                        {post.author.social_links.map((link: any) => {
-                                            const SocialIcon = getSocialIcon(link.platform);
-                                            return (
-                                                <a href={link.url} target="_blank" rel="noopener noreferrer" class="social-icon-btn" title={link.platform}>
-                                                    <SocialIcon class="icon-xs" />
-                                                </a>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </header>
-                            <p class="bio-text-modern">{post.author.bio || "この著者のプロフィールはまだ登録されていません。"}</p>
-                            <div class="bio-footer">
-                                <a href={`/users/${post.author.id}`} class="btn-profile-premium">
-                                    <span>すべての記事を見る</span>
-                                    <ArrowLeft class="icon icon-xs rotate-180" />
-                                </a>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-            
+                )
+            }
+
             <div class="post-navigation reveal-fade">
                 <a href="/posts" class="back-link-premium">
                     <div class="back-icon-circle">
@@ -246,24 +337,34 @@ if (post.content) {
 
     <script>
         // Progress Bar logic
-        window.addEventListener('scroll', () => {
-            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        window.addEventListener("scroll", () => {
+            const winScroll =
+                document.body.scrollTop || document.documentElement.scrollTop;
+            const height =
+                document.documentElement.scrollHeight -
+                document.documentElement.clientHeight;
             const scrolled = (winScroll / height) * 100;
-            const barFill = document.querySelector('.progress-bar-fill') as HTMLElement;
+            const barFill = document.querySelector(
+                ".progress-bar-fill"
+            ) as HTMLElement;
             if (barFill) barFill.style.width = scrolled + "%";
         });
 
         // Simple Reveal Animation
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
-                }
-            });
-        }, { threshold: 0.1 });
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add("is-visible");
+                    }
+                });
+            },
+            { threshold: 0.1 }
+        );
 
-        document.querySelectorAll('.reveal-fade').forEach(el => observer.observe(el));
+        document
+            .querySelectorAll(".reveal-fade")
+            .forEach((el) => observer.observe(el));
     </script>
 </Layout>
 
@@ -280,7 +381,11 @@ if (post.content) {
 
     .progress-bar-fill {
         height: 100%;
-        background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+        background: linear-gradient(
+            90deg,
+            var(--accent-primary),
+            var(--accent-secondary)
+        );
         width: 0%;
         transition: width 0.1s ease-out;
     }
@@ -295,7 +400,7 @@ if (post.content) {
         opacity: 1;
         transform: translateY(0);
     }
-    
+
     .post-detail-premium {
         padding-bottom: 8rem;
     }
@@ -305,15 +410,22 @@ if (post.content) {
         display: flex;
         justify-content: center;
     }
-    
+
     .post-header-block {
         padding-top: 6rem;
-        background: 
-            radial-gradient(circle at 10% 0%, var(--accent-soft), transparent 40%),
-            radial-gradient(circle at 90% 10%, rgba(14, 165, 233, 0.08), transparent 40%);
+        background: radial-gradient(
+                circle at 10% 0%,
+                var(--accent-soft),
+                transparent 40%
+            ),
+            radial-gradient(
+                circle at 90% 10%,
+                rgba(14, 165, 233, 0.08),
+                transparent 40%
+            );
         padding-bottom: 8rem;
     }
-    
+
     .header-meta-group {
         display: flex;
         justify-content: space-between;
@@ -362,7 +474,7 @@ if (post.content) {
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .post-title-giant {
         font-size: 3.75rem;
         line-height: 1.1;
@@ -370,7 +482,7 @@ if (post.content) {
         color: var(--text-main);
         letter-spacing: -0.04em;
         margin-bottom: 2.5rem;
-        filter: drop-shadow(0 10px 20px rgba(0,0,0,0.05));
+        filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.05));
     }
 
     .header-author-row {
@@ -404,9 +516,9 @@ if (post.content) {
         height: 52px;
         border-radius: 50%;
         border: 2px solid white;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
-    
+
     .author-pill-placeholder {
         width: 52px;
         height: 52px;
@@ -423,9 +535,17 @@ if (post.content) {
         flex-direction: column;
     }
 
-    .pill-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
-    .pill-name { font-size: 1.05rem; font-weight: 800; }
-    
+    .pill-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+    .pill-name {
+        font-size: 1.05rem;
+        font-weight: 800;
+    }
+
     .hero-image-wrapper {
         margin-top: 5rem;
         margin-bottom: -6rem;
@@ -433,7 +553,7 @@ if (post.content) {
         z-index: 10;
         padding: 0 1rem;
     }
-    
+
     .hero-image {
         width: 100%;
         max-width: 1100px;
@@ -442,15 +562,15 @@ if (post.content) {
         height: 60vh;
         object-fit: cover;
         border-radius: 32px;
-        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
         border: 1px solid var(--border-glass);
     }
-    
+
     .content-card {
         padding: 4rem 3.5rem;
         background: var(--bg-surface-solid);
         border-radius: 24px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.05);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
     }
 
     :global([data-theme="dark"]) .content-card {
@@ -474,13 +594,13 @@ if (post.content) {
         margin-bottom: 1.5rem;
         display: block;
     }
-    
+
     .tags-list {
         display: flex;
         flex-wrap: wrap;
         gap: 0.85rem;
     }
-    
+
     .tag-premium {
         display: inline-flex;
         align-items: center;
@@ -503,7 +623,7 @@ if (post.content) {
         color: var(--accent-primary);
         opacity: 0.7;
     }
-    
+
     .tag-premium:hover {
         background: var(--accent-primary);
         color: white;
@@ -516,7 +636,7 @@ if (post.content) {
         color: white;
         opacity: 1;
     }
-    
+
     /* Author Bio Card - Premium */
     .author-bio-card {
         margin-top: 6rem;
@@ -534,7 +654,7 @@ if (post.content) {
 
     .author-bio-card:hover {
         transform: translateY(-8px);
-        box-shadow: var(--shadow-hover), 0 20px 40px rgba(0,0,0,0.1);
+        box-shadow: var(--shadow-hover), 0 20px 40px rgba(0, 0, 0, 0.1);
         border-color: var(--accent-primary);
     }
 
@@ -542,7 +662,11 @@ if (post.content) {
         position: absolute;
         width: 300px;
         height: 300px;
-        background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%);
+        background: radial-gradient(
+            circle,
+            var(--accent-primary) 0%,
+            transparent 70%
+        );
         top: -150px;
         right: -150px;
         opacity: 0.05;
@@ -584,7 +708,8 @@ if (post.content) {
         flex-shrink: 0;
     }
 
-    .bio-img-premium, .bio-img-placeholder-premium {
+    .bio-img-premium,
+    .bio-img-placeholder-premium {
         width: 120px;
         height: 120px;
         border-radius: 50%;
@@ -607,7 +732,7 @@ if (post.content) {
         align-items: center;
         justify-content: center;
         border: 2px solid var(--bg-surface-solid);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
 
     .bio-details {
@@ -716,14 +841,30 @@ if (post.content) {
     }
 
     @media (max-width: 768px) {
-        .author-bio-card { padding: 2.5rem 1.5rem; }
-        .bio-content-horizontal { flex-direction: column; gap: 2rem; text-align: center; }
-        .bio-header { flex-direction: column; align-items: center; gap: 1.5rem; }
-        .name-badge-row { justify-content: center; }
-        .bio-footer { justify-content: center; }
-        .author-socials { justify-content: center; }
+        .author-bio-card {
+            padding: 2.5rem 1.5rem;
+        }
+        .bio-content-horizontal {
+            flex-direction: column;
+            gap: 2rem;
+            text-align: center;
+        }
+        .bio-header {
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .name-badge-row {
+            justify-content: center;
+        }
+        .bio-footer {
+            justify-content: center;
+        }
+        .author-socials {
+            justify-content: center;
+        }
     }
-    
+
     .back-link-premium {
         display: inline-flex;
         align-items: center;
@@ -756,19 +897,41 @@ if (post.content) {
         transform: translateX(-5px);
         border-color: var(--accent-primary);
     }
-    
+
     @media (max-width: 1024px) {
-        .post-title-giant { font-size: 3.5rem; }
-        .hero-image { height: 40vh; }
+        .post-title-giant {
+            font-size: 3.5rem;
+        }
+        .hero-image {
+            height: 40vh;
+        }
     }
 
     @media (max-width: 768px) {
-        .post-header-block { padding-top: 4rem; padding-bottom: 6rem; }
-        .post-title-giant { font-size: 2.5rem; letter-spacing: -0.03em; margin-bottom: 2rem; }
-        .content-card { padding: 2.5rem 1.5rem; border-radius: 20px; }
-        .hero-image-wrapper { margin-top: 3rem; margin-bottom: -4rem; }
-        .hero-image { border-radius: 16px; height: 35vh; }
-        .author-bio-section { padding: 2rem 1.5rem; margin-top: 4rem; }
+        .post-header-block {
+            padding-top: 4rem;
+            padding-bottom: 6rem;
+        }
+        .post-title-giant {
+            font-size: 2.5rem;
+            letter-spacing: -0.03em;
+            margin-bottom: 2rem;
+        }
+        .content-card {
+            padding: 2.5rem 1.5rem;
+            border-radius: 20px;
+        }
+        .hero-image-wrapper {
+            margin-top: 3rem;
+            margin-bottom: -4rem;
+        }
+        .hero-image {
+            border-radius: 16px;
+            height: 35vh;
+        }
+        .author-bio-section {
+            padding: 2rem 1.5rem;
+            margin-top: 4rem;
+        }
     }
 </style>
-

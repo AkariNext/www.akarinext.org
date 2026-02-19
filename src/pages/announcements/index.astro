@@ -1,56 +1,61 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { directus, readItems, skipDirectusFetch } from "../../lib/directus";
+import { payloadClient, type Announcement } from "../../lib/payload";
 import { processContentHtml } from "../../lib/content";
 import { Megaphone, Calendar, Clock, BellRing, Sparkles } from "lucide-astro";
 
-let announcements: Array<{
-  id: number;
-  title: string;
-  content: string;
-  published_date?: string;
-}> = [];
+export const prerender = false;
 
-if (!skipDirectusFetch) {
-  try {
-    const raw = (await directus.request(
-      readItems("announcements", {
-        fields: ["id", "title", "content", "published_date"],
-        filter: { status: { _eq: "published" } },
-        sort: ["-published_date", "-id"],
-      })
-    )) ?? [];
-    const toTime = (d: string | null | undefined) => {
-      if (!d) return 0;
-      const t = new Date(d).getTime();
-      return Number.isNaN(t) ? 0 : t;
-    };
-    announcements = raw.sort((a: { published_date?: string; id?: number }, b: { published_date?: string; id?: number }) => {
-      const diff = toTime(b.published_date) - toTime(a.published_date);
-      return diff !== 0 ? diff : ((b.id ?? 0) - (a.id ?? 0));
-    });
+let announcements: Announcement[] = [];
 
-    // Process content asynchronously (OGP fetch etc)
-    announcements = await Promise.all(announcements.map(async (ann: any) => ({
-        ...ann,
-        content: await processContentHtml(ann.content)
-    })));
+try {
+    const res = await payloadClient
+        .items<Announcement>("announcements")
+        .readByQuery({
+            sort: "-published_date",
+            where: {
+                status: { equals: "published" },
+            },
+            limit: 50,
+        });
+    announcements = res;
 
-  } catch (e) {
-    // Silent fail
-  }
+    // Process content (if string)
+    // Note: Payload richText is JSON. If data migrated as string, this works.
+    // If not, we need a serializer.
+    announcements = await Promise.all(
+        announcements.map(async (ann) => {
+            let content = "";
+            if (typeof ann.content === "string") {
+                content = await processContentHtml(ann.content);
+            } else if (ann.content) {
+                content = "<p><i>(Rich Text Content)</i></p>";
+            }
+            return {
+                ...ann,
+                content: content,
+            };
+        })
+    );
+} catch (e) {
+    console.error("Error fetching announcements:", e);
+    announcements = [];
 }
 
-const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('ja-JP', {
-       year: 'numeric',
-       month: 'short',
-       day: 'numeric' 
+const formatDate = (dateVal: string | null | undefined) => {
+    if (!dateVal) return "";
+    return new Date(dateVal).toLocaleDateString("ja-JP", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
     });
 };
 ---
 
-<Layout title="News" description="最新のニュースとアップデート情報をお届けします。">
+<Layout
+    title="News"
+    description="最新のニュースとアップデート情報をお届けします。"
+>
     <div class="hero-section">
         <div class="hero-bg">
             <div class="orb orb-1"></div>
@@ -67,47 +72,65 @@ const formatDate = (date: string) => {
                 <span class="gradient-text">ニュース</span>
             </h1>
             <p class="hero-desc">
-                コミュニティの最新情報、イベントのお知らせ、<br class="desktop-break"/>
+                コミュニティの最新情報、イベントのお知らせ、<br
+                    class="desktop-break"
+                />
                 メンテナンス情報をいち早くお届けします。
             </p>
         </div>
     </div>
 
     <div class="container container-narrow content-wrapper">
-        {announcements.length > 0 ? (
-            <div class="timeline-container">
-                {announcements.map((ann) => {
-                    const annDate = ann.published_date || new Date().toISOString();
-                    return (
-                    <article id={`ann-${ann.id}`} class="timeline-item">
-                        <div class="timeline-date-col">
-                            <span class="date-badge">
-                                <span class="date-month">{new Date(annDate).toLocaleDateString('en-US', {month:'short'})}</span>
-                                <span class="date-day">{new Date(annDate).getDate()}</span>
-                            </span>
-                        </div>
-                        <div class="timeline-content glass-card">
-                            <div class="card-header">
-                                <h2 class="ann-title">{ann.title}</h2>
-                                <div class="meta-inline">
-                                    <Clock class="icon-xs" /> {formatDate(annDate)}
+        {
+            announcements.length > 0 ? (
+                <div class="timeline-container">
+                    {announcements.map((ann) => {
+                        const annDate =
+                            ann.published_date || new Date().toISOString();
+                        const dateObj = new Date(annDate);
+                        // content is already processed to string in the map above, but type definition says richText
+                        // We cast to any or string to satisfy ts in template
+                        const htmlContent = ann.content as unknown as string;
+
+                        return (
+                            <article id={`ann-${ann.id}`} class="timeline-item">
+                                <div class="timeline-date-col">
+                                    <span class="date-badge">
+                                        <span class="date-month">
+                                            {dateObj.toLocaleDateString(
+                                                "en-US",
+                                                { month: "short" }
+                                            )}
+                                        </span>
+                                        <span class="date-day">
+                                            {dateObj.getDate()}
+                                        </span>
+                                    </span>
                                 </div>
-                            </div>
-                            <div class="prose" set:html={ann.content} />
-                        </div>
-                    </article>
-                );
-                })}
-            </div>
-        ) : (
-            <div class="glass-card empty-state">
-                <div class="empty-icon-wrapper">
-                    <BellRing class="empty-icon" />
+                                <div class="timeline-content glass-card">
+                                    <div class="card-header">
+                                        <h2 class="ann-title">{ann.title}</h2>
+                                        <div class="meta-inline">
+                                            <Clock class="icon-xs" />{" "}
+                                            {formatDate(annDate)}
+                                        </div>
+                                    </div>
+                                    <div class="prose" set:html={htmlContent} />
+                                </div>
+                            </article>
+                        );
+                    })}
                 </div>
-                <h3>まだお知らせはありません</h3>
-                <p>新しい情報が追加されるのをお待ちください。</p>
-            </div>
-        )}
+            ) : (
+                <div class="glass-card empty-state">
+                    <div class="empty-icon-wrapper">
+                        <BellRing class="empty-icon" />
+                    </div>
+                    <h3>まだお知らせはありません</h3>
+                    <p>新しい情報が追加されるのをお待ちください。</p>
+                </div>
+            )
+        }
     </div>
 </Layout>
 
@@ -142,7 +165,11 @@ const formatDate = (date: string) => {
         left: 20%;
         width: 300px;
         height: 300px;
-        background: radial-gradient(circle, var(--accent-secondary) 0%, transparent 70%);
+        background: radial-gradient(
+            circle,
+            var(--accent-secondary) 0%,
+            transparent 70%
+        );
         animation: float 10s ease-in-out infinite;
     }
 
@@ -151,13 +178,22 @@ const formatDate = (date: string) => {
         right: 20%;
         width: 400px;
         height: 400px;
-        background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%);
+        background: radial-gradient(
+            circle,
+            var(--accent-primary) 0%,
+            transparent 70%
+        );
         animation: float 12s ease-in-out infinite reverse;
     }
 
     @keyframes float {
-        0%, 100% { transform: translate(0, 0); }
-        50% { transform: translate(20px, -20px); }
+        0%,
+        100% {
+            transform: translate(0, 0);
+        }
+        50% {
+            transform: translate(20px, -20px);
+        }
     }
 
     .hero-content {
@@ -196,7 +232,11 @@ const formatDate = (date: string) => {
     }
 
     .gradient-text {
-        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        background: linear-gradient(
+            135deg,
+            var(--accent-primary),
+            var(--accent-secondary)
+        );
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -211,8 +251,13 @@ const formatDate = (date: string) => {
         margin: 0 auto;
     }
 
-    .icon-sm { width: 1rem; height: 1rem; }
-    .mobile-break { display: none; }
+    .icon-sm {
+        width: 1rem;
+        height: 1rem;
+    }
+    .mobile-break {
+        display: none;
+    }
 
     /* Content Layout */
     .content-wrapper {
@@ -231,26 +276,32 @@ const formatDate = (date: string) => {
         padding-bottom: 5rem;
         position: relative;
     }
-    
+
     /* Center line */
     .timeline-container::before {
-        content: '';
+        content: "";
         position: absolute;
         top: 2rem;
         bottom: 2rem;
         left: 2.25rem; /* Align with date badges center */
         width: 2px;
-        background: linear-gradient(to bottom, transparent, var(--border-subtle) 10%, var(--border-subtle) 90%, transparent);
+        background: linear-gradient(
+            to bottom,
+            transparent,
+            var(--border-subtle) 10%,
+            var(--border-subtle) 90%,
+            transparent
+        );
         z-index: 0;
     }
-    
+
     .timeline-item {
         display: flex;
         gap: 2.5rem;
         position: relative;
         z-index: 1;
     }
-    
+
     .timeline-date-col {
         flex-shrink: 0;
         width: 4.5rem;
@@ -260,7 +311,7 @@ const formatDate = (date: string) => {
         align-items: center;
         position: relative;
     }
-    
+
     .date-badge {
         display: flex;
         flex-direction: column;
@@ -276,28 +327,28 @@ const formatDate = (date: string) => {
         z-index: 2;
         backdrop-filter: blur(8px);
     }
-    
-    .date-day { 
-        font-size: 1.5rem; 
-        line-height: 1; 
+
+    .date-day {
+        font-size: 1.5rem;
+        line-height: 1;
         font-weight: 700;
         color: var(--accent-primary);
     }
-    
-    .date-month { 
-        font-size: 0.75rem; 
-        text-transform: uppercase; 
+
+    .date-month {
+        font-size: 0.75rem;
+        text-transform: uppercase;
         font-weight: 600;
         opacity: 0.7;
         margin-bottom: 0.1rem;
     }
-    
+
     .timeline-content {
         flex: 1;
         padding: 0; /* Clear padding for card structure */
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    
+
     .timeline-content:hover {
         transform: translateY(-4px);
         box-shadow: var(--shadow-hover);
@@ -307,7 +358,7 @@ const formatDate = (date: string) => {
         padding: 2rem 2rem 1.5rem;
         border-bottom: 1px solid var(--border-subtle);
     }
-    
+
     .ann-title {
         font-size: 1.75rem;
         margin-bottom: 0.75rem;
@@ -315,7 +366,7 @@ const formatDate = (date: string) => {
         font-weight: 700;
         color: var(--text-main);
     }
-    
+
     .meta-inline {
         font-size: 0.9rem;
         color: var(--text-muted);
@@ -324,8 +375,11 @@ const formatDate = (date: string) => {
         gap: 0.5rem;
     }
 
-    .icon-xs { width: 1rem; height: 1rem; }
-    
+    .icon-xs {
+        width: 1rem;
+        height: 1rem;
+    }
+
     .timeline-content .prose {
         padding: 1.5rem 2rem 2rem;
         font-size: 1rem;
@@ -354,7 +408,10 @@ const formatDate = (date: string) => {
         color: var(--text-muted);
     }
 
-    .empty-icon { width: 2rem; height: 2rem; }
+    .empty-icon {
+        width: 2rem;
+        height: 2rem;
+    }
 
     .empty-state h3 {
         font-size: 1.25rem;
@@ -367,7 +424,7 @@ const formatDate = (date: string) => {
         color: var(--text-muted);
         margin: 0;
     }
-    
+
     @media (max-width: 768px) {
         .hero-section {
             padding: 4rem 0 3rem;
@@ -376,26 +433,30 @@ const formatDate = (date: string) => {
         .hero-title {
             font-size: 2.25rem;
         }
-        
-        .mobile-break { display: block; }
-        .desktop-break { display: none; }
+
+        .mobile-break {
+            display: block;
+        }
+        .desktop-break {
+            display: none;
+        }
 
         .timeline-container {
             gap: 2rem;
             padding-left: 0;
         }
-        
+
         .timeline-container::before {
             left: 1.25rem; /* Adjust line position for mobile */
             top: 3rem;
         }
-        
+
         .timeline-item {
             flex-direction: column;
             gap: 1rem;
             padding-left: 3rem; /* Space for the timeline line */
         }
-        
+
         .timeline-date-col {
             position: absolute;
             left: 0;
@@ -404,17 +465,21 @@ const formatDate = (date: string) => {
             background: transparent;
             align-items: flex-start;
         }
-        
+
         .date-badge {
-             flex-direction: column;
-             width: 3rem;
-             height: 3rem;
-             padding: 0;
-             border-radius: 10px;
+            flex-direction: column;
+            width: 3rem;
+            height: 3rem;
+            padding: 0;
+            border-radius: 10px;
         }
-        
-        .date-day { font-size: 1.1rem; }
-        .date-month { font-size: 0.6rem; }
+
+        .date-day {
+            font-size: 1.1rem;
+        }
+        .date-month {
+            font-size: 0.6rem;
+        }
 
         .card-header {
             padding: 1.5rem;

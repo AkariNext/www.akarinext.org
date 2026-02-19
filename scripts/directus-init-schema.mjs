@@ -23,11 +23,11 @@ const DIRECTUS_PASSWORD = process.env.DIRECTUS_PASSWORD || "admin";
 const client = createDirectus(DIRECTUS_URL).with(rest()).with(authentication());
 
 async function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function request(method, path, body) {
-    await sleep(100); // Wait a bit between requests
+	await sleep(100); // Wait a bit between requests
 	const token = await client.getToken();
 	const res = await fetch(`${DIRECTUS_URL}${path}`, {
 		method,
@@ -92,9 +92,9 @@ async function ensureFields(collection, fields) {
 				console.log(`    ✓ ${fieldDef.field} 更新/確認完了`);
 			} catch (e) {
 				console.warn(`    ! ${fieldDef.field} 更新失敗:`, e.message);
-                if (e.message.includes("400")) {
-                    console.warn(`      (詳細: 既存のデータ型と新しいインターフェースの互換性がない可能性があります)`);
-                }
+				if (e.message.includes("400")) {
+					console.warn(`      (詳細: 既存のデータ型と新しいインターフェースの互換性がない可能性があります)`);
+				}
 			}
 		}
 	}
@@ -373,201 +373,201 @@ async function main() {
 		await ensureFields("authors", authorsFields);
 	}
 
-    // --- 1.5 authors M2M Relations (Junction Tables) ---
-    // Helper to create M2M junction
-    const ensureM2M = async (junctionName, fieldName, note) => {
-        if (!(await hasCollection(junctionName))) {
-            console.log(`${junctionName} (M2M中間テーブル) を作成中...`);
-            await request("POST", "/collections", {
-                collection: junctionName,
-                meta: { hidden: true, icon: "import_export" },
-                schema: { name: junctionName },
-                fields: [
-                    { field: "authors_id", type: "integer", meta: { hidden: true } },
-                    { field: "games_id", type: "integer", meta: { hidden: true } },
-                    { 
-                        field: "skill_level", 
-                        type: "string", 
-                        meta: { 
-                            interface: "select-dropdown",
-                            note: "スキルレベル",
-                            options: {
-                                choices: [
-                                    { text: "カジュアル", value: "casual" },
-                                    { text: "中級", value: "intermediate" },
-                                    { text: "エキスパート", value: "expert" },
-                                    { text: "あなたより上手", value: "better_than_you" }
-                                ]
-                            }
-                        } 
-                    },
-                    { 
-                        field: "impression", 
-                        type: "string", 
-                        meta: { 
-                            interface: "select-dropdown",
-                            note: "感想",
-                            options: {
-                                choices: [
-                                    { text: "夢中", value: "obsessed" },
-                                    { text: "大好き", value: "love" },
-                                    { text: "わりと好き", value: "like" },
-                                    { text: "ビミョーかも", value: "meh" },
-                                    { text: "ギブアップ", value: "give_up" }
-                                ]
-                            }
-                        } 
-                    },
-                    {
-                        field: "recruitment",
-                        type: "string",
-                        meta: {
-                            interface: "select-dropdown",
-                            note: "募集内容",
-                            options: {
-                                choices: [
-                                    { text: "グループ探してます", value: "looking_for_group" },
-                                    { text: "いつでも誘って", value: "invite_anytime" },
-                                    { text: "ヒントを教えて", value: "need_hints" },
-                                    { text: "教えられるよ", value: "can_teach" },
-                                    { text: "議論大歓迎", value: "discussion_welcome" }
-                                ]
-                            }
-                        }
-                    }
-                ]
-            });
+	// --- 1.5 authors M2M Relations (Junction Tables) ---
+	// Helper to create M2M junction
+	const ensureM2M = async (junctionName, fieldName, note) => {
+		if (!(await hasCollection(junctionName))) {
+			console.log(`${junctionName} (M2M中間テーブル) を作成中...`);
+			await request("POST", "/collections", {
+				collection: junctionName,
+				meta: { hidden: true, icon: "import_export" },
+				schema: { name: junctionName },
+				fields: [
+					{ field: "authors_id", type: "integer", meta: { hidden: true } },
+					{ field: "games_id", type: "integer", meta: { hidden: true } },
+					{
+						field: "skill_level",
+						type: "string",
+						meta: {
+							interface: "select-dropdown",
+							note: "スキルレベル",
+							options: {
+								choices: [
+									{ text: "カジュアル", value: "casual" },
+									{ text: "中級", value: "intermediate" },
+									{ text: "エキスパート", value: "expert" },
+									{ text: "あなたより上手", value: "better_than_you" }
+								]
+							}
+						}
+					},
+					{
+						field: "impression",
+						type: "string",
+						meta: {
+							interface: "select-dropdown",
+							note: "感想",
+							options: {
+								choices: [
+									{ text: "夢中", value: "obsessed" },
+									{ text: "大好き", value: "love" },
+									{ text: "わりと好き", value: "like" },
+									{ text: "ビミョーかも", value: "meh" },
+									{ text: "ギブアップ", value: "give_up" }
+								]
+							}
+						}
+					},
+					{
+						field: "recruitment",
+						type: "string",
+						meta: {
+							interface: "select-dropdown",
+							note: "募集内容",
+							options: {
+								choices: [
+									{ text: "グループ探してます", value: "looking_for_group" },
+									{ text: "いつでも誘って", value: "invite_anytime" },
+									{ text: "ヒントを教えて", value: "need_hints" },
+									{ text: "教えられるよ", value: "can_teach" },
+									{ text: "議論大歓迎", value: "discussion_welcome" }
+								]
+							}
+						}
+					}
+				]
+			});
 
-            // Relation: authors -> junction
-            await request("POST", "/relations", {
-                collection: junctionName,
-                field: "authors_id",
-                related_collection: "authors",
-                meta: {
-                    one_collection: "authors",
-                    one_field: fieldName, // Set the alias field name here!
-                    many_collection: junctionName,
-                    many_field: "authors_id",
-                    junction_field: "games_id",
-                },
-                schema: { on_delete: "CASCADE" }
-            });
+			// Relation: authors -> junction
+			await request("POST", "/relations", {
+				collection: junctionName,
+				field: "authors_id",
+				related_collection: "authors",
+				meta: {
+					one_collection: "authors",
+					one_field: fieldName, // Set the alias field name here!
+					many_collection: junctionName,
+					many_field: "authors_id",
+					junction_field: "games_id",
+				},
+				schema: { on_delete: "CASCADE" }
+			});
 
-            // Relation: junction -> games
-            await request("POST", "/relations", {
-                collection: junctionName,
-                field: "games_id",
-                related_collection: "games",
-                meta: {
-                    one_collection: "games",
-                    one_field: null,
-                    many_collection: junctionName,
-                    many_field: "games_id",
-                    junction_field: "authors_id",
-                },
-                schema: { on_delete: "CASCADE" }
-            });
-            
-            console.log(`  ✓ ${junctionName} 作成とリレーション設定完了`);
-        } else {
-             console.log(`${junctionName} は既に存在します`);
-        }
+			// Relation: junction -> games
+			await request("POST", "/relations", {
+				collection: junctionName,
+				field: "games_id",
+				related_collection: "games",
+				meta: {
+					one_collection: "games",
+					one_field: null,
+					many_collection: junctionName,
+					many_field: "games_id",
+					junction_field: "authors_id",
+				},
+				schema: { on_delete: "CASCADE" }
+			});
 
-        // Ensure detailed status fields exist
-        await ensureFields(junctionName, [
-            { 
-                field: "skill_level", 
-                type: "string", 
-                meta: { 
-                    interface: "select-dropdown",
-                    note: "スキルレベル",
-                    options: {
-                        choices: [
-                            { text: "カジュアル", value: "casual" },
-                            { text: "中級", value: "intermediate" },
-                            { text: "エキスパート", value: "expert" },
-                            { text: "あなたより上手", value: "better_than_you" }
-                        ]
-                    }
-                } 
-            },
-            { 
-                field: "impression", 
-                type: "string", 
-                meta: { 
-                    interface: "select-dropdown",
-                    note: "感想",
-                    options: {
-                        choices: [
-                            { text: "夢中", value: "obsessed" },
-                            { text: "大好き", value: "love" },
-                            { text: "わりと好き", value: "like" },
-                            { text: "ビミョーかも", value: "meh" },
-                            { text: "ギブアップ", value: "give_up" }
-                        ]
-                    }
-                } 
-            },
-            {
-                field: "recruitment",
-                type: "string",
-                meta: {
-                    interface: "select-dropdown",
-                    note: "募集内容",
-                    options: {
-                        choices: [
-                            { text: "グループ探してます", value: "looking_for_group" },
-                            { text: "いつでも誘って", value: "invite_anytime" },
-                            { text: "ヒントを教えて", value: "need_hints" },
-                            { text: "教えられるよ", value: "can_teach" },
-                            { text: "議論大歓迎", value: "discussion_welcome" }
-                        ]
-                    }
-                }
-            }
-        ]);
+			console.log(`  ✓ ${junctionName} 作成とリレーション設定完了`);
+		} else {
+			console.log(`${junctionName} は既に存在します`);
+		}
 
-        // 既存のリレーション定義を強制更新 (one_field の設定漏れを防ぐため)
-        try {
-            console.log(`  ~ ${junctionName}.authors_id リレーションを更新中...`);
-            await request("PATCH", `/relations/${junctionName}/authors_id`, {
-                meta: {
-                    one_field: fieldName, // Alias field in authors
-                }
-            });
-             console.log(`    ✓ リレーション更新完了`);
-        } catch (e) {
-            console.warn(`    ! リレーション更新失敗 (想定内:まだ存在しない等):`, e.message);
-        }
-    };
+		// Ensure detailed status fields exist
+		await ensureFields(junctionName, [
+			{
+				field: "skill_level",
+				type: "string",
+				meta: {
+					interface: "select-dropdown",
+					note: "スキルレベル",
+					options: {
+						choices: [
+							{ text: "カジュアル", value: "casual" },
+							{ text: "中級", value: "intermediate" },
+							{ text: "エキスパート", value: "expert" },
+							{ text: "あなたより上手", value: "better_than_you" }
+						]
+					}
+				}
+			},
+			{
+				field: "impression",
+				type: "string",
+				meta: {
+					interface: "select-dropdown",
+					note: "感想",
+					options: {
+						choices: [
+							{ text: "夢中", value: "obsessed" },
+							{ text: "大好き", value: "love" },
+							{ text: "わりと好き", value: "like" },
+							{ text: "ビミョーかも", value: "meh" },
+							{ text: "ギブアップ", value: "give_up" }
+						]
+					}
+				}
+			},
+			{
+				field: "recruitment",
+				type: "string",
+				meta: {
+					interface: "select-dropdown",
+					note: "募集内容",
+					options: {
+						choices: [
+							{ text: "グループ探してます", value: "looking_for_group" },
+							{ text: "いつでも誘って", value: "invite_anytime" },
+							{ text: "ヒントを教えて", value: "need_hints" },
+							{ text: "教えられるよ", value: "can_teach" },
+							{ text: "議論大歓迎", value: "discussion_welcome" }
+						]
+					}
+				}
+			}
+		]);
 
-    await ensureM2M("authors_playing_games", "playing_games", "プレイ中のゲーム");
-    await ensureM2M("authors_finished_games", "finished_games", "クリア済みのゲーム");
+		// 既存のリレーション定義を強制更新 (one_field の設定漏れを防ぐため)
+		try {
+			console.log(`  ~ ${junctionName}.authors_id リレーションを更新中...`);
+			await request("PATCH", `/relations/${junctionName}/authors_id`, {
+				meta: {
+					one_field: fieldName, // Alias field in authors
+				}
+			});
+			console.log(`    ✓ リレーション更新完了`);
+		} catch (e) {
+			console.warn(`    ! リレーション更新失敗 (想定内:まだ存在しない等):`, e.message);
+		}
+	};
 
-    // Add Alias Fields to authors (After relations exist)
-    await ensureFields("authors", [
-        {
-            field: "playing_games",
-            type: "alias",
-            meta: {
-                interface: "list-m2m",
-                special: ["m2m"],
-                note: "プレイ中のゲーム",
-                // 簡易的なフィルタ: 同じユーザーがクリア済みにしたゲームは除外...したいが
-                // Directusの標準フィルタ($parent等)はM2M作成時には複雑なため、
-                // 一旦バリデーションは行わない（運用対処）
-            },
-        },
-        {
-            field: "finished_games",
-            type: "alias",
-            meta: {
-                interface: "list-m2m",
-                special: ["m2m"],
-                note: "クリア済みのゲーム",
-            },
-        }
-    ]);
+	await ensureM2M("authors_playing_games", "playing_games", "プレイ中のゲーム");
+	await ensureM2M("authors_finished_games", "finished_games", "クリア済みのゲーム");
+
+	// Add Alias Fields to authors (After relations exist)
+	await ensureFields("authors", [
+		{
+			field: "playing_games",
+			type: "alias",
+			meta: {
+				interface: "list-m2m",
+				special: ["m2m"],
+				note: "プレイ中のゲーム",
+				// 簡易的なフィルタ: 同じユーザーがクリア済みにしたゲームは除外...したいが
+				// Directusの標準フィルタ($parent等)はM2M作成時には複雑なため、
+				// 一旦バリデーションは行わない（運用対処）
+			},
+		},
+		{
+			field: "finished_games",
+			type: "alias",
+			meta: {
+				interface: "list-m2m",
+				special: ["m2m"],
+				note: "クリア済みのゲーム",
+			},
+		}
+	]);
 
 	// --- 2. global (singleton) ---
 	if (!(await hasCollection("global"))) {
@@ -682,7 +682,7 @@ async function main() {
 	if (!(await hasCollection("directus_presets"))) {
 		// directus_presets はシステムコレクションなので通常は存在します
 	}
-	
+
 	// 画像プリセットのガイド
 	console.log("\n【重要】画像プリセットの設定について");
 	console.log("Directus の Settings -> Files & Thumbnails -> Presets にて");
@@ -740,13 +740,13 @@ async function main() {
 		console.log("\n※ global の初期データは手動で設定してください");
 	}
 
-    // キャッシュクリア
-    try {
-        await request("POST", "/utils/cache/clear");
-        console.log("\n✓ キャッシュをクリアしました");
-    } catch (e) {
-        console.warn("\n! キャッシュクリアに失敗しました (権限不足等の可能性)", e.message);
-    }
+	// キャッシュクリア
+	try {
+		await request("POST", "/utils/cache/clear");
+		console.log("\n✓ キャッシュをクリアしました");
+	} catch (e) {
+		console.warn("\n! キャッシュクリアに失敗しました (権限不足等の可能性)", e.message);
+	}
 
 	console.log("\n完了！");
 }

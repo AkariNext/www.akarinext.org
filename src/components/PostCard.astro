@@ -1,38 +1,30 @@
 ---
-import { Calendar, User, Tag, Code2, Gamepad2, MessageCircle } from "lucide-astro";
+import {
+    Calendar,
+    User,
+    Tag,
+    Code2,
+    Gamepad2,
+    MessageCircle,
+} from "lucide-astro";
 import { marked } from "marked";
+import { getMediaUrl, type Post } from "../lib/payload";
 
 interface Props {
-	post: {
-		id: number;
-		title: string;
-		slug: string;
-		content?: string;
-		published_date?: string;
-		category: "tech" | "game" | "misc" | string;
-		image?: string;
-		author?: {
-			id: number;
-			name: string;
-			avatar?: string;
-		};
-		tags?: string[];
-	};
+    post: Post;
 }
 
 const { post } = Astro.props;
 
-const directusUrl = import.meta.env.PUBLIC_DIRECTUS_URL || "http://localhost:8055";
-
 const getCategoryInfo = (cat: string) => {
-	switch (cat) {
-		case "tech":
-			return { icon: Code2, color: "#3b82f6", label: "技術・開発" };
-		case "game":
-			return { icon: Gamepad2, color: "#10b981", label: "ゲーム" };
-		default:
-			return { icon: MessageCircle, color: "#f59e0b", label: "雑談" };
-	}
+    switch (cat) {
+        case "tech":
+            return { icon: Code2, color: "#3b82f6", label: "技術・開発" };
+        case "game":
+            return { icon: Gamepad2, color: "#10b981", label: "ゲーム" };
+        default:
+            return { icon: MessageCircle, color: "#f59e0b", label: "雑談" };
+    }
 };
 
 const { icon: Icon, color, label } = getCategoryInfo(post.category);
@@ -40,47 +32,65 @@ const { icon: Icon, color, label } = getCategoryInfo(post.category);
 const displayDate = post.published_date || new Date().toISOString();
 
 const formatDate = (dateStr: string) => {
-	return new Date(dateStr).toLocaleDateString("ja-JP", {
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-	});
+    return new Date(dateStr).toLocaleDateString("ja-JP", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+    });
 };
 
-const excerptText = post.content 
-    ? (await marked.parse(post.content)).toString().replace(/<[^>]*>?/gm, "").replace(/\r?\n|\r/g, " ").trim()
-    : "";
-const excerpt = excerptText.length > 80 ? excerptText.substring(0, 80) + "..." : excerptText;
+/* Payload richText is complex JSON, for now assume content is not easily excerpt-able without a parser.
+   If content is HTML string (from richText-lexical -> HTML converter), we can strip tags. 
+   But Payload's richText field returns JSON structure by default.
+   For simplicity in this initial migration, we might skip excerpt or implement a basic text extractor later.
+   OR, if user uses HTML converter on backend, it might be string. 
+   Let's check type. Post["content"] in payload-types is { root: ... } object. 
+   So we can't just marked.parse() it.
+   We will leave excerpt blank for now or add a TODO.
+*/
+const excerpt = ""; // Placeholder as content is Lexical JSON
+
+// Function to safely get author info
+const authorName =
+    typeof post.author === "object" && post.author
+        ? post.author.name
+        : "Unknown Author";
+const authorId =
+    typeof post.author === "object" && post.author ? post.author.id : "#";
+const authorAvatar =
+    typeof post.author === "object" && post.author ? post.author.avatar : null;
+const authorAvatarUrl = getMediaUrl(authorAvatar);
+const postImageUrl = getMediaUrl(post.image);
 ---
 
 <article class="post-card-premium">
     <div class="card-inner">
         <div class="card-image-section">
             <a href={`/posts/${post.slug || post.id}`} class="image-wrapper">
-                {post.image ? (
-                    <img 
-                        src={`${directusUrl}/assets/${post.image}?width=600&height=400&fit=cover&format=webp&quality=80`} 
-                        srcset={`
-                            ${directusUrl}/assets/${post.image}?width=400&height=267&fit=cover&format=webp&quality=80 400w,
-                            ${directusUrl}/assets/${post.image}?width=600&height=400&fit=cover&format=webp&quality=80 600w,
-                            ${directusUrl}/assets/${post.image}?width=800&height=533&fit=cover&format=webp&quality=80 800w
-                        `}
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        alt={post.title} 
-                        class="card-img"
-                        loading="lazy"
-                        decoding="async"
-                        width="600"
-                        height="400"
-                    />
-                ) : (
-                    <div class="card-img-placeholder" style={`background: linear-gradient(135deg, ${color}15, var(--bg-surface));`}>
-                        <Icon class="placeholder-icon" style={`color: ${color}`} />
-                    </div>
-                )}
+                {
+                    postImageUrl ? (
+                        <img
+                            src={`${postImageUrl}`}
+                            alt={post.title}
+                            class="card-img"
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    ) : (
+                        <div
+                            class="card-img-placeholder"
+                            style={`background: linear-gradient(135deg, ${color}15, var(--bg-surface));`}
+                        >
+                            <Icon
+                                class="placeholder-icon"
+                                style={`color: ${color}`}
+                            />
+                        </div>
+                    )
+                }
                 <div class="image-overlay"></div>
             </a>
-            
+
             <div class="category-pill" style={`--pill-color: ${color}`}>
                 <div class="pill-bg" style={`background: ${color}`}></div>
                 <Icon class="pill-icon" />
@@ -91,21 +101,29 @@ const excerpt = excerptText.length > 80 ? excerptText.substring(0, 80) + "..." :
         <div class="card-content">
             <header class="content-header">
                 <div class="meta-row">
-                    <span class="meta-item"><Calendar class="icon-mini" /> {formatDate(displayDate)}</span>
-                    {post.author && (
-                        <a href={`/users/${post.author.id}`} class="meta-item author-link">
-                            {post.author.avatar ? (
-                                <img 
-                                    src={`${directusUrl}/assets/${post.author.avatar}?width=48&height=48&fit=cover`} 
-                                    alt={post.author.name} 
-                                    class="author-avatar"
-                                />
-                            ) : (
-                                <User class="icon-mini" />
-                            )}
-                            <span>{post.author.name}</span>
-                        </a>
-                    )}
+                    <span class="meta-item"
+                        ><Calendar class="icon-mini" />
+                        {formatDate(displayDate)}
+                    </span>
+                    {
+                        typeof post.author === "object" && post.author && (
+                            <a
+                                href={`/users/${authorId}`}
+                                class="meta-item author-link"
+                            >
+                                {authorAvatarUrl ? (
+                                    <img
+                                        src={authorAvatarUrl}
+                                        alt={authorName}
+                                        class="author-avatar"
+                                    />
+                                ) : (
+                                    <User class="icon-mini" />
+                                )}
+                                <span>{authorName}</span>
+                            </a>
+                        )
+                    }
                 </div>
                 <h3 class="post-title">
                     <a href={`/posts/${post.slug || post.id}`}>{post.title}</a>
@@ -115,16 +133,21 @@ const excerpt = excerptText.length > 80 ? excerptText.substring(0, 80) + "..." :
             {excerpt && <p class="post-excerpt">{excerpt}...</p>}
 
             <footer class="content-footer">
-                {post.tags && post.tags.length > 0 && (
-                    <div class="tag-cloud">
-                        {post.tags.slice(0, 3).map((t) => (
-                            <a href={`/posts?tag=${t}`} class="premium-tag">
-                                <Tag class="tag-icon" />
-                                <span>{t}</span>
-                            </a>
-                        ))}
-                    </div>
-                )}
+                {
+                    post.tags && post.tags.length > 0 && (
+                        <div class="tag-cloud">
+                            {post.tags.slice(0, 3).map((t) => (
+                                <a
+                                    href={`/posts?tag=${t.tag}`}
+                                    class="premium-tag"
+                                >
+                                    <Tag class="tag-icon" />
+                                    <span>{t.tag}</span>
+                                </a>
+                            ))}
+                        </div>
+                    )
+                }
             </footer>
         </div>
     </div>
@@ -147,7 +170,7 @@ const excerpt = excerptText.length > 80 ? excerptText.substring(0, 80) + "..." :
 
     .post-card-premium:hover {
         transform: translateY(-12px);
-        box-shadow: 0 40px 80px -20px rgba(0,0,0,0.15);
+        box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.15);
         border-color: var(--accent-primary);
     }
 
@@ -188,7 +211,11 @@ const excerpt = excerptText.length > 80 ? excerptText.substring(0, 80) + "..." :
     .image-overlay {
         position: absolute;
         inset: 0;
-        background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5));
+        background: linear-gradient(
+            to bottom,
+            transparent 40%,
+            rgba(0, 0, 0, 0.5)
+        );
         opacity: 0.4;
         transition: opacity 0.5s;
     }
@@ -233,8 +260,8 @@ const excerpt = excerptText.length > 80 ? excerptText.substring(0, 80) + "..." :
         z-index: 10;
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255,255,255,0.4);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         overflow: hidden; /* Added to clip background */
     }
 
@@ -370,6 +397,6 @@ const excerpt = excerptText.length > 80 ? excerptText.substring(0, 80) + "..." :
 
     :global([data-theme="dark"]) .post-card-premium {
         background: rgba(30, 41, 59, 0.6);
-        border-color: rgba(255,255,255,0.1);
+        border-color: rgba(255, 255, 255, 0.1);
     }
 </style>
