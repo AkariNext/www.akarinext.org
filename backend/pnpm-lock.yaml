@@ -30,8 +30,8 @@ importers:
         specifier: ^7.0.3
         version: 7.0.3
       dotenv:
-        specifier: 16.4.7
-        version: 16.4.7
+        specifier: 16.6.1
+        version: 16.6.1
       graphql:
         specifier: ^16.8.1
         version: 16.12.0
@@ -2657,8 +2657,8 @@ packages:
   dompurify@3.2.7:
     resolution: {integrity: sha512-WhL/YuveyGXJaerVlMYGWhvQswa7myDG17P7Vu65EWC05o8vfeNbvNf4d/BOvH99+ZW+LlQsc1GDKMa1vNK6dw==}
 
-  dotenv@16.4.7:
-    resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
+  dotenv@16.6.1:
+    resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
     engines: {node: '>=12'}
 
   drizzle-kit@0.31.7:
@@ -7647,7 +7647,7 @@ snapshots:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
-  dotenv@16.4.7: {}
+  dotenv@16.6.1: {}
 
   drizzle-kit@0.31.7:
     dependencies:
