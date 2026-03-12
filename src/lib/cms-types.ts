@@ -21,6 +21,7 @@ export interface StrapiSetting {
 
 export interface StrapiGame {
   id: number;
+  documentId?: string;
   name: string;
   slug: string;
   description?: string | null;
@@ -51,6 +52,7 @@ export type StrapiAuthor = StrapiUser;
 
 export interface StrapiPost {
   id: number;
+  documentId?: string;
   title: string;
   slug?: string | null;
   content?: string | null;
@@ -66,6 +68,7 @@ export interface StrapiPost {
 
 export interface StrapiAnnouncement {
   id: number;
+  documentId?: string;
   title: string;
   content?: string | null;
   published_date?: string | null;
@@ -76,6 +79,7 @@ export interface StrapiAnnouncement {
 
 export interface StrapiGameServer {
   id: number;
+  documentId?: string;
   name: string;
   type: 'minecraft' | 'web' | 'other';
   ip: string;

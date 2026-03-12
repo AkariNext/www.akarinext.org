@@ -54,12 +54,13 @@ const authorAvatar =
     typeof post.author === "object" && post.author ? post.author.avatar : null;
 const authorAvatarUrl = getMediaUrl(authorAvatar);
 const postImageUrl = getMediaUrl(post.image);
+const postPathSegment = post.slug || post.documentId || String(post.id);
 ---
 
 <article class="post-card-premium">
     <div class="card-inner">
         <div class="card-image-section">
-            <a href={`/posts/${post.slug || post.id}`} class="image-wrapper">
+            <a href={`/posts/${postPathSegment}`} class="image-wrapper">
                 {
                     postImageUrl ? (
                         <img
@@ -119,7 +120,7 @@ const postImageUrl = getMediaUrl(post.image);
                     }
                 </div>
                 <h3 class="post-title">
-                    <a href={`/posts/${post.slug || post.id}`}>{post.title}</a>
+                    <a href={`/posts/${postPathSegment}`}>{post.title}</a>
                 </h3>
             </header>
 

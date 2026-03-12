@@ -34,15 +34,33 @@ let authorSocials: any[] = [];
 let processedContent = "";
 
 try {
-    const isNumeric = /^\d+$/.test(slug || "");
+    const routeValue = (slug || "").trim();
+    const isNumeric = /^\d+$/.test(routeValue);
     let posts: StrapiPost[] = [];
-    if (isNumeric) {
-        posts = await strapiClient.items<StrapiPost>("posts").readByQuery({ limit: 1, where: { id: { equals: parseInt(slug!, 10) } } });
-    } else {
-        posts = await strapiClient.items<StrapiPost>("posts").readByQuery({ limit: 1, where: { slug: { equals: slug } } });
+
+    if (routeValue) {
+        posts = await strapiClient.items<StrapiPost>("posts").readByQuery({
+            limit: 1,
+            where: { slug: { equals: routeValue } },
+        });
+
+        if (posts.length === 0) {
+            posts = await strapiClient.items<StrapiPost>("posts").readByQuery({
+                limit: 1,
+                where: { documentId: { equals: routeValue } },
+            });
+        }
+
+        if (posts.length === 0 && isNumeric) {
+            posts = await strapiClient.items<StrapiPost>("posts").readByQuery({
+                limit: 1,
+                where: { id: { equals: parseInt(routeValue, 10) } },
+            });
+        }
     }
+
     post = posts[0] || null;
-    console.log(`[slug.astro] Fetched post: ${post?.id} - ${post?.slug}`);
+    console.log(`[slug.astro] Fetched post: ${post?.documentId || post?.id} - ${post?.slug}`);
 
     if (post) {
         // Author Handling
