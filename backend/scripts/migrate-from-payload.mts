@@ -10,6 +10,10 @@
  */
 
 import 'dotenv/config';
+import { strapi as createStrapiClient } from '@strapi/client';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const PAYLOAD_URL = process.env.PAYLOAD_URL?.replace(/\/$/, '') || 'http://localhost:3000';
 const STRAPI_URL = process.env.STRAPI_URL?.replace(/\/$/, '') || 'http://localhost:1337';
@@ -20,10 +24,16 @@ if (!STRAPI_API_TOKEN) {
   process.exit(1);
 }
 
-const strapiHeaders: Record<string, string> = {
-  Authorization: `Bearer ${STRAPI_API_TOKEN}`,
-  'Content-Type': 'application/json',
-};
+// 現在のスクリプトのディレクトリ（メディアIDマップを永続化するために使用）
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const MEDIA_MAP_FILE = path.join(__dirname, '.migrate-media-map.json');
+
+// Strapi Client（/api を baseURL に含める）
+const strapiClient = createStrapiClient({
+  baseURL: `${STRAPI_URL}/api`,
+  auth: STRAPI_API_TOKEN,
+});
 
 async function payloadGet<T>(path: string): Promise<T> {
   const res = await fetch(`${PAYLOAD_URL}${path}`);
@@ -39,68 +49,96 @@ async function payloadGetDocs<T>(collection: string, limit = 500): Promise<T[]> 
 }
 
 async function strapiGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${STRAPI_URL}${path}`, { headers: strapiHeaders });
-  if (!res.ok) throw new Error(`Strapi GET ${path}: ${res.status}`);
-  return res.json() as Promise<T>;
+  const resourcePath = path.replace(/^\/api\//, '');
+  // Strapi Client の fetch は baseURL からの相対パスを受け取る
+  return strapiClient.fetch(resourcePath, { method: 'GET' }) as Promise<T>;
 }
 
 async function strapiPost(path: string, body: unknown): Promise<{ data: { id: number } }> {
-  const res = await fetch(`${STRAPI_URL}${path}`, {
-    method: 'POST',
-    headers: strapiHeaders,
-    body: JSON.stringify({ data: body }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    if (res.status === 405) {
+  const resourcePath = path.replace(/^\/api\//, '');
+  try {
+    const res = (await strapiClient.fetch(resourcePath, {
+      method: 'POST',
+      body: { data: body },
+    })) as { data: { id: number } };
+    return res;
+  } catch (e: any) {
+    const status = e?.response?.status ?? e?.status;
+    if (status === 405) {
       console.error('\n405 Method Not Allowed のときは次を確認してください:');
       console.error('  1) リバースプロキシ(Nginx/Cloudflare等)で /api/* への POST が許可されているか');
       console.error('  2) Strapi 管理画面 > Settings > Roles > トークンのロールで Game の create にチェックが入っているか');
       console.error('  3) 一度 STRAPI_URL=http://localhost:1337 でローカル Strapi に投げて成功するか試す');
     }
-    throw new Error(`Strapi POST ${path}: ${res.status} ${text}`);
+    throw e;
   }
-  return res.json() as Promise<{ data: { id: number } }>;
 }
 
 async function strapiPut(path: string, body: unknown): Promise<{ data: { id: number } }> {
-  const res = await fetch(`${STRAPI_URL}${path}`, {
-    method: 'PUT',
-    headers: strapiHeaders,
-    body: JSON.stringify({ data: body }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Strapi PUT ${path}: ${res.status} ${text}`);
+  const resourcePath = path.replace(/^\/api\//, '');
+  try {
+    const res = (await strapiClient.fetch(resourcePath, {
+      method: 'PUT',
+      body: { data: body },
+    })) as { data: { id: number } };
+    return res;
+  } catch (e: any) {
+    throw e;
   }
-  return res.json() as Promise<{ data: { id: number } }>;
 }
 
 type PayloadMedia = { id: number; url?: string | null; filename?: string | null; alt: string };
 const mediaIdMap = new Map<number, number>();
 
+async function loadMediaMap() {
+  try {
+    const json = await fs.readFile(MEDIA_MAP_FILE, 'utf-8');
+    const parsed = JSON.parse(json) as Record<string, number>;
+    for (const [k, v] of Object.entries(parsed)) {
+      const keyNum = Number(k);
+      if (!Number.isNaN(keyNum)) {
+        mediaIdMap.set(keyNum, v);
+      }
+    }
+    console.log(`Loaded media map entries: ${mediaIdMap.size}`);
+  } catch {
+    // 初回実行など、ファイルが無いときは無視
+  }
+}
+
+async function saveMediaMap() {
+  const obj: Record<string, number> = {};
+  for (const [k, v] of mediaIdMap.entries()) {
+    obj[String(k)] = v;
+  }
+  await fs.writeFile(MEDIA_MAP_FILE, JSON.stringify(obj, null, 2), 'utf-8');
+}
+
 async function migrateMedia() {
   console.log('Migrating media...');
   const docs = await payloadGetDocs<PayloadMedia>('media');
   for (const m of docs) {
+    if (mediaIdMap.has(m.id)) {
+      // 既にマッピングがある場合は再アップロードせずスキップ
+      continue;
+    }
     const fileUrl = m.url ? (m.url.startsWith('http') ? m.url : `${PAYLOAD_URL}${m.url}`) : null;
     let strapiId: number | null = null;
     if (fileUrl) {
       try {
         const fileRes = await fetch(fileUrl);
         if (!fileRes.ok) continue;
-        const blob = await fileRes.blob();
-        const form = new FormData();
-        form.append('files', blob, m.filename || 'file');
-        form.append('fileInfo', JSON.stringify({ alternativeText: m.alt }));
-        const up = await fetch(`${STRAPI_URL}/api/upload`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${STRAPI_API_TOKEN}` },
-          body: form,
-        });
-        if (up.ok) {
-          const arr = (await up.json()) as { id: number }[];
-          if (arr?.length) strapiId = arr[0].id;
+        const arrayBuffer = await fileRes.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const uploaded = (await strapiClient.files.upload(buffer, {
+          filename: m.filename || 'file',
+          mimetype: fileRes.headers.get('content-type') || 'application/octet-stream',
+          fileInfo: {
+            alternativeText: m.alt,
+          },
+        })) as { id: number }[];
+        if (uploaded?.length) {
+          strapiId = uploaded[0].id;
         }
       } catch (e) {
         console.warn(`Media ${m.id} upload skip:`, e);
@@ -109,6 +147,7 @@ async function migrateMedia() {
     if (strapiId != null) mediaIdMap.set(m.id, strapiId);
   }
   console.log(`Media: ${mediaIdMap.size} / ${docs.length}`);
+  await saveMediaMap();
 }
 
 type PayloadGame = { id: number; name: string; slug: string; description?: string; cover_image?: number | null };
@@ -285,6 +324,7 @@ async function migrateSettings() {
 async function main() {
   console.log('Payload URL:', PAYLOAD_URL);
   console.log('Strapi URL:', STRAPI_URL);
+  await loadMediaMap();
   await migrateMedia();
   await migrateGames();
   await migrateAuthors();
