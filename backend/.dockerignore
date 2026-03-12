@@ -1,0 +1,14 @@
+node_modules
+.tmp
+.cache
+build
+.env
+.env.*
+!.env.example
+*.log
+.git
+.gitignore
+*.md
+.DS_Store
+scripts
+migrate.ps1

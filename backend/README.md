@@ -2,6 +2,30 @@
 
 このリポジトリの CMS は Strapi です。Dokploy などで Self-host する想定です。
 
+## Dokploy でデプロイするときの環境変数
+
+Dokploy のアプリ設定で **Environment Variables** に以下を追加する。
+
+| 変数名 | 必須 | 説明 |
+|--------|------|------|
+| `HOST` | - | `0.0.0.0`（コンテナ内で全インターフェースを listen） |
+| `PORT` | - | `1337`（Dockerfile と揃える） |
+| `APP_KEYS` | ✅ | カンマ区切り 4 つ。`node -e "console.log(require('crypto').randomBytes(16).toString('base64'))"` で生成した値を並べる |
+| `API_TOKEN_SALT` | ✅ | ランダム文字列 |
+| `ADMIN_JWT_SECRET` | ✅ | ランダム文字列 |
+| `TRANSFER_TOKEN_SALT` | ✅ | ランダム文字列 |
+| `JWT_SECRET` | ✅ | ランダム文字列 |
+| `ENCRYPTION_KEY` | ✅ | ランダム文字列 |
+| `DATABASE_URL` | ✅ | Postgres の接続文字列。例: `postgres://user:password@postgres:5432/strapi`（Dokploy で Postgres をリンクした場合はサービス名をホストに） |
+
+**秘密鍵の一括生成例（PowerShell）:**
+
+```powershell
+1..5 | ForEach-Object { node -e "console.log(require('crypto').randomBytes(16).toString('base64'))" }
+```
+
+出た 5 行のうち 4 つを `APP_KEYS` にカンマ区切りで、残りをそれぞれ `API_TOKEN_SALT` / `ADMIN_JWT_SECRET` 等に割り当てる。
+
 ## 管理者と作者の違い
 
 - **管理者** … Strapi の管理画面（`/admin`）にログインできる人。Content-Type の編集・コンテンツの作成・ユーザー管理などができる。作者である必要はない。
