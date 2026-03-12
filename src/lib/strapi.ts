@@ -32,10 +32,12 @@ function buildStrapiQuery(params: {
   if (params.limit != null) search.set('pagination[pageSize]', String(params.limit));
 
   const apiId = params.apiId ?? '';
-  if (['posts', 'announcements'].includes(apiId)) {
+  if (apiId === 'posts') {
     // author の avatar まで展開、image はデフォルトで返る
     search.set('populate[author][populate]', '*');
     search.set('populate[image]', 'true');
+  } else if (apiId === 'announcements') {
+    // announcements には author/image フィールドが存在しないため populate なし
   } else if (apiId === 'games') {
     search.set('populate[cover_image]', 'true');
   } else if (apiId === 'game-servers') {
