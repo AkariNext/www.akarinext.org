@@ -393,35 +393,33 @@ const getRecruitmentLabel = (val?: string) => {
                             return (
                                 <div class="game-poster-wrapper">
                                     <div class="poster-card-premium">
-                                        <div class="poster-image-box">
+                                        <div class="poster-image-area">
                                             {coverUrl ? (
                                                 <img
                                                     src={coverUrl}
                                                     alt={p.game.name}
-                                                    class="poster-img-fluid"
+                                                    class="poster-img"
                                                     loading="lazy"
                                                 />
                                             ) : (
-                                                <div class="poster-placeholder-premium">
-                                                    <Gamepad2 class="placeholder-icon-lg" />
+                                                <div class="poster-empty">
+                                                    <Gamepad2 class="empty-icon" />
                                                 </div>
                                             )}
-                                            <div class="poster-overlay-gradient" />
+                                            <div class="poster-glow" />
                                         </div>
 
-                                        <div class="info-overlay-panel">
-                                            <div class="info-top-content">
-                                                <div class="title-status-row">
-                                                    <h3 class="game-name-display">
-                                                        {p.game.name}
-                                                    </h3>
-                                                    {p.status === "playing" && (
-                                                        <div
-                                                            class="playing-indicator-dot"
-                                                            title="Currently Playing"
-                                                        />
-                                                    )}
-                                                </div>
+                                        <div class="poster-info-glass">
+                                            <div class="title-status-row">
+                                                <h3 class="game-name-display">
+                                                    {p.game.name}
+                                                </h3>
+                                                {p.status === "playing" && (
+                                                    <div
+                                                        class="playing-indicator-dot"
+                                                        title="Currently Playing"
+                                                    />
+                                                )}
                                             </div>
 
                                             <div class="expand-details">
@@ -918,42 +916,63 @@ const getRecruitmentLabel = (val?: string) => {
     }
 
     .game-poster-wrapper {
-        perspective: 1000px;
+        transition: transform 0.4s cubic-bezier(0.2, 1, 0.2, 1);
     }
 
     .poster-card-premium {
-        position: relative;
-        border-radius: 20px;
-        aspect-ratio: 3 / 4;
-        overflow: hidden;
         background: var(--bg-surface-solid);
+        border-radius: 20px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.15);
         border: 1px solid var(--border-subtle);
-        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
-        transition: all 0.5s cubic-bezier(0.2, 1, 0.2, 1);
-        display: flex;
-        flex-direction: column;
+        transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
     }
 
     .game-poster-wrapper:hover .poster-card-premium,
     .game-poster-wrapper.is-active .poster-card-premium {
-        transform: translateY(-10px) rotateX(4deg);
-        box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5);
+        transform: translateY(-12px);
+        box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.3);
         border-color: var(--accent-primary);
     }
 
-    .poster-image-box {
-        position: absolute;
-        inset: 0;
-        z-index: 1;
+    .poster-image-area {
+        position: relative;
+        aspect-ratio: 3 / 4;
+        overflow: hidden;
+        background: #000;
     }
 
-    .poster-img-fluid {
+    .poster-img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        transition: transform 0.8s cubic-bezier(0.2, 1, 0.2, 1);
     }
 
-    .poster-placeholder-premium {
+    .game-poster-wrapper:hover .poster-img {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+
+    .poster-glow {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+            circle at 50% 50%,
+            var(--accent-primary) 0%,
+            transparent 70%
+        );
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        mix-blend-mode: soft-light;
+    }
+
+    .game-poster-wrapper:hover .poster-glow {
+        opacity: 0.4;
+    }
+
+    .poster-empty {
         width: 100%;
         height: 100%;
         display: flex;
@@ -963,46 +982,58 @@ const getRecruitmentLabel = (val?: string) => {
         color: var(--text-muted);
     }
 
-    .placeholder-icon-lg {
+    .empty-icon {
         width: 4rem;
         height: 4rem;
         opacity: 0.2;
     }
 
-    .poster-overlay-gradient {
+    .poster-info-glass {
         position: absolute;
-        inset: 0;
-        background: linear-gradient(
-            to top,
-            rgba(0, 0, 0, 0.9) 0%,
-            transparent 60%
-        );
-        z-index: 2;
+        bottom: 12px;
+        left: 12px;
+        right: 12px;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 16px;
+        padding: 1rem;
+        transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
+        z-index: 10;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
 
-    .info-overlay-panel {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 5;
-        padding: 1.5rem;
-        color: white;
+    :global([data-theme="dark"]) .poster-info-glass {
+        background: rgba(30, 41, 59, 0.8);
+        border-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .game-poster-wrapper:hover .poster-info-glass,
+    .game-poster-wrapper.is-active .poster-info-glass {
+        bottom: 18px;
+        padding-bottom: 1.5rem;
+        background: rgba(255, 255, 255, 0.9);
+    }
+
+    :global([data-theme="dark"]) .game-poster-wrapper:hover .poster-info-glass,
+    :global([data-theme="dark"]) .game-poster-wrapper.is-active .poster-info-glass {
+        background: rgba(15, 23, 42, 0.95);
     }
 
     .title-status-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 0.5rem;
     }
 
     .game-name-display {
-        font-weight: 800;
         font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1.25;
         margin: 0;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-        line-height: 1.2;
+        transition: color 0.3s;
     }
 
     .playing-indicator-dot {
@@ -1012,6 +1043,7 @@ const getRecruitmentLabel = (val?: string) => {
         border-radius: 50%;
         box-shadow: 0 0 10px #00ff88;
         animation: pulse-dot 2s infinite;
+        flex-shrink: 0;
     }
 
     @keyframes pulse-dot {
@@ -1030,17 +1062,20 @@ const getRecruitmentLabel = (val?: string) => {
     }
 
     .expand-details {
-        max-height: 0;
-        overflow: hidden;
+        height: 0;
         opacity: 0;
+        overflow: hidden;
         transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
+        margin-top: 0;
     }
 
     .game-poster-wrapper:hover .expand-details,
     .game-poster-wrapper.is-active .expand-details {
-        max-height: 200px;
+        height: auto;
         opacity: 1;
         margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-subtle);
     }
 
     .game-status-details {
@@ -1062,16 +1097,33 @@ const getRecruitmentLabel = (val?: string) => {
     }
 
     .pill-mini.skill {
+        background: rgba(14, 165, 233, 0.15);
+        color: #0369a1;
+        border: 1px solid rgba(14, 165, 233, 0.3);
+    }
+    :global([data-theme="dark"]) .pill-mini.skill {
         background: rgba(14, 165, 233, 0.3);
         color: #bae6fd;
         border: 1px solid rgba(14, 165, 233, 0.4);
     }
+
     .pill-mini.impression {
+        background: rgba(236, 72, 153, 0.15);
+        color: #be185d;
+        border: 1px solid rgba(236, 72, 153, 0.3);
+    }
+    :global([data-theme="dark"]) .pill-mini.impression {
         background: rgba(236, 72, 153, 0.3);
         color: #fbcfe8;
         border: 1px solid rgba(236, 72, 153, 0.4);
     }
+
     .pill-mini.recruitment {
+        background: rgba(16, 185, 129, 0.15);
+        color: #047857;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    :global([data-theme="dark"]) .pill-mini.recruitment {
         background: rgba(16, 185, 129, 0.3);
         color: #a7f3d0;
         border: 1px solid rgba(16, 185, 129, 0.4);
@@ -1084,11 +1136,13 @@ const getRecruitmentLabel = (val?: string) => {
 
     .status-footer {
         font-size: 0.7rem;
-        color: rgba(255, 255, 255, 0.6);
+        color: var(--text-muted);
         text-transform: uppercase;
         letter-spacing: 0.1em;
-        padding-top: 0.5rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    :global([data-theme="dark"]) .status-footer {
+        color: rgba(255, 255, 255, 0.6);
     }
 
     .profile-empty-state {

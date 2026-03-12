@@ -37,9 +37,15 @@ function buildStrapiQuery(params: {
     search.set('populate[author][populate]', '*');
     search.set('populate[image]', 'true');
   } else if (apiId === 'games') {
-    search.set('populate[cover_image]', '*');
+    search.set('populate[cover_image]', 'true');
   } else if (apiId === 'game-servers') {
     search.set('populate', '*');
+  } else if (apiId === 'users') {
+    // コンポーネント内のリレーション・ゲーム画像まで展開
+    search.set('populate[avatar]', 'true');
+    search.set('populate[social_links]', 'true');
+    search.set('populate[playing_games][populate][game][populate][cover_image]', 'true');
+    search.set('populate[finished_games][populate][game][populate][cover_image]', 'true');
   } else {
     search.set('populate', '*');
   }
