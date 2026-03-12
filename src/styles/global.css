@@ -425,6 +425,21 @@ a {
 	opacity: 0.85;
 }
 
+.link-card-youtube {
+	margin: 2.5rem 0;
+}
+
+.link-card-youtube iframe {
+	display: block;
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	height: auto;
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--border-glass);
+	box-shadow: var(--shadow-glass);
+	background: #000;
+}
+
 @media (max-width: 768px) {
 	.link-card-rich {
 		flex-direction: column-reverse;
@@ -445,6 +460,10 @@ a {
 
 	.link-card-title {
 		-webkit-line-clamp: 3;
+	}
+
+	.link-card-youtube iframe {
+		border-radius: var(--radius-md);
 	}
 }
 

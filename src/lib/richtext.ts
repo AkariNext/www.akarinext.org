@@ -9,6 +9,7 @@ import rehypeStringify from 'rehype-stringify';
 import { visit } from 'unist-util-visit';
 import { h } from 'hastscript';
 import { fetchOgp } from './ogp';
+import { getYouTubeEmbedUrl } from './youtube';
 
 function rehypeOgpLinkCards() {
     return async (tree: any): Promise<void> => {
@@ -37,6 +38,26 @@ function rehypeOgpLinkCards() {
         await Promise.all(
             nodesToProcess.map(async ({ node, parent, href }) => {
                 try {
+                    const youtubeEmbedUrl = getYouTubeEmbedUrl(href);
+                    if (youtubeEmbedUrl) {
+                        const playerNode = h('div.link-card-youtube', [
+                            h('iframe', {
+                                src: youtubeEmbedUrl,
+                                title: 'YouTube video player',
+                                loading: 'lazy',
+                                allow:
+                                    'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
+                                allowFullScreen: true,
+                            }),
+                        ]);
+
+                        const youtubeIdx = parent.children.indexOf(node);
+                        if (youtubeIdx !== -1) {
+                            parent.children.splice(youtubeIdx, 1, playerNode);
+                        }
+                        return;
+                    }
+
                     const data = await fetchOgp(href);
                     if (data && (data.ogTitle || data.ogDescription)) {
                         const title = data.ogTitle || data.twitterTitle || href;
