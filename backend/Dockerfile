@@ -30,7 +30,7 @@ FROM base AS runner
 ARG HOST=0.0.0.0
 ARG PORT=1337
 
-RUN apk add --no-cache vips-dev
+RUN apk add --no-cache vips-dev su-exec
 ENV HOST=${HOST}
 ENV PORT=${PORT}
 ENV PATH=/app/node_modules/.bin:$PATH
@@ -43,11 +43,12 @@ COPY --from=prod-deps /app/node_modules ./node_modules
 # アプリ本体は build から丸ごとコピー（node_modules は除外済み）
 COPY --from=build /app ./
 
-# アップロード保存先を用意し node に権限付与（EACCES 防止）
-RUN mkdir -p /app/public/uploads /app/.tmp /app/.cache && chown -R node:node /app
+# アップロード用ボリュームは起動時 entrypoint で chown する
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # 永続化: 実行時に -v や compose の volumes でマウントすること
 VOLUME ["/app/public/uploads"]
 
-USER node
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["pnpm", "run", "start"]
