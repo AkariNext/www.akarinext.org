@@ -19,31 +19,17 @@ COPY . .
 ENV NODE_ENV=${NODE_ENV}
 RUN pnpm run build
 
-# 本番イメージ（.env.example の変数を ARG で受け取り ENV に渡す）
+# 本番イメージ
+# 秘密情報（APP_KEYS, JWT_SECRET, DATABASE_URL など）はビルド時に含めず、
+# 実行時に Dokploy / docker run / compose の環境変数で渡すこと（SecretsUsedInArgOrEnv 対策）
 FROM base AS runner
 ARG NODE_ENV=production
 ARG HOST=0.0.0.0
 ARG PORT=1337
-ARG APP_KEYS
-ARG API_TOKEN_SALT
-ARG ADMIN_JWT_SECRET
-ARG TRANSFER_TOKEN_SALT
-ARG JWT_SECRET
-ARG ENCRYPTION_KEY
-ARG DATABASE_URL
-ARG PUBLIC_URL
 
 ENV NODE_ENV=${NODE_ENV}
 ENV HOST=${HOST}
 ENV PORT=${PORT}
-ENV APP_KEYS=${APP_KEYS}
-ENV API_TOKEN_SALT=${API_TOKEN_SALT}
-ENV ADMIN_JWT_SECRET=${ADMIN_JWT_SECRET}
-ENV TRANSFER_TOKEN_SALT=${TRANSFER_TOKEN_SALT}
-ENV JWT_SECRET=${JWT_SECRET}
-ENV ENCRYPTION_KEY=${ENCRYPTION_KEY}
-ENV DATABASE_URL=${DATABASE_URL}
-ENV PUBLIC_URL=${PUBLIC_URL}
 
 EXPOSE ${PORT}
 
@@ -51,6 +37,12 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 # Strapi プロジェクト一式を builder からコピー（/app 配下にそのまま展開）
 COPY --from=builder /app ./
+
+# アップロード保存先を用意し node に権限付与（EACCES 防止）
+RUN mkdir -p /app/public/uploads /app/.tmp /app/.cache && chown -R node:node /app/public /app/.tmp /app/.cache
+
+# 永続化: 実行時に -v や compose の volumes でマウントすること
+VOLUME ["/app/public/uploads"]
 
 USER node
 CMD ["pnpm", "run", "start"]
