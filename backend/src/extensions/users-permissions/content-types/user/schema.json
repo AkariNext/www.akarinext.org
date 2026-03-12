@@ -92,6 +92,21 @@
       "relation": "oneToMany",
       "target": "api::post.post",
       "mappedBy": "author"
+    },
+    "social_links": {
+      "type": "component",
+      "component": "author.social-link",
+      "repeatable": true
+    },
+    "playing_games": {
+      "type": "component",
+      "component": "author.playing-game",
+      "repeatable": true
+    },
+    "finished_games": {
+      "type": "component",
+      "component": "author.finished-game",
+      "repeatable": true
     }
   }
 }

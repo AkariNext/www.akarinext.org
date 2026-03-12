@@ -1060,6 +1060,7 @@ export interface PluginUsersPermissionsUser
       Schema.Attribute.SetMinMaxLength<{
         minLength: 6;
       }>;
+    finished_games: Schema.Attribute.Component<'author.finished-game', true>;
     is_staff: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
@@ -1073,6 +1074,7 @@ export interface PluginUsersPermissionsUser
       Schema.Attribute.SetMinMaxLength<{
         minLength: 6;
       }>;
+    playing_games: Schema.Attribute.Component<'author.playing-game', true>;
     posts: Schema.Attribute.Relation<'oneToMany', 'api::post.post'>;
     provider: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
@@ -1081,6 +1083,7 @@ export interface PluginUsersPermissionsUser
       'manyToOne',
       'plugin::users-permissions.role'
     >;
+    social_links: Schema.Attribute.Component<'author.social-link', true>;
     staff_title: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
