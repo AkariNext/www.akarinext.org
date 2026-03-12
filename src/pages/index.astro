@@ -12,30 +12,30 @@ import {
     Megaphone,
 } from "lucide-astro";
 import {
-    payloadClient,
+    strapiClient,
     getMediaUrl,
-    type Post,
-    type Game,
-    type GameServer,
-    type Setting,
-    type Author,
-    type Announcement,
-} from "../lib/payload";
+    type StrapiPost,
+    type StrapiGame,
+    type StrapiGameServer,
+    type StrapiSetting,
+    type StrapiAuthor,
+    type StrapiAnnouncement,
+} from "../lib/strapi";
 import ServerCard from "../components/ServerCard.astro";
 import PostCard from "../components/PostCard.astro";
 
 // Fetch data
-let globalSettings: Setting = {
+let globalSettings: StrapiSetting = {
+    id: 0,
     site_title: "AkariNext",
     site_description: "Connect, Play, and Share Your Journey.",
-    id: 0,
 };
 
-let recentPosts: Post[] = [];
-let recentGames: Game[] = [];
-let gameServers: GameServer[] = [];
-let staffMembers: Author[] = [];
-let latestAnnouncement: Announcement | null = null;
+let recentPosts: StrapiPost[] = [];
+let recentGames: StrapiGame[] = [];
+let gameServers: StrapiGameServer[] = [];
+let staffMembers: StrapiAuthor[] = [];
+let latestAnnouncement: StrapiAnnouncement | null = null;
 
 try {
     const [
@@ -46,43 +46,39 @@ try {
         staffData,
         announcementData,
     ] = await Promise.all([
-        payloadClient
-            .singleton<Setting>("settings")
+        strapiClient
+            .singleton<StrapiSetting>("settings")
             .read()
             .catch(() => null),
-        payloadClient
-            .items<Post>("posts")
+        strapiClient
+            .items<StrapiPost>("posts")
             .readByQuery({
                 sort: ["-published_date", "-createdAt", "-id"],
                 limit: 6,
-                where: { status: { equals: "published" } },
             })
             .catch(() => []),
-        payloadClient
-            .items<Game>("games")
+        strapiClient
+            .items<StrapiGame>("games")
             .readByQuery({
                 sort: ["-createdAt", "-id"],
                 limit: 4,
             })
             .catch(() => []),
-        payloadClient
-            .items<GameServer>("game-servers")
-            .readByQuery({
-                where: { status: { equals: "published" } },
-            })
+        strapiClient
+            .items<StrapiGameServer>("game-servers")
+            .readByQuery({})
             .catch(() => []),
-        payloadClient
-            .items<Author>("authors")
+        strapiClient
+            .items<StrapiAuthor>("authors")
             .readByQuery({
                 where: { is_staff: { equals: true } },
             })
             .catch(() => []),
-        payloadClient
-            .items<Announcement>("announcements")
+        strapiClient
+            .items<StrapiAnnouncement>("announcements")
             .readByQuery({
-                sort: "-published_date,-id",
+                sort: ["-published_date", "-id"],
                 limit: 1,
-                where: { status: { equals: "published" } },
             })
             .catch(() => []),
     ]);
@@ -336,7 +332,7 @@ const formatDate = (dateStr: string | null | undefined) => {
                                 {staff.avatar ? (
                                     <img
                                         src={getMediaUrl(staff.avatar)}
-                                        alt={staff.name}
+                                        alt={staff.name || staff.username}
                                         class="staff-avatar"
                                     />
                                 ) : (
@@ -349,7 +345,7 @@ const formatDate = (dateStr: string | null | undefined) => {
                                 </div>
                             </div>
                             <div class="staff-info">
-                                <h3 class="staff-name">{staff.name}</h3>
+                                <h3 class="staff-name">{staff.name || staff.username}</h3>
                                 <p class="staff-role">
                                     {staff.staff_title || "Staff"}
                                 </p>

@@ -1,19 +1,17 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import {
-    payloadClient,
+    strapiClient,
     getMediaUrl,
-    type Game,
-    type Author,
-} from "../../lib/payload";
+    type StrapiGame,
+    type StrapiAuthor,
+} from "../../lib/strapi";
 import { Users, Gamepad2, Search } from "lucide-astro";
 
 // Data Handling
-let games: Game[] = [];
-// Group players
-// Using a simpler structure for internal usage
+let games: StrapiGame[] = [];
 interface PlayerData {
-    user: Author;
+    user: StrapiAuthor;
     skill_level?: string;
     impression?: string;
     recruitment?: string;
@@ -21,37 +19,22 @@ interface PlayerData {
 const playersByGame = new Map<number, PlayerData[]>();
 
 try {
-    // Fetch Games
-    const gamesRes = await payloadClient.items<Game>("games").readByQuery({
+    const gamesRes = await strapiClient.items<StrapiGame>("games").readByQuery({
         limit: 100,
-        sort: "name",
+        sort: ["name"],
     });
     games = gamesRes;
 
-    // Fetch Authors and their playing games
-    // We need depth to get avatar url
-    const authorsRes = await payloadClient
-        .items<Author>("authors")
-        .readByQuery({
-            limit: 100,
-            depth: 1,
-        });
+    const authorsRes = await strapiClient
+        .items<StrapiAuthor>("authors")
+        .readByQuery({ limit: 100 });
     const authors = authorsRes;
 
-    // Map players to games
     authors.forEach((author) => {
         if (author.playing_games && Array.isArray(author.playing_games)) {
             author.playing_games.forEach((playInfo) => {
-                // game might be an ID or an object depending on depth
                 const gameObj = playInfo.game;
-                let gameId: number | undefined;
-
-                if (typeof gameObj === "number") {
-                    gameId = gameObj;
-                } else if (gameObj && typeof gameObj === "object") {
-                    gameId = gameObj.id;
-                }
-
+                const gameId = gameObj && typeof gameObj === "object" ? gameObj.id : undefined;
                 if (gameId) {
                     const list = playersByGame.get(gameId) || [];
                     list.push({
@@ -172,7 +155,7 @@ const getRecruitmentLabel = (val?: string) => {
                         const players = playersByGame.get(game.id) || [];
                         const coverUrl = getMediaUrl(game.cover_image);
                         const playerNames = players
-                            .map((p) => p.user.name)
+                            .map((p) => p.user.name || p.user.username)
                             .join(" ")
                             .toLowerCase();
 
@@ -249,8 +232,8 @@ const getRecruitmentLabel = (val?: string) => {
                                                                         );
                                                                 const title =
                                                                     details
-                                                                        ? `${pUser.name} (${details})`
-                                                                        : pUser.name;
+                                                                        ? `${pUser.name || pUser.username} (${details})`
+                                                                        : (pUser.name || pUser.username);
 
                                                                 return (
                                                                     <div
@@ -265,12 +248,12 @@ const getRecruitmentLabel = (val?: string) => {
                                                                                     userAvatarUrl
                                                                                 }
                                                                                 alt={
-                                                                                    pUser.name
+                                                                                    pUser.name || pUser.username
                                                                                 }
                                                                             />
                                                                         ) : (
                                                                             <div class="stack-placeholder">
-                                                                                {pUser.name.charAt(
+                                                                                {(pUser.name || pUser.username).charAt(
                                                                                     0
                                                                                 )}
                                                                             </div>

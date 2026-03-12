@@ -1,3 +1,5 @@
+# Podman: podman compose up -d
+# Strapi (backend): DATABASE_URL=postgres://postgres:akarinext_password@localhost:5432/akarinext_backend
 services:
   postgres:
     image: postgres:18-alpine

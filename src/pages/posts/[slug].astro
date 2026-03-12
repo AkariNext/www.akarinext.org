@@ -1,6 +1,6 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { payloadClient, getMediaUrl, type Post } from "../../lib/payload";
+import { strapiClient, getMediaUrl, type StrapiPost } from "../../lib/strapi";
 import { processContentHtml } from "../../lib/content";
 import { lexicalToHtml } from "../../lib/richtext";
 import {
@@ -24,7 +24,7 @@ import {
 export const prerender = false;
 
 const { slug } = Astro.params;
-let post: Post | null = null;
+let post: StrapiPost | null = null;
 let authorAvatarUrl: string | undefined = undefined;
 let authorName: string = "Unknown";
 let authorId: string | number = "#";
@@ -36,28 +36,20 @@ let processedContent = "";
 
 try {
     const isNumeric = /^\d+$/.test(slug || "");
-    const query: any = {
-        limit: 1,
-        where: {
-            status: { equals: "published" },
-        },
-    };
-
+    let posts: StrapiPost[] = [];
     if (isNumeric) {
-        query.where.id = { equals: parseInt(slug!, 10) };
+        const one = await strapiClient.items<StrapiPost>("posts").readOne(parseInt(slug!, 10));
+        posts = one ? [one] : [];
     } else {
-        query.where.slug = { equals: slug };
+        posts = await strapiClient.items<StrapiPost>("posts").readByQuery({ limit: 1, where: { slug: { equals: slug } } });
     }
-
-    console.log(`[slug.astro] Requesting slug: ${slug}`);
-    const posts = await payloadClient.items<Post>("posts").readByQuery(query);
     post = posts[0] || null;
     console.log(`[slug.astro] Fetched post: ${post?.id} - ${post?.slug}`);
 
     if (post) {
         // Author Handling
         if (post.author && typeof post.author === "object") {
-            authorName = post.author.name;
+            authorName = post.author.name || post.author.username || 'Unknown';
             authorId = post.author.id;
             authorAvatarUrl = getMediaUrl(post.author.avatar);
             authorBio = post.author.bio || "";
@@ -66,11 +58,19 @@ try {
             authorSocials = post.author.social_links || [];
         }
 
-        // Content Processing
+        // Content Processing (Strapi richtext is string; migration may store Lexical JSON string)
         if (post.content) {
-            // New Lexical content (Supports alignment, indentation, etc.)
-            // @ts-ignore
-            const rawHtml = await lexicalToHtml(post.content);
+            let rawHtml: string;
+            if (typeof post.content === "string") {
+                try {
+                    const parsed = JSON.parse(post.content) as unknown;
+                    rawHtml = await lexicalToHtml(parsed);
+                } catch {
+                    rawHtml = post.content;
+                }
+            } else {
+                rawHtml = await lexicalToHtml(post.content as unknown);
+            }
             processedContent = await processContentHtml(rawHtml);
         }
     }

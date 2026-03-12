@@ -1,67 +1,91 @@
-# Payload Blank Template
+# Strapi CMS (backend)
 
-This template comes configured with the bare minimum to get started on anything you need.
+このリポジトリの CMS は Strapi です。Dokploy などで Self-host する想定です。
 
-## Quick start
+## 管理者と作者の違い
 
-This template can be deployed directly from our Cloud hosting and it will setup MongoDB and cloud S3 object storage for media.
+- **管理者** … Strapi の管理画面（`/admin`）にログインできる人。Content-Type の編集・コンテンツの作成・ユーザー管理などができる。作者である必要はない。
+- **作者** … 記事（Post）の「著者」として表示される人。**Users & Permissions の「User」** を作者として使っている。User に name / avatar / bio / is_staff / playing_games などを拡張している。
+- 同じ人が「管理者かつ作者」の場合 … 管理用の Admin アカウントと、サイト用の User（作者）を 1 人につき 1 つずつ作る形になる。記事作成時に「作者」としてその User を選ぶ。
 
-## Quick Start - local setup
+フロントから作者一覧・プロフィールを読むには、Strapi 管理画面で **Settings > Users & Permissions > User** の **find / findOne** を **Public** に許可すること。
 
-To spin up this template locally, follow these steps:
+## Payload からのデータ移行
 
-### Clone
+既存の Payload CMS データを Strapi に移行する場合:
 
-After you click the `Deploy` button above, you'll want to have standalone copy of this repo on your machine. If you've already cloned this repo, skip to [Development](#development).
+1. Payload が動作している状態で、Strapi を起動する。
+2. 環境変数を設定する:
+   - `PAYLOAD_URL` … Payload API のベース URL（例: `http://localhost:3000`）
+   - `STRAPI_URL` … Strapi API のベース URL（例: `http://localhost:1337`）
+   - `STRAPI_API_TOKEN` … Strapi 管理画面（Settings > API Tokens）で発行したトークン
+3. 以下を実行する:
 
-### Development
+```bash
+cd backend
+pnpm run migrate:payload
+```
 
-1. First [clone the repo](#clone) if you have not done so already
-2. `cd my-project && cp .env.example .env` to copy the example environment variables. You'll need to add the `MONGODB_URL` from your Cloud project to your `.env` if you want to use S3 storage and the MongoDB database that was created for you.
+---
 
-3. `pnpm install && pnpm dev` to install dependencies and start the dev server
-4. open `http://localhost:3000` to open the app in your browser
+# 🚀 Getting started with Strapi
 
-That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
+Strapi comes with a full featured [Command Line Interface](https://docs.strapi.io/dev-docs/cli) (CLI) which lets you scaffold and manage your project in seconds.
 
-#### Docker (Optional)
+### `develop`
 
-If you prefer to use Docker for local development instead of a local MongoDB instance, the provided docker-compose.yml file can be used.
+Start your Strapi application with autoReload enabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-develop)
 
-To do so, follow these steps:
+```
+npm run develop
+# or
+yarn develop
+```
 
-- Modify the `MONGODB_URL` in your `.env` file to `mongodb://127.0.0.1/<dbname>`
-- Modify the `docker-compose.yml` file's `MONGODB_URL` to match the above `<dbname>`
-- Run `docker-compose up` to start the database, optionally pass `-d` to run in the background.
+### `start`
 
-## How it works
+Start your Strapi application with autoReload disabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-start)
 
-The Payload config is tailored specifically to the needs of most websites. It is pre-configured in the following ways:
+```
+npm run start
+# or
+yarn start
+```
 
-### Collections
+### `build`
 
-See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
+Build your admin panel. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-build)
 
-- #### Users (Authentication)
+```
+npm run build
+# or
+yarn build
+```
 
-  Users are auth-enabled collections that have access to the admin panel.
+## ⚙️ Deployment
 
-  For additional help, see the official [Auth Example](https://github.com/payloadcms/payload/tree/main/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
+Strapi gives you many possible deployment options for your project including [Strapi Cloud](https://cloud.strapi.io). Browse the [deployment section of the documentation](https://docs.strapi.io/dev-docs/deployment) to find the best solution for your use case.
 
-- #### Media
+```
+yarn strapi deploy
+```
 
-  This is the uploads enabled collection. It features pre-configured sizes, focal point and manual resizing to help you manage your pictures.
+## 📚 Learn more
 
-### Docker
+- [Resource center](https://strapi.io/resource-center) - Strapi resource center.
+- [Strapi documentation](https://docs.strapi.io) - Official Strapi documentation.
+- [Strapi tutorials](https://strapi.io/tutorials) - List of tutorials made by the core team and the community.
+- [Strapi blog](https://strapi.io/blog) - Official Strapi blog containing articles made by the Strapi team and the community.
+- [Changelog](https://strapi.io/changelog) - Find out about the Strapi product updates, new features and general improvements.
 
-Alternatively, you can use [Docker](https://www.docker.com) to spin up this template locally. To do so, follow these steps:
+Feel free to check out the [Strapi GitHub repository](https://github.com/strapi/strapi). Your feedback and contributions are welcome!
 
-1. Follow [steps 1 and 2 from above](#development), the docker-compose file will automatically use the `.env` file in your project root
-1. Next run `docker-compose up`
-1. Follow [steps 4 and 5 from above](#development) to login and create your first admin user
+## ✨ Community
 
-That's it! The Docker instance will help you get up and running quickly while also standardizing the development environment across your teams.
+- [Discord](https://discord.strapi.io) - Come chat with the Strapi community including the core team.
+- [Forum](https://forum.strapi.io/) - Place to discuss, ask questions and find answers, show your Strapi project and get feedback or just talk with other Community members.
+- [Awesome Strapi](https://github.com/strapi/awesome-strapi) - A curated list of awesome things related to Strapi.
 
-## Questions
+---
 
-If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).
+<sub>🤫 Psst! [Strapi is hiring](https://strapi.io/careers).</sub>

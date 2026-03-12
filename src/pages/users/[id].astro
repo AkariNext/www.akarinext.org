@@ -1,12 +1,12 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import {
-    payloadClient,
+    strapiClient,
     getMediaUrl,
-    type Author,
-    type Post,
-    type Game,
-} from "../../lib/payload";
+    type StrapiAuthor,
+    type StrapiPost,
+    type StrapiGame,
+} from "../../lib/strapi";
 import {
     Twitter,
     Github,
@@ -34,8 +34,8 @@ if (!id) {
 
 // Local GamePlayer Interface for View
 interface GamePlayer {
-    id: number; // Placeholder
-    game: Game;
+    id: number;
+    game: StrapiGame;
     started_at: string;
     status: "playing" | "finished";
     skill_level?: string;
@@ -43,9 +43,9 @@ interface GamePlayer {
     recruitment?: string;
 }
 
-let user: Author | null = null;
+let user: StrapiAuthor | null = null;
 let allGames: GamePlayer[] = [];
-let userPosts: Post[] = [];
+let userPosts: StrapiPost[] = [];
 let avatarUrl: string | undefined = undefined;
 
 try {
@@ -54,27 +54,22 @@ try {
         return Astro.redirect("/404");
     }
 
-    // Fetch User and their Games
-    // depth: 2 to get game details AND game cover image
-    const usersRes = await payloadClient.items<Author>("authors").readByQuery({
+    const usersRes = await strapiClient.items<StrapiAuthor>("authors").readByQuery({
         where: { id: { equals: userId } },
         limit: 1,
-        depth: 2,
     });
 
     if (usersRes.length > 0) {
         user = usersRes[0];
-
         avatarUrl = getMediaUrl(user.avatar);
 
-        // Transform Playing Games
         if (user.playing_games && Array.isArray(user.playing_games)) {
-            user.playing_games.forEach((g: any) => {
-                const gameObj = g.game; // Should be expanded object due to depth: 2
+            user.playing_games.forEach((g: { game?: StrapiGame; skill_level?: string; impression?: string; recruitment?: string }) => {
+                const gameObj = g.game;
                 if (gameObj && typeof gameObj === "object") {
                     allGames.push({
                         id: 0,
-                        game: gameObj as Game,
+                        game: gameObj,
                         started_at: "",
                         status: "playing",
                         skill_level: g.skill_level,
@@ -87,12 +82,12 @@ try {
 
         // Transform Finished Games
         if (user.finished_games && Array.isArray(user.finished_games)) {
-            user.finished_games.forEach((g: any) => {
+            user.finished_games.forEach((g: { game?: StrapiGame; skill_level?: string; impression?: string; recruitment?: string }) => {
                 const gameObj = g.game;
                 if (gameObj && typeof gameObj === "object") {
                     allGames.push({
                         id: 0,
-                        game: gameObj as Game,
+                        game: gameObj,
                         started_at: "",
                         status: "finished",
                         skill_level: g.skill_level,
@@ -104,18 +99,11 @@ try {
         }
     }
 
-    // Fetch Authored Posts
-    const postsRes = await payloadClient.items<Post>("posts").readByQuery({
-        where: {
-            // Check if user.id works directly or we need relationship query
-            // Usually 'author' field in Post stores the ID or relationship
-            author: { equals: userId },
-            status: { equals: "published" },
-        },
-        sort: "-published_date",
-        limit: 20,
+    const allPosts = await strapiClient.items<StrapiPost>("posts").readByQuery({
+        sort: ["-published_date"],
+        limit: 100,
     });
-    userPosts = postsRes;
+    userPosts = allPosts.filter((p) => p.author && typeof p.author === "object" && p.author.id === userId);
 } catch (e) {
     console.error("Error fetching user profile:", e);
 }
@@ -246,8 +234,8 @@ const getRecruitmentLabel = (val?: string) => {
 ---
 
 <Layout
-    title={user.name}
-    description={`${user.name}さんのプロフィールとゲームコレクション。`}
+    title={user.name || user.username}
+    description={`${user.name || user.username}さんのプロフィールとゲームコレクション。`}
 >
     <div class="profile-header">
         <div class="container profile-container">
@@ -256,13 +244,13 @@ const getRecruitmentLabel = (val?: string) => {
                     avatarUrl ? (
                         <img
                             src={avatarUrl}
-                            alt={user.name}
+                            alt={user.name || user.username}
                             class="profile-avatar"
                         />
                     ) : (
                         <div class="profile-avatar-placeholder">
                             <span class="avatar-initial">
-                                {user.name.charAt(0).toUpperCase()}
+                                {(user.name || user.username).charAt(0).toUpperCase()}
                             </span>
                         </div>
                     )
@@ -271,7 +259,7 @@ const getRecruitmentLabel = (val?: string) => {
 
             <div class="profile-info">
                 <div class="profile-title-row">
-                    <h1 class="profile-name">{user.name}</h1>
+                    <h1 class="profile-name">{user.name || user.username}</h1>
                     {
                         user.is_staff && (
                             <span class="staff-tag-premium">

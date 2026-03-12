@@ -1,0 +1,117 @@
+/**
+ * Strapi REST API クライアント（Payload クライアントに近いインターフェース）
+ * 環境変数: PUBLIC_STRAPI_URL (例: http://localhost:1337)
+ */
+
+import type {
+  StrapiMedia,
+  StrapiSetting,
+  StrapiGame,
+  StrapiUser,
+  StrapiPost,
+  StrapiAnnouncement,
+  StrapiGameServer,
+} from './cms-types';
+
+const STRAPI_URL = (import.meta.env.PUBLIC_STRAPI_URL || 'http://localhost:1337').replace(/\/$/, '');
+
+function buildStrapiQuery(params: {
+  sort?: string | string[];
+  limit?: number;
+  where?: Record<string, unknown>;
+  populate?: string | string[] | Record<string, unknown>;
+}): string {
+  const search = new URLSearchParams();
+  if (params.sort) {
+    const sortArr = Array.isArray(params.sort) ? params.sort : [params.sort];
+    sortArr.forEach((s) => {
+      const strapiSort = s.startsWith('-') ? `${s.slice(1)}:desc` : `${s}:asc`;
+      search.append('sort', strapiSort);
+    });
+  }
+  if (params.limit != null) search.set('pagination[pageSize]', String(params.limit));
+  search.set('populate', '*');
+  if (params.where && Object.keys(params.where).length > 0) {
+    for (const [key, val] of Object.entries(params.where)) {
+      if (val && typeof val === 'object') {
+        if ('equals' in val) {
+          search.set(`filters[${key}][$eq]`, String((val as { equals: unknown }).equals));
+        } else if ('$notNull' in val) {
+          search.set(`filters[${key}][$notNull]`, String((val as { $notNull: unknown }).$notNull));
+        }
+      }
+    }
+  }
+  return search.toString();
+}
+
+async function strapiFetch<T>(path: string, query?: string): Promise<T> {
+  const url = query ? `${STRAPI_URL}${path}?${query}` : `${STRAPI_URL}${path}`;
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Strapi API Error: ${res.status} ${res.statusText}`);
+  return res.json() as Promise<T>;
+}
+
+/** Strapi のメディアオブジェクトから表示用 URL を取得 */
+export function getMediaUrl(
+  media: StrapiMedia | { url?: string } | number | null | undefined
+): string | undefined {
+  if (!media) return undefined;
+  if (typeof media === 'number') return undefined;
+  const url = media.url;
+  if (!url) return undefined;
+  return url.startsWith('http') ? url : `${STRAPI_URL}${url}`;
+}
+
+const collectionMap: Record<string, string> = {
+  posts: 'posts',
+  games: 'games',
+  authors: 'users',
+  users: 'users',
+  announcements: 'announcements',
+  'game-servers': 'game-servers',
+};
+
+/** 公開済みのみに絞るフィルター（draftAndPublish 利用コレクション用） */
+const publishedFilter = (): Record<string, unknown> => ({ publishedAt: { $notNull: true } });
+
+export const strapiClient = {
+  items: <T>(collection: string) => ({
+    readByQuery: async (query: {
+      sort?: string | string[];
+      limit?: number;
+      where?: Record<string, unknown>;
+    } = {}): Promise<T[]> => {
+      const apiId = collectionMap[collection] || collection;
+      const where = { ...(query.where || {}) };
+      if (['posts', 'announcements', 'game-servers'].includes(apiId) && apiId !== 'users') {
+        Object.assign(where, publishedFilter());
+      }
+      const q = buildStrapiQuery({ ...query, where });
+      const data = await strapiFetch<{ data: T[] }>(`/api/${apiId}`, q);
+      return Array.isArray(data.data) ? data.data : [];
+    },
+    readOne: async (id: number): Promise<T> => {
+      const apiId = collectionMap[collection] || collection;
+      const data = await strapiFetch<{ data: T }>(`/api/${apiId}/${id}`);
+      return data.data;
+    },
+  }),
+  singleton: <T>(slug: string) => ({
+    read: async (): Promise<T> => {
+      const path = slug === 'settings' ? '/api/settings' : `/api/${slug}`;
+      const data = await strapiFetch<{ data: T }>(path);
+      return data.data;
+    },
+  }),
+};
+
+export type {
+  StrapiMedia,
+  StrapiSetting,
+  StrapiGame,
+  StrapiUser,
+  StrapiPost,
+  StrapiAnnouncement,
+  StrapiGameServer,
+};

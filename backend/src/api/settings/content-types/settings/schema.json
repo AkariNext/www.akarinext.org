@@ -1,0 +1,28 @@
+{
+  "kind": "singleType",
+  "collectionName": "settings",
+  "info": {
+    "singularName": "settings",
+    "pluralName": "settings-list",
+    "displayName": "Settings",
+    "description": "Site-wide settings"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "site_title": {
+      "type": "string"
+    },
+    "site_description": {
+      "type": "text"
+    },
+    "site_logo": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    }
+  }
+}

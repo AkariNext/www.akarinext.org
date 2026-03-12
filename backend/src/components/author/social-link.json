@@ -1,0 +1,19 @@
+{
+  "collectionName": "components_author_social_links",
+  "info": {
+    "displayName": "Social Link",
+    "icon": "link",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "platform": {
+      "type": "enumeration",
+      "enum": ["twitter", "github", "discord", "website", "twitch", "youtube"],
+      "required": false
+    },
+    "url": {
+      "type": "string"
+    }
+  }
+}
