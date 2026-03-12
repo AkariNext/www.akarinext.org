@@ -8,8 +8,9 @@
     "description": ""
   },
   "options": {
-    "timestamps": true
+    "draftAndPublish": false
   },
+  "pluginOptions": {},
   "attributes": {
     "username": {
       "type": "string",
@@ -72,7 +73,9 @@
       "type": "media",
       "multiple": false,
       "required": false,
-      "allowedTypes": ["images"]
+      "allowedTypes": [
+        "images"
+      ]
     },
     "is_staff": {
       "type": "boolean",
@@ -84,20 +87,11 @@
     "bio": {
       "type": "text"
     },
-    "social_links": {
-      "type": "component",
-      "repeatable": true,
-      "component": "author.social-link"
-    },
-    "playing_games": {
-      "type": "component",
-      "repeatable": true,
-      "component": "author.playing-game"
-    },
-    "finished_games": {
-      "type": "component",
-      "repeatable": true,
-      "component": "author.finished-game"
+    "posts": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::post.post",
+      "mappedBy": "author"
     }
   }
 }

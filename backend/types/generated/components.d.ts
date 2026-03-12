@@ -3,13 +3,10 @@ import type { Schema, Struct } from '@strapi/strapi';
 export interface AuthorFinishedGame extends Struct.ComponentSchema {
   collectionName: 'components_author_finished_games';
   info: {
-    description: '';
     displayName: 'Finished Game';
-    icon: 'check';
   };
   attributes: {
-    game: Schema.Attribute.Relation<'oneToOne', 'api::game.game'> &
-      Schema.Attribute.Required;
+    game: Schema.Attribute.Relation<'oneToOne', 'api::game.game'>;
     impression: Schema.Attribute.Enumeration<
       ['obsessed', 'love', 'like', 'meh', 'give_up']
     >;
@@ -31,13 +28,10 @@ export interface AuthorFinishedGame extends Struct.ComponentSchema {
 export interface AuthorPlayingGame extends Struct.ComponentSchema {
   collectionName: 'components_author_playing_games';
   info: {
-    description: '';
     displayName: 'Playing Game';
-    icon: 'gamepad';
   };
   attributes: {
-    game: Schema.Attribute.Relation<'oneToOne', 'api::game.game'> &
-      Schema.Attribute.Required;
+    game: Schema.Attribute.Relation<'oneToOne', 'api::game.game'>;
     impression: Schema.Attribute.Enumeration<
       ['obsessed', 'love', 'like', 'meh', 'give_up']
     >;
@@ -59,9 +53,7 @@ export interface AuthorPlayingGame extends Struct.ComponentSchema {
 export interface AuthorSocialLink extends Struct.ComponentSchema {
   collectionName: 'components_author_social_links';
   info: {
-    description: '';
     displayName: 'Social Link';
-    icon: 'link';
   };
   attributes: {
     platform: Schema.Attribute.Enumeration<

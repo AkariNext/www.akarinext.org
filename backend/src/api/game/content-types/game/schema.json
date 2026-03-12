@@ -4,8 +4,7 @@
   "info": {
     "singularName": "game",
     "pluralName": "games",
-    "displayName": "Game",
-    "description": ""
+    "displayName": "Game"
   },
   "options": {
     "draftAndPublish": false
@@ -21,13 +20,14 @@
       "required": true
     },
     "description": {
-      "type": "text"
+      "type": "string"
     },
     "cover_image": {
       "type": "media",
       "multiple": false,
-      "required": false,
-      "allowedTypes": ["images"]
+      "allowedTypes": [
+        "images"
+      ]
     }
   }
 }

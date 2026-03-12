@@ -1,29 +1,44 @@
 {
   "collectionName": "components_author_finished_games",
   "info": {
-    "displayName": "Finished Game",
-    "icon": "check",
-    "description": ""
+    "displayName": "Finished Game"
   },
   "options": {},
   "attributes": {
     "game": {
       "type": "relation",
       "relation": "oneToOne",
-      "target": "api::game.game",
-      "required": true
+      "target": "api::game.game"
     },
     "skill_level": {
       "type": "enumeration",
-      "enum": ["casual", "intermediate", "expert", "better_than_you"]
+      "enum": [
+        "casual",
+        "intermediate",
+        "expert",
+        "better_than_you"
+      ]
     },
     "impression": {
       "type": "enumeration",
-      "enum": ["obsessed", "love", "like", "meh", "give_up"]
+      "enum": [
+        "obsessed",
+        "love",
+        "like",
+        "meh",
+        "give_up"
+      ]
     },
     "recruitment": {
       "type": "enumeration",
-      "enum": ["looking_for_group", "invite_anytime", "need_hints", "can_teach", "discussion_welcome"]
+      "enum": [
+        "looking_for_group",
+        "invite_anytime",
+        "need_hints",
+        "can_teach",
+        "discussion_welcome"
+      ]
     }
-  }
+  },
+  "config": {}
 }

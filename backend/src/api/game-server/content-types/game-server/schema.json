@@ -4,11 +4,10 @@
   "info": {
     "singularName": "game-server",
     "pluralName": "game-servers",
-    "displayName": "Game Server",
-    "description": ""
+    "displayName": "Game Server"
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "pluginOptions": {},
   "attributes": {
@@ -18,8 +17,13 @@
     },
     "type": {
       "type": "enumeration",
-      "enum": ["minecraft", "web", "other"],
-      "required": true
+      "required": true,
+      "default": "other",
+      "enum": [
+        "minecraft",
+        "web",
+        "other"
+      ]
     },
     "ip": {
       "type": "string",
@@ -27,8 +31,7 @@
     },
     "port": {
       "type": "integer",
-      "required": true,
-      "default": 25565
+      "required": true
     },
     "protocol": {
       "type": "string",

@@ -434,7 +434,6 @@ export interface ApiAnnouncementAnnouncement
   extends Struct.CollectionTypeSchema {
   collectionName: 'announcements';
   info: {
-    description: '';
     displayName: 'Announcement';
     pluralName: 'announcements';
     singularName: 'announcement';
@@ -465,13 +464,12 @@ export interface ApiAnnouncementAnnouncement
 export interface ApiGameServerGameServer extends Struct.CollectionTypeSchema {
   collectionName: 'game_servers';
   info: {
-    description: '';
     displayName: 'Game Server';
     pluralName: 'game-servers';
     singularName: 'game-server';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     createdAt: Schema.Attribute.DateTime;
@@ -486,13 +484,12 @@ export interface ApiGameServerGameServer extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     name: Schema.Attribute.String & Schema.Attribute.Required;
-    port: Schema.Attribute.Integer &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<25565>;
+    port: Schema.Attribute.Integer & Schema.Attribute.Required;
     protocol: Schema.Attribute.String & Schema.Attribute.DefaultTo<'TCP'>;
     publishedAt: Schema.Attribute.DateTime;
     type: Schema.Attribute.Enumeration<['minecraft', 'web', 'other']> &
-      Schema.Attribute.Required;
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'other'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -502,7 +499,6 @@ export interface ApiGameServerGameServer extends Struct.CollectionTypeSchema {
 export interface ApiGameGame extends Struct.CollectionTypeSchema {
   collectionName: 'games';
   info: {
-    description: '';
     displayName: 'Game';
     pluralName: 'games';
     singularName: 'game';
@@ -515,7 +511,7 @@ export interface ApiGameGame extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    description: Schema.Attribute.Text;
+    description: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::game.game'> &
       Schema.Attribute.Private;
@@ -531,7 +527,6 @@ export interface ApiGameGame extends Struct.CollectionTypeSchema {
 export interface ApiPostPost extends Struct.CollectionTypeSchema {
   collectionName: 'posts';
   info: {
-    description: '';
     displayName: 'Post';
     pluralName: 'posts';
     singularName: 'post';
@@ -545,8 +540,7 @@ export interface ApiPostPost extends Struct.CollectionTypeSchema {
       'plugin::users-permissions.user'
     >;
     category: Schema.Attribute.Enumeration<['tech', 'game', 'misc']> &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<'game'>;
+      Schema.Attribute.Required;
     content: Schema.Attribute.RichText;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -567,15 +561,14 @@ export interface ApiPostPost extends Struct.CollectionTypeSchema {
 }
 
 export interface ApiSettingsSettings extends Struct.SingleTypeSchema {
-  collectionName: 'settings';
+  collectionName: 'settings_list';
   info: {
-    description: 'Site-wide settings';
     displayName: 'Settings';
     pluralName: 'settings-list';
     singularName: 'settings';
   };
   options: {
-    draftAndPublish: false;
+    draftAndPublish: true;
   };
   attributes: {
     createdAt: Schema.Attribute.DateTime;
@@ -588,7 +581,7 @@ export interface ApiSettingsSettings extends Struct.SingleTypeSchema {
     > &
       Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
-    site_description: Schema.Attribute.Text;
+    site_description: Schema.Attribute.String;
     site_logo: Schema.Attribute.Media<'images'>;
     site_title: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
@@ -1052,7 +1045,6 @@ export interface PluginUsersPermissionsUser
   };
   options: {
     draftAndPublish: false;
-    timestamps: true;
   };
   attributes: {
     avatar: Schema.Attribute.Media<'images'>;
@@ -1068,7 +1060,6 @@ export interface PluginUsersPermissionsUser
       Schema.Attribute.SetMinMaxLength<{
         minLength: 6;
       }>;
-    finished_games: Schema.Attribute.Component<'author.finished-game', true>;
     is_staff: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
@@ -1082,7 +1073,7 @@ export interface PluginUsersPermissionsUser
       Schema.Attribute.SetMinMaxLength<{
         minLength: 6;
       }>;
-    playing_games: Schema.Attribute.Component<'author.playing-game', true>;
+    posts: Schema.Attribute.Relation<'oneToMany', 'api::post.post'>;
     provider: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
     resetPasswordToken: Schema.Attribute.String & Schema.Attribute.Private;
@@ -1090,7 +1081,6 @@ export interface PluginUsersPermissionsUser
       'manyToOne',
       'plugin::users-permissions.role'
     >;
-    social_links: Schema.Attribute.Component<'author.social-link', true>;
     staff_title: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &

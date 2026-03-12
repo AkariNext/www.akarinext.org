@@ -1,14 +1,13 @@
 {
   "kind": "singleType",
-  "collectionName": "settings",
+  "collectionName": "settings_list",
   "info": {
     "singularName": "settings",
     "pluralName": "settings-list",
-    "displayName": "Settings",
-    "description": "Site-wide settings"
+    "displayName": "Settings"
   },
   "options": {
-    "draftAndPublish": false
+    "draftAndPublish": true
   },
   "pluginOptions": {},
   "attributes": {
@@ -16,13 +15,14 @@
       "type": "string"
     },
     "site_description": {
-      "type": "text"
+      "type": "string"
     },
     "site_logo": {
       "type": "media",
       "multiple": false,
-      "required": false,
-      "allowedTypes": ["images"]
+      "allowedTypes": [
+        "images"
+      ]
     }
   }
 }
