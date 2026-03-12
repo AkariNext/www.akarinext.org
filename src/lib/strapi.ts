@@ -104,7 +104,9 @@ export const strapiClient = {
     } = {}): Promise<T[]> => {
       const apiId = collectionMap[collection] || collection;
       const where = { ...(query.where || {}) };
-      if (['posts', 'announcements', 'game-servers'].includes(apiId) && apiId !== 'users') {
+      // posts / announcements は draftAndPublish=true のため公開済みのみに絞る
+      // game-servers は draftAndPublish=false のためフィルタ不要
+      if (['posts', 'announcements'].includes(apiId)) {
         Object.assign(where, publishedFilter());
       }
       const q = buildStrapiQuery({ ...query, where, apiId });
