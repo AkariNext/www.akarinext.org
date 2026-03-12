@@ -49,13 +49,9 @@ EXPOSE ${PORT}
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod
-COPY --from=builder /app/build ./build
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/config ./config
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/database ./database
-COPY --from=builder /app/favicon.png ./favicon.png
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
+# Strapi プロジェクト一式を builder からコピー（build ディレクトリも含まれる）
+COPY --from=builder /app ./app
+WORKDIR /app
 
 USER node
 CMD ["pnpm", "run", "start"]
