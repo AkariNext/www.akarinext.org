@@ -19,7 +19,7 @@ function buildStrapiQuery(params: {
   sort?: string | string[];
   limit?: number;
   where?: Record<string, unknown>;
-  populate?: string | string[] | Record<string, unknown>;
+  apiId?: string;
 }): string {
   const search = new URLSearchParams();
   if (params.sort) {
@@ -30,7 +30,19 @@ function buildStrapiQuery(params: {
     });
   }
   if (params.limit != null) search.set('pagination[pageSize]', String(params.limit));
-  search.set('populate', '*');
+
+  const apiId = params.apiId ?? '';
+  if (['posts', 'announcements'].includes(apiId)) {
+    // author の avatar まで展開、image はデフォルトで返る
+    search.set('populate[author][populate]', '*');
+    search.set('populate[image]', 'true');
+  } else if (apiId === 'games') {
+    search.set('populate[cover_image]', '*');
+  } else if (apiId === 'game-servers') {
+    search.set('populate', '*');
+  } else {
+    search.set('populate', '*');
+  }
   if (params.where && Object.keys(params.where).length > 0) {
     for (const [key, val] of Object.entries(params.where)) {
       if (val && typeof val === 'object') {
@@ -87,14 +99,14 @@ export const strapiClient = {
       if (['posts', 'announcements', 'game-servers'].includes(apiId) && apiId !== 'users') {
         Object.assign(where, publishedFilter());
       }
-      const q = buildStrapiQuery({ ...query, where });
+      const q = buildStrapiQuery({ ...query, where, apiId });
+      // /api/users (users-permissions) はフラット配列を返す。他は { data: [...] } 形式。
+      if (apiId === 'users') {
+        const data = await strapiFetch<T[]>(`/api/${apiId}`, q);
+        return Array.isArray(data) ? data : [];
+      }
       const data = await strapiFetch<{ data: T[] }>(`/api/${apiId}`, q);
       return Array.isArray(data.data) ? data.data : [];
-    },
-    readOne: async (id: number): Promise<T> => {
-      const apiId = collectionMap[collection] || collection;
-      const data = await strapiFetch<{ data: T }>(`/api/${apiId}/${id}`);
-      return data.data;
     },
   }),
   singleton: <T>(slug: string) => ({

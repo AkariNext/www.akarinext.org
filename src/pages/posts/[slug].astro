@@ -1,8 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { strapiClient, getMediaUrl, type StrapiPost } from "../../lib/strapi";
-import { processContentHtml } from "../../lib/content";
-import { lexicalToHtml } from "../../lib/richtext";
+import { markdownToHtml } from "../../lib/richtext";
 import {
     Calendar,
     User,
@@ -38,8 +37,7 @@ try {
     const isNumeric = /^\d+$/.test(slug || "");
     let posts: StrapiPost[] = [];
     if (isNumeric) {
-        const one = await strapiClient.items<StrapiPost>("posts").readOne(parseInt(slug!, 10));
-        posts = one ? [one] : [];
+        posts = await strapiClient.items<StrapiPost>("posts").readByQuery({ limit: 1, where: { id: { equals: parseInt(slug!, 10) } } });
     } else {
         posts = await strapiClient.items<StrapiPost>("posts").readByQuery({ limit: 1, where: { slug: { equals: slug } } });
     }
@@ -58,20 +56,9 @@ try {
             authorSocials = post.author.social_links || [];
         }
 
-        // Content Processing (Strapi richtext is string; migration may store Lexical JSON string)
+        // Content Processing (Strapi richtext field is Markdown)
         if (post.content) {
-            let rawHtml: string;
-            if (typeof post.content === "string") {
-                try {
-                    const parsed = JSON.parse(post.content) as unknown;
-                    rawHtml = await lexicalToHtml(parsed);
-                } catch {
-                    rawHtml = post.content;
-                }
-            } else {
-                rawHtml = await lexicalToHtml(post.content as unknown);
-            }
-            processedContent = await processContentHtml(rawHtml);
+            processedContent = await markdownToHtml(post.content);
         }
     }
 } catch (e) {

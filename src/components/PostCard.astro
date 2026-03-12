@@ -7,7 +7,6 @@ import {
     Gamepad2,
     MessageCircle,
 } from "lucide-astro";
-import { lexicalToPlainText } from "../lib/richtext";
 import { getMediaUrl, type StrapiPost } from "../lib/strapi";
 
 interface Props {
@@ -41,16 +40,7 @@ const formatDate = (dateStr: string) => {
 
 let excerpt = "";
 if (post.content) {
-    if (typeof post.content === "string") {
-        try {
-            const parsed = JSON.parse(post.content) as unknown;
-            excerpt = lexicalToPlainText(parsed).substring(0, 120);
-        } catch {
-            excerpt = post.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().substring(0, 120);
-        }
-    } else {
-        excerpt = lexicalToPlainText(post.content as unknown).substring(0, 120);
-    }
+    excerpt = post.content.replace(/[#*_`>\[\]!]/g, '').replace(/\s+/g, ' ').trim().substring(0, 120);
 }
 
 // Function to safely get author info
