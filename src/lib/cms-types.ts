@@ -61,6 +61,8 @@ export interface StrapiPost {
   category: string;
   tags?: { tag?: string }[] | null;
   image?: StrapiMedia | null;
+  is_spoiler?: boolean;
+  spoiler_warning?: string | null;
   publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
