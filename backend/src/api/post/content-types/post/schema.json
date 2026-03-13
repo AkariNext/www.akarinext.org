@@ -49,6 +49,12 @@
       "allowedTypes": [
         "images"
       ]
+    },
+    "is_spoiler": {
+      "type": "boolean"
+    },
+    "spoiler_warning": {
+      "type": "string"
     }
   }
 }
