@@ -39,9 +39,6 @@
         "misc"
       ]
     },
-    "tags": {
-      "type": "json"
-    },
     "image": {
       "type": "media",
       "multiple": false,
@@ -55,6 +52,12 @@
     },
     "spoiler_warning": {
       "type": "string"
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::tag.tag",
+      "inversedBy": "posts"
     }
   }
 }
