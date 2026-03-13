@@ -394,6 +394,9 @@ const getSocialIcon = (platform: string) => {
         const spoilerOverlay = document.getElementById("spoiler-overlay");
 
         if (btnReveal && contentWrapper && spoilerOverlay) {
+            // Auto-scroll to spoiler warning
+            spoilerOverlay.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
             btnReveal.addEventListener("click", () => {
                 contentWrapper.classList.remove("is-blurred");
                 spoilerOverlay.style.display = "none";
