@@ -123,9 +123,11 @@ const getSocialIcon = (platform: string) => {
 
 <Layout
     title={post.title}
-    description={typeof post.content === "string"
-        ? post.content.replace(/<[^>]*>/g, "").substring(0, 160)
-        : ""}
+    description={post.is_spoiler 
+        ? (post.spoiler_warning || "この記事にはネタバレが含まれています。")
+        : (typeof post.content === "string"
+            ? post.content.replace(/<[^>]*>/g, "").substring(0, 160)
+            : "")}
     image={imageUrl || undefined}
 >
     <!-- Reading Progress Bar -->

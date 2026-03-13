@@ -6,6 +6,7 @@ import {
     Code2,
     Gamepad2,
     MessageCircle,
+    Shield,
 } from "lucide-astro";
 import { getMediaUrl, type StrapiPost, getCategoryInfo } from "../lib/strapi";
 
@@ -79,6 +80,13 @@ const postPathSegment = post.slug || post.documentId || String(post.id);
                 <Icon class="pill-icon" />
                 <span>{label}</span>
             </div>
+
+            {post.is_spoiler && (
+                <div class="spoiler-mini-badge">
+                    <Shield class="pill-icon" />
+                    <span>SPOILER</span>
+                </div>
+            )}
         </div>
 
         <div class="card-content">
@@ -113,7 +121,8 @@ const postPathSegment = post.slug || post.documentId || String(post.id);
                 </h3>
             </header>
 
-            {excerpt && <p class="post-excerpt">{excerpt}...</p>}
+            {excerpt && !post.is_spoiler && <p class="post-excerpt">{excerpt}...</p>}
+            {post.is_spoiler && <p class="post-excerpt spoiler-hint">ネタバレが含まれるため内容を非表示にしています。</p>}
 
             <footer class="content-footer">
                 {
@@ -259,6 +268,33 @@ const postPathSegment = post.slug || post.documentId || String(post.id);
     .pill-icon {
         width: 1rem;
         height: 1rem;
+    }
+
+    .spoiler-mini-badge {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.6rem 1.2rem;
+        border-radius: 100px;
+        color: white;
+        background: #ef4444;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        z-index: 10;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
+    }
+
+    .spoiler-hint {
+        font-style: italic;
+        opacity: 0.8;
     }
 
     .card-content {
