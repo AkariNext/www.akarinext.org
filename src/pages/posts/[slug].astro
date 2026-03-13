@@ -63,6 +63,8 @@ try {
     post = posts[0] || null;
     console.log(`[slug.astro] Fetched post: ${post?.documentId || post?.id} - ${post?.slug}`);
 
+
+
     if (post) {
         // Author Handling
         if (post.author && typeof post.author === "object") {
@@ -235,11 +237,11 @@ const getSocialIcon = (platform: string) => {
                             <div class="tags-list">
                                 {post.tags.map((tagObj) => (
                                     <a
-                                        href={`/posts?tag=${tagObj.tag}`}
+                                        href={`/posts?tag=${tagObj.slug}`}
                                         class="tag-premium"
                                     >
                                         <TagIcon class="icon-tag" />
-                                        <span>{tagObj.tag}</span>
+                                        <span>{tagObj.name}</span>
                                     </a>
                                 ))}
                             </div>

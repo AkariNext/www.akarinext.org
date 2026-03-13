@@ -16,6 +16,7 @@ import { Code2, Gamepad2, MessageCircle } from "lucide-astro";
 
 const STRAPI_URL = (import.meta.env.PUBLIC_STRAPI_URL || 'http://localhost:1337').replace(/\/$/, '');
 
+
 function buildStrapiQuery(params: {
   sort?: string | string[];
   limit?: number;
@@ -34,10 +35,12 @@ function buildStrapiQuery(params: {
 
   const apiId = params.apiId ?? '';
   if (apiId === 'posts') {
-    // author の avatar まで展開、image はデフォルトで返る
+    // author の avatar まで展開、image/tags はデフォルトで返る
     search.set('populate[author][populate]', '*');
     search.set('populate[image]', 'true');
+    search.set('populate[tags]', 'true');
   } else if (apiId === 'announcements') {
+
     // announcements には author/image フィールドが存在しないため populate なし
   } else if (apiId === 'games') {
     search.set('populate[cover_image]', 'true');

@@ -50,6 +50,15 @@ export interface StrapiUser {
 /** 互換用エイリアス（作者 = User） */
 export type StrapiAuthor = StrapiUser;
 
+export interface StrapiTag {
+  id: number;
+  documentId?: string;
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface StrapiPost {
   id: number;
   documentId?: string;
@@ -59,7 +68,8 @@ export interface StrapiPost {
   author?: StrapiUser | null;
   published_date?: string | null;
   category: string;
-  tags?: { tag?: string }[] | null;
+  tags?: StrapiTag[] | null;
+
   image?: StrapiMedia | null;
   is_spoiler?: boolean;
   spoiler_warning?: string | null;

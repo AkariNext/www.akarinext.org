@@ -130,11 +130,11 @@ const postPathSegment = post.slug || post.documentId || String(post.id);
                         <div class="tag-cloud">
                             {post.tags.slice(0, 3).map((t) => (
                                 <a
-                                    href={`/posts?tag=${t.tag}`}
+                                    href={`/posts?tag=${t.slug}`}
                                     class="premium-tag"
                                 >
                                     <Tag class="tag-icon" />
-                                    <span>{t.tag}</span>
+                                    <span>{t.name}</span>
                                 </a>
                             ))}
                         </div>

@@ -24,7 +24,7 @@ try {
     });
 
     posts = tag
-        ? fetchedPosts.filter((p) => Array.isArray(p.tags) && p.tags.some((t) => t?.tag === tag))
+        ? fetchedPosts.filter((p) => Array.isArray(p.tags) && p.tags.some((t) => t?.slug === tag || t?.name === tag))
         : fetchedPosts;
     console.log(
         `[Posts] Loaded ${posts.length} items. Tag selector: ${tag || "none"}`
