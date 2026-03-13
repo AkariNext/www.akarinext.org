@@ -1,6 +1,6 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { strapiClient, getMediaUrl, type StrapiPost } from "../../lib/strapi";
+import { strapiClient, getMediaUrl, getCategoryInfo, type StrapiPost } from "../../lib/strapi";
 import { markdownToHtml } from "../../lib/richtext";
 import {
     Calendar,
@@ -99,19 +99,7 @@ const formatDate = (date: string) => {
     });
 };
 
-const getCategoryIcon = (cat: string) => {
-    switch (cat) {
-        case "tech":
-            return Code2;
-        case "game":
-            return Gamepad2;
-        case "misc":
-            return MessageCircle;
-        default:
-            return MessageCircle;
-    }
-};
-const CategoryIcon = getCategoryIcon(post.category);
+const { icon: CategoryIcon, label: categoryLabel, color: categoryColor } = getCategoryInfo(post.category);
 
 const getSocialIcon = (platform: string) => {
     switch (platform?.toLowerCase()) {
@@ -150,9 +138,9 @@ const getSocialIcon = (platform: string) => {
             <div class="container container-medium reveal-fade">
                 <div class="header-meta-group">
                     <div class="meta-left">
-                        <div class="category-indicator">
+                        <div class="category-indicator" style={`--cat-color: ${categoryColor}`}>
                             <CategoryIcon class="icon icon-xs" />
-                            <span>{post.category.toUpperCase()}</span>
+                            <span>{categoryLabel}</span>
                         </div>
                         <div class="date-indicator">
                             <Calendar class="icon icon-xs" />
@@ -479,8 +467,8 @@ const getSocialIcon = (platform: string) => {
     }
 
     .category-indicator {
-        color: var(--accent-primary);
-        background: var(--accent-soft);
+        color: var(--cat-color);
+        background: color-mix(in srgb, var(--cat-color), transparent 85%);
         padding: 0.4rem 1rem;
         border-radius: 8px;
         font-size: 0.8rem;

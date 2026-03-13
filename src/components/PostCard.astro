@@ -7,24 +7,13 @@ import {
     Gamepad2,
     MessageCircle,
 } from "lucide-astro";
-import { getMediaUrl, type StrapiPost } from "../lib/strapi";
+import { getMediaUrl, type StrapiPost, getCategoryInfo } from "../lib/strapi";
 
 interface Props {
     post: StrapiPost;
 }
 
 const { post } = Astro.props;
-
-const getCategoryInfo = (cat: string) => {
-    switch (cat) {
-        case "tech":
-            return { icon: Code2, color: "#3b82f6", label: "技術・開発" };
-        case "game":
-            return { icon: Gamepad2, color: "#10b981", label: "ゲーム" };
-        default:
-            return { icon: MessageCircle, color: "#f59e0b", label: "雑談" };
-    }
-};
 
 const { icon: Icon, color, label } = getCategoryInfo(post.category);
 

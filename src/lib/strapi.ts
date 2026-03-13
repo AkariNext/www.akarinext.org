@@ -12,6 +12,7 @@ import type {
   StrapiAnnouncement,
   StrapiGameServer,
 } from './cms-types';
+import { Code2, Gamepad2, MessageCircle } from "lucide-astro";
 
 const STRAPI_URL = (import.meta.env.PUBLIC_STRAPI_URL || 'http://localhost:1337').replace(/\/$/, '');
 
@@ -126,6 +127,20 @@ export const strapiClient = {
       return data.data;
     },
   }),
+};
+
+/**
+ * カテゴリー情報を取得
+ */
+export const getCategoryInfo = (cat: string) => {
+  switch (cat?.toLowerCase()) {
+    case "tech":
+      return { icon: Code2, color: "#3b82f6", label: "技術・開発" };
+    case "game":
+      return { icon: Gamepad2, color: "#10b981", label: "ゲーム" };
+    default:
+      return { icon: MessageCircle, color: "#f59e0b", label: "雑談" };
+  }
 };
 
 export type {
