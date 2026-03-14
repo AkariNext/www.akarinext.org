@@ -12,7 +12,7 @@ export default {
       // 'he',
       // 'id',
       // 'it',
-      // 'ja',
+      'ja',
       // 'ko',
       // 'ms',
       // 'nl',
