@@ -18,6 +18,9 @@ Dokploy のアプリ設定で **Environment Variables** に以下を追加する
 | `ENCRYPTION_KEY` | ✅ | ランダム文字列 |
 | `DATABASE_URL` | ✅ | Postgres の接続文字列。例: `postgres://user:password@postgres:5432/strapi`（Dokploy で Postgres をリンクした場合はサービス名をホストに） |
 
+**アップロードの永続化（Docker / Dokploy）:** コンテナ再作成でアップロードが消えないよう、`/app/public/uploads` をボリュームでマウントすること。Dokploy なら「Volumes」でコンテナパス `/app/public/uploads` にボリュームまたはホストパスを割り当てる。  
+**注意:** ボリュームは初期状態で root 所有になりがちで、`USER node` のままだと `EACCES` になります。この Dockerfile は起動時（entrypoint）に root で `uploads/.tmp/.cache` を `chown` してから node に降ろすため、通常は追加対応不要です（ただし Dokploy 側でユーザーを強制的に変更している場合は別途権限調整が必要）。
+
 **秘密鍵の一括生成例（PowerShell）:**
 
 ```powershell

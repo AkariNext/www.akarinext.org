@@ -21,6 +21,7 @@ export interface StrapiSetting {
 
 export interface StrapiGame {
   id: number;
+  documentId?: string;
   name: string;
   slug: string;
   description?: string | null;
@@ -49,16 +50,29 @@ export interface StrapiUser {
 /** 互換用エイリアス（作者 = User） */
 export type StrapiAuthor = StrapiUser;
 
+export interface StrapiTag {
+  id: number;
+  documentId?: string;
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface StrapiPost {
   id: number;
+  documentId?: string;
   title: string;
   slug?: string | null;
   content?: string | null;
   author?: StrapiUser | null;
   published_date?: string | null;
   category: string;
-  tags?: { tag?: string }[] | null;
+  tags?: StrapiTag[] | null;
+
   image?: StrapiMedia | null;
+  is_spoiler?: boolean;
+  spoiler_warning?: string | null;
   publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -66,6 +80,7 @@ export interface StrapiPost {
 
 export interface StrapiAnnouncement {
   id: number;
+  documentId?: string;
   title: string;
   content?: string | null;
   published_date?: string | null;
@@ -76,6 +91,7 @@ export interface StrapiAnnouncement {
 
 export interface StrapiGameServer {
   id: number;
+  documentId?: string;
   name: string;
   type: 'minecraft' | 'web' | 'other';
   ip: string;

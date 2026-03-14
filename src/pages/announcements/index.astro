@@ -1,8 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { strapiClient, type StrapiAnnouncement } from "../../lib/strapi";
-import { processContentHtml } from "../../lib/content";
-import { lexicalToHtml } from "../../lib/richtext";
+import { markdownToHtml } from "../../lib/richtext";
 import { Megaphone, Calendar, Clock, BellRing, Sparkles } from "lucide-astro";
 
 export const prerender = false;
@@ -23,13 +22,7 @@ try {
         announcements.map(async (ann) => {
             let content = "";
             if (ann.content) {
-                try {
-                    const parsed = typeof ann.content === "string" ? JSON.parse(ann.content) as unknown : ann.content;
-                    const rawHtml = await lexicalToHtml(parsed);
-                    content = await processContentHtml(rawHtml);
-                } catch {
-                    content = await processContentHtml(String(ann.content));
-                }
+                content = await markdownToHtml(ann.content);
             }
             return { ...ann, processedContent: content };
         })

@@ -1,8 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { strapiClient, getMediaUrl, type StrapiPost } from "../../lib/strapi";
-import { processContentHtml } from "../../lib/content";
-import { lexicalToHtml } from "../../lib/richtext";
+import { strapiClient, getMediaUrl, getCategoryInfo, type StrapiPost } from "../../lib/strapi";
+import { markdownToHtml } from "../../lib/richtext";
 import {
     Calendar,
     User,
@@ -19,6 +18,7 @@ import {
     Twitch,
     Youtube,
     Shield,
+    Eye,
 } from "lucide-astro";
 
 export const prerender = false;
@@ -35,16 +35,35 @@ let authorSocials: any[] = [];
 let processedContent = "";
 
 try {
-    const isNumeric = /^\d+$/.test(slug || "");
+    const routeValue = (slug || "").trim();
+    const isNumeric = /^\d+$/.test(routeValue);
     let posts: StrapiPost[] = [];
-    if (isNumeric) {
-        const one = await strapiClient.items<StrapiPost>("posts").readOne(parseInt(slug!, 10));
-        posts = one ? [one] : [];
-    } else {
-        posts = await strapiClient.items<StrapiPost>("posts").readByQuery({ limit: 1, where: { slug: { equals: slug } } });
+
+    if (routeValue) {
+        posts = await strapiClient.items<StrapiPost>("posts").readByQuery({
+            limit: 1,
+            where: { slug: { equals: routeValue } },
+        });
+
+        if (posts.length === 0) {
+            posts = await strapiClient.items<StrapiPost>("posts").readByQuery({
+                limit: 1,
+                where: { documentId: { equals: routeValue } },
+            });
+        }
+
+        if (posts.length === 0 && isNumeric) {
+            posts = await strapiClient.items<StrapiPost>("posts").readByQuery({
+                limit: 1,
+                where: { id: { equals: parseInt(routeValue, 10) } },
+            });
+        }
     }
+
     post = posts[0] || null;
-    console.log(`[slug.astro] Fetched post: ${post?.id} - ${post?.slug}`);
+    console.log(`[slug.astro] Fetched post: ${post?.documentId || post?.id} - ${post?.slug}`);
+
+
 
     if (post) {
         // Author Handling
@@ -58,20 +77,9 @@ try {
             authorSocials = post.author.social_links || [];
         }
 
-        // Content Processing (Strapi richtext is string; migration may store Lexical JSON string)
+        // Content Processing (Strapi richtext field is Markdown)
         if (post.content) {
-            let rawHtml: string;
-            if (typeof post.content === "string") {
-                try {
-                    const parsed = JSON.parse(post.content) as unknown;
-                    rawHtml = await lexicalToHtml(parsed);
-                } catch {
-                    rawHtml = post.content;
-                }
-            } else {
-                rawHtml = await lexicalToHtml(post.content as unknown);
-            }
-            processedContent = await processContentHtml(rawHtml);
+            processedContent = await markdownToHtml(post.content);
         }
     }
 } catch (e) {
@@ -93,19 +101,7 @@ const formatDate = (date: string) => {
     });
 };
 
-const getCategoryIcon = (cat: string) => {
-    switch (cat) {
-        case "tech":
-            return Code2;
-        case "game":
-            return Gamepad2;
-        case "misc":
-            return MessageCircle;
-        default:
-            return MessageCircle;
-    }
-};
-const CategoryIcon = getCategoryIcon(post.category);
+const { icon: CategoryIcon, label: categoryLabel, color: categoryColor } = getCategoryInfo(post.category);
 
 const getSocialIcon = (platform: string) => {
     switch (platform?.toLowerCase()) {
@@ -129,9 +125,11 @@ const getSocialIcon = (platform: string) => {
 
 <Layout
     title={post.title}
-    description={typeof post.content === "string"
-        ? post.content.replace(/<[^>]*>/g, "").substring(0, 160)
-        : ""}
+    description={post.is_spoiler 
+        ? (post.spoiler_warning || "この記事にはネタバレが含まれています。")
+        : (typeof post.content === "string"
+            ? post.content.replace(/<[^>]*>/g, "").substring(0, 160)
+            : "")}
     image={imageUrl || undefined}
 >
     <!-- Reading Progress Bar -->
@@ -144,9 +142,9 @@ const getSocialIcon = (platform: string) => {
             <div class="container container-medium reveal-fade">
                 <div class="header-meta-group">
                     <div class="meta-left">
-                        <div class="category-indicator">
+                        <div class="category-indicator" style={`--cat-color: ${categoryColor}`}>
                             <CategoryIcon class="icon icon-xs" />
-                            <span>{post.category.toUpperCase()}</span>
+                            <span>{categoryLabel}</span>
                         </div>
                         <div class="date-indicator">
                             <Calendar class="icon icon-xs" />
@@ -212,8 +210,25 @@ const getSocialIcon = (platform: string) => {
         </header>
 
         <div class="container container-medium content-container">
-            <div class="glass-card content-card">
-                <div class="prose" set:html={processedContent}></div>
+                <div class={`prose-wrapper ${post.is_spoiler ? 'is-blurred' : ''}`} id="post-content-wrapper">
+                    <div class="prose" set:html={processedContent}></div>
+                </div>
+
+                {post.is_spoiler && (
+                    <div class="spoiler-overlay" id="spoiler-overlay">
+                        <div class="spoiler-content">
+                            <Shield class="icon-lg text-yellow mb-4" />
+                            <h3 class="spoiler-title">ネタバレ注意</h3>
+                            <p class="spoiler-text">
+                                {post.spoiler_warning || "この記事にはネタバレが含まれています。"}
+                            </p>
+                            <button class="btn-reveal-spoiler" id="btn-reveal-spoiler">
+                                <Eye class="icon-xs" />
+                                <span>内容を表示する</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {
                     post.tags && post.tags.length > 0 && (
@@ -222,11 +237,11 @@ const getSocialIcon = (platform: string) => {
                             <div class="tags-list">
                                 {post.tags.map((tagObj) => (
                                     <a
-                                        href={`/posts?tag=${tagObj.tag}`}
+                                        href={`/posts?tag=${tagObj.slug}`}
                                         class="tag-premium"
                                     >
                                         <TagIcon class="icon-tag" />
-                                        <span>{tagObj.tag}</span>
+                                        <span>{tagObj.name}</span>
                                     </a>
                                 ))}
                             </div>
@@ -364,6 +379,21 @@ const getSocialIcon = (platform: string) => {
         document
             .querySelectorAll(".reveal-fade")
             .forEach((el) => observer.observe(el));
+
+        // Spoiler Logic
+        const btnReveal = document.getElementById("btn-reveal-spoiler");
+        const contentWrapper = document.getElementById("post-content-wrapper");
+        const spoilerOverlay = document.getElementById("spoiler-overlay");
+
+        if (btnReveal && contentWrapper && spoilerOverlay) {
+            // Auto-scroll to spoiler warning
+            spoilerOverlay.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            btnReveal.addEventListener("click", () => {
+                contentWrapper.classList.remove("is-blurred");
+                spoilerOverlay.style.display = "none";
+            });
+        }
     </script>
 </Layout>
 
@@ -441,8 +471,8 @@ const getSocialIcon = (platform: string) => {
     }
 
     .category-indicator {
-        color: var(--accent-primary);
-        background: var(--accent-soft);
+        color: var(--cat-color);
+        background: color-mix(in srgb, var(--cat-color), transparent 85%);
         padding: 0.4rem 1rem;
         border-radius: 8px;
         font-size: 0.8rem;
@@ -570,6 +600,85 @@ const getSocialIcon = (platform: string) => {
         background: var(--bg-surface-solid);
         border-radius: 24px;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .prose-wrapper.is-blurred {
+        filter: blur(20px);
+        pointer-events: none;
+        user-select: none;
+        opacity: 0.3;
+        transition: all 0.5s ease;
+    }
+
+    .spoiler-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(var(--bg-rgb), 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 50;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .spoiler-content {
+        max-width: 400px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: var(--bg-surface);
+        padding: 3rem;
+        border-radius: 24px;
+        border: 1px solid var(--border-glass);
+        box-shadow: var(--shadow-hover);
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    .spoiler-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        color: var(--text-main);
+    }
+
+    .spoiler-text {
+        font-size: 1rem;
+        color: var(--text-muted);
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+
+    .btn-reveal-spoiler {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.8rem 2rem;
+        background: var(--accent-primary);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.2, 1, 0.2, 1);
+        box-shadow: 0 10px 20px -5px rgba(14, 165, 233, 0.4);
+    }
+
+    .btn-reveal-spoiler:hover {
+        transform: translateY(-3px);
+        background: var(--accent-secondary);
+        box-shadow: 0 15px 30px -5px rgba(14, 165, 233, 0.6);
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
     }
 
     :global([data-theme="dark"]) .content-card {

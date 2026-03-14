@@ -1,17 +1,21 @@
 ---
 import { fetchOgp } from '../lib/ogp';
+import { getYouTubeEmbedUrl } from '../lib/youtube';
 
 interface Props {
   url: string;
 }
 
 const { url } = Astro.props;
+const youtubeEmbedUrl = getYouTubeEmbedUrl(url);
 
 let data = null;
-try {
-  data = await fetchOgp(url);
-} catch (e) {
-  // Silent fail
+if (!youtubeEmbedUrl) {
+  try {
+    data = await fetchOgp(url);
+  } catch (e) {
+    // Silent fail
+  }
 }
 
 const title = data?.ogTitle || data?.twitterTitle || url;
@@ -22,7 +26,17 @@ const siteName = data?.ogSiteName || new URL(url).hostname;
 const hasData = !!(data && (data.ogTitle || data.ogDescription));
 ---
 
-{hasData ? (
+{youtubeEmbedUrl ? (
+  <div class="link-card-youtube">
+      <iframe
+        src={youtubeEmbedUrl}
+        title="YouTube video player"
+        loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen
+      ></iframe>
+  </div>
+) : hasData ? (
   <a href={url} target="_blank" rel="noopener noreferrer" class="link-card-rich">
       <div class="link-card-text">
           <div class="link-card-meta">

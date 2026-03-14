@@ -10,7 +10,7 @@ const INFLUX_URL = process.env.INFLUX_URL || 'http://localhost:8086';
 const INFLUX_TOKEN = process.env.INFLUX_TOKEN;
 const INFLUX_ORG = process.env.INFLUX_ORG || 'akarinext';
 const INFLUX_BUCKET = process.env.INFLUX_BUCKET || 'server_metrics';
-const PAYLOAD_URL = process.env.PUBLIC_PAYLOAD_URL || 'http://localhost:3000';
+const STRAPI_URL = (process.env.PUBLIC_STRAPI_URL || 'http://localhost:1337').replace(/\/$/, '');
 
 let writeApi: any;
 
@@ -52,10 +52,10 @@ async function monitorServers() {
     if (!writeApi) return; // Skip if no write API
 
     try {
-        const res = await fetch(`${PAYLOAD_URL}/api/game-servers?limit=100&where[status][equals]=published`);
-        if (!res.ok) throw new Error(`Payload Error: ${res.status}`);
+        const res = await fetch(`${STRAPI_URL}/api/game-servers?pagination[pageSize]=100&populate=*`);
+        if (!res.ok) throw new Error(`Strapi Error: ${res.status}`);
         const data = await res.json() as any;
-        const servers = data.docs as MonitoredServer[];
+        const servers = data.data as MonitoredServer[];
 
         if (!servers || servers.length === 0) {
             console.log(`[${new Date().toISOString()}] No servers found to monitor.`);
@@ -113,7 +113,7 @@ async function monitorServers() {
 }
 
 // Start only if configured
-console.log("Starting server monitor agent...", INFLUX_URL, PAYLOAD_URL);
+console.log("Starting server monitor agent...", INFLUX_URL, STRAPI_URL);
 if (writeApi) {
     monitorServers();
     setInterval(monitorServers, 10000);

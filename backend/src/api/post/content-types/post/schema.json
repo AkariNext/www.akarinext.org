@@ -4,8 +4,7 @@
   "info": {
     "singularName": "post",
     "pluralName": "posts",
-    "displayName": "Post",
-    "description": ""
+    "displayName": "Post"
   },
   "options": {
     "draftAndPublish": true
@@ -25,26 +24,40 @@
     "author": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::users-permissions.user"
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "posts"
     },
     "published_date": {
       "type": "date"
     },
     "category": {
       "type": "enumeration",
-      "enum": ["tech", "game", "misc"],
-      "default": "game",
-      "required": true
-    },
-    "tags": {
-      "type": "json",
-      "description": "Array of { tag: string }"
+      "required": true,
+      "enum": [
+        "tech",
+        "game",
+        "misc"
+      ]
     },
     "image": {
       "type": "media",
       "multiple": false,
       "required": false,
-      "allowedTypes": ["images"]
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "is_spoiler": {
+      "type": "boolean"
+    },
+    "spoiler_warning": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::tag.tag",
+      "inversedBy": "posts"
     }
   }
 }

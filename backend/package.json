@@ -17,6 +17,7 @@
     "generate:env-keys": "node scripts/generate-env-keys.mjs"
   },
   "dependencies": {
+    "@strapi/client": "^1.0.0",
     "@strapi/plugin-cloud": "5.39.0",
     "@strapi/plugin-users-permissions": "5.39.0",
     "@strapi/strapi": "5.39.0",

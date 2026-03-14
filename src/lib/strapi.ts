@@ -12,14 +12,16 @@ import type {
   StrapiAnnouncement,
   StrapiGameServer,
 } from './cms-types';
+import { Code2, Gamepad2, MessageCircle } from "lucide-astro";
 
 const STRAPI_URL = (import.meta.env.PUBLIC_STRAPI_URL || 'http://localhost:1337').replace(/\/$/, '');
+
 
 function buildStrapiQuery(params: {
   sort?: string | string[];
   limit?: number;
   where?: Record<string, unknown>;
-  populate?: string | string[] | Record<string, unknown>;
+  apiId?: string;
 }): string {
   const search = new URLSearchParams();
   if (params.sort) {
@@ -30,7 +32,29 @@ function buildStrapiQuery(params: {
     });
   }
   if (params.limit != null) search.set('pagination[pageSize]', String(params.limit));
-  search.set('populate', '*');
+
+  const apiId = params.apiId ?? '';
+  if (apiId === 'posts') {
+    // author の avatar まで展開、image/tags はデフォルトで返る
+    search.set('populate[author][populate]', '*');
+    search.set('populate[image]', 'true');
+    search.set('populate[tags]', 'true');
+  } else if (apiId === 'announcements') {
+
+    // announcements には author/image フィールドが存在しないため populate なし
+  } else if (apiId === 'games') {
+    search.set('populate[cover_image]', 'true');
+  } else if (apiId === 'game-servers') {
+    search.set('populate', '*');
+  } else if (apiId === 'users') {
+    // コンポーネント内のリレーション・ゲーム画像まで展開
+    search.set('populate[avatar]', 'true');
+    search.set('populate[social_links]', 'true');
+    search.set('populate[playing_games][populate][game][populate][cover_image]', 'true');
+    search.set('populate[finished_games][populate][game][populate][cover_image]', 'true');
+  } else {
+    search.set('populate', '*');
+  }
   if (params.where && Object.keys(params.where).length > 0) {
     for (const [key, val] of Object.entries(params.where)) {
       if (val && typeof val === 'object') {
@@ -84,17 +108,19 @@ export const strapiClient = {
     } = {}): Promise<T[]> => {
       const apiId = collectionMap[collection] || collection;
       const where = { ...(query.where || {}) };
-      if (['posts', 'announcements', 'game-servers'].includes(apiId) && apiId !== 'users') {
+      // posts / announcements は draftAndPublish=true のため公開済みのみに絞る
+      // game-servers は draftAndPublish=false のためフィルタ不要
+      if (['posts', 'announcements'].includes(apiId)) {
         Object.assign(where, publishedFilter());
       }
-      const q = buildStrapiQuery({ ...query, where });
+      const q = buildStrapiQuery({ ...query, where, apiId });
+      // /api/users (users-permissions) はフラット配列を返す。他は { data: [...] } 形式。
+      if (apiId === 'users') {
+        const data = await strapiFetch<T[]>(`/api/${apiId}`, q);
+        return Array.isArray(data) ? data : [];
+      }
       const data = await strapiFetch<{ data: T[] }>(`/api/${apiId}`, q);
       return Array.isArray(data.data) ? data.data : [];
-    },
-    readOne: async (id: number): Promise<T> => {
-      const apiId = collectionMap[collection] || collection;
-      const data = await strapiFetch<{ data: T }>(`/api/${apiId}/${id}`);
-      return data.data;
     },
   }),
   singleton: <T>(slug: string) => ({
@@ -104,6 +130,20 @@ export const strapiClient = {
       return data.data;
     },
   }),
+};
+
+/**
+ * カテゴリー情報を取得
+ */
+export const getCategoryInfo = (cat: string) => {
+  switch (cat?.toLowerCase()) {
+    case "tech":
+      return { icon: Code2, color: "#3b82f6", label: "技術・開発" };
+    case "game":
+      return { icon: Gamepad2, color: "#10b981", label: "ゲーム" };
+    default:
+      return { icon: MessageCircle, color: "#f59e0b", label: "雑談" };
+  }
 };
 
 export type {

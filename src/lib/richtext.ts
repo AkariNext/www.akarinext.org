@@ -1,139 +1,108 @@
 
-import type { SerializedEditorState, SerializedLexicalNode } from 'lexical';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
+import remarkRehype from 'remark-rehype';
+import rehypeRaw from 'rehype-raw';
+import rehypeExternalLinks from 'rehype-external-links';
+import rehypeStringify from 'rehype-stringify';
+import { visit } from 'unist-util-visit';
+import { h } from 'hastscript';
+import { fetchOgp } from './ogp';
+import { getYouTubeEmbedUrl } from './youtube';
 
-/**
- * Basic Lexical to HTML converter for Astro
- * 
- * Supports standard nodes:
- * - root
- * - paragraph
- * - heading
- * - text (bold, italic, underline, strikethrough, code)
- * - link
- * - list (unordered, ordered)
- * - listitem
- * - quote
- * - upload (image) - basic support
- */
-export async function lexicalToHtml(editorState: SerializedEditorState | null | undefined): Promise<string> {
-    if (!editorState?.root) return '';
+function rehypeOgpLinkCards() {
+    return async (tree: any): Promise<void> => {
+        const nodesToProcess: Array<{ node: any; parent: any; href: string }> = [];
 
-    return serialize(editorState.root.children);
-}
+        visit(tree, 'element', (node: any, _index: any, parent: any) => {
+            if (node.tagName !== 'p' || !parent) return;
 
-function serialize(children: SerializedLexicalNode[]): string {
-    return children
-        .map((node: any) => {
-            if (node.type === 'text') {
-                let text = escapeHTML(node.text);
-
-                if (node.format & 1) text = `<strong>${text}</strong>`;
-                if (node.format & 2) text = `<em>${text}</em>`;
-                if (node.format & 8) text = `<s>${text}</s>`; // Adjusted bitmask if needed, lexical usually uses 8 for strikethrough, 4 for underline
-                if (node.format & 4) text = `<u>${text}</u>`;
-                if (node.format & 16) text = `<code>${text}</code>`;
-
-                return text;
+            // 空白テキストノードを除いた実質的な子要素を取得
+            const meaningfulChildren = node.children.filter(
+                (c: any) => !(c.type === 'text' && c.value.trim() === '')
+            );
+            if (
+                meaningfulChildren.length === 1 &&
+                meaningfulChildren[0].type === 'element' &&
+                meaningfulChildren[0].tagName === 'a'
+            ) {
+                const anchor = meaningfulChildren[0];
+                const href = anchor.properties?.href;
+                if (href && typeof href === 'string' && href.startsWith('http')) {
+                    nodesToProcess.push({ node, parent, href });
+                }
             }
+        });
 
-            if (!node) return '';
+        await Promise.all(
+            nodesToProcess.map(async ({ node, parent, href }) => {
+                try {
+                    const youtubeEmbedUrl = getYouTubeEmbedUrl(href);
+                    if (youtubeEmbedUrl) {
+                        const playerNode = h('div.link-card-youtube', [
+                            h('iframe', {
+                                src: youtubeEmbedUrl,
+                                title: 'YouTube video player',
+                                loading: 'lazy',
+                                allow:
+                                    'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
+                                allowFullScreen: true,
+                            }),
+                        ]);
 
-            const content = node.children ? serialize(node.children) : '';
-            const alignment = node.format && ['left', 'center', 'right', 'justify', 'start', 'end'].includes(node.format)
-                ? `text-align: ${node.format};`
-                : '';
-            const indentation = node.indent && node.indent > 0
-                ? `padding-left: ${node.indent * 40}px;`
-                : '';
-
-            const style = (alignment || indentation) ? ` style="${alignment}${indentation}"` : '';
-
-            switch (node.type) {
-                case 'paragraph':
-                    // Check for empty paragraphs
-                    if (!content || content.trim() === '') return `<p${style}><br></p>`;
-                    return `<p${style}>${content}</p>`;
-
-                case 'heading':
-                    const tag = node.tag || 'h1';
-                    return `<${tag}${style}>${content}</${tag}>`;
-
-                case 'list':
-                    const listTag = node.listType === 'number' ? 'ol' : 'ul';
-                    return `<${listTag}${style}>${content}</${listTag}>`;
-
-                case 'listitem':
-                    return `<li${style}>${content}</li>`;
-
-                case 'quote':
-                    return `<blockquote${style}>${content}</blockquote>`;
-
-                case 'link':
-                case 'autolink':
-                    const href = node.fields?.url || node.url;
-                    const target = node.fields?.newTab ? ' target="_blank" rel="noopener noreferrer"' : '';
-                    return `<a href="${href}"${target}>${content}</a>`;
-
-                case 'upload':
-                    // Handle uploaded images
-                    // This assumes the 'value' field contains the media object
-                    if (node.value && typeof node.value === 'object') {
-                        const { url, alt, width, height } = node.value;
-                        // Resolve URL properly if it's relative
-                        const src = url?.startsWith('http') ? url : `${import.meta.env.PUBLIC_PAYLOAD_URL || ''}${url}`;
-                        const imgHtml = `<img src="${src}" alt="${alt || ''}" width="${width}" height="${height}" class="post-image" />`;
-
-                        return style ? `<div${style}>${imgHtml}</div>` : imgHtml;
+                        const youtubeIdx = parent.children.indexOf(node);
+                        if (youtubeIdx !== -1) {
+                            parent.children.splice(youtubeIdx, 1, playerNode);
+                        }
+                        return;
                     }
-                    return '';
 
-                case 'horizontalrule':
-                    return '<hr />';
+                    const data = await fetchOgp(href);
+                    if (data && (data.ogTitle || data.ogDescription)) {
+                        const title = data.ogTitle || data.twitterTitle || href;
+                        const desc = data.ogDescription || data.twitterDescription || '';
+                        const image = data.ogImage?.[0]?.url || data.twitterImage?.[0]?.url || '';
+                        const siteName = data.ogSiteName || new URL(href).hostname;
 
-                case 'linebreak':
-                    return '<br />';
+                        const cardNode = h('a.link-card-rich', { href, target: '_blank', rel: 'noopener noreferrer' }, [
+                            h('div.link-card-text', [
+                                h('div.link-card-meta', [
+                                    ...(image ? [h('img.link-card-favicon', { src: image, alt: '' })] : []),
+                                    h('span', siteName),
+                                ]),
+                                h('div.link-card-title', title),
+                                ...(desc ? [h('div.link-card-desc', desc)] : []),
+                            ]),
+                            ...(image ? [h('div.link-card-image', { style: `background-image: url('${image}')` })] : []),
+                        ]);
 
-                default:
-                    return content;
-            }
-        })
-        .join('');
+                        const idx = parent.children.indexOf(node);
+                        if (idx !== -1) {
+                            parent.children.splice(idx, 1, cardNode);
+                        }
+                    }
+                } catch (e) {
+                    console.error(`Failed to fetch OGP for ${href}:`, e);
+                }
+            })
+        );
+    };
 }
 
-// Simple HTML escaper
-function escapeHTML(str: string): string {
-    return str.replace(
-        /[&<>'"]/g,
-        (tag) =>
-        ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            "'": '&#39;',
-            '"': '&quot;',
-        }[tag] || tag)
-    );
+export async function markdownToHtml(content: string | null | undefined): Promise<string> {
+    if (!content) return '';
+
+    const file = await unified()
+        .use(remarkParse)
+        .use(remarkGfm)
+        .use(remarkRehype, { allowDangerousHtml: true })
+        .use(rehypeRaw)
+        .use(rehypeOgpLinkCards)
+        .use(rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] })
+        .use(rehypeStringify)
+        .process(content);
+
+    return String(file);
 }
 
-/**
- * Basic Lexical to Plain Text converter for excerpts
- */
-export function lexicalToPlainText(editorState: SerializedEditorState | null | undefined): string {
-    if (!editorState?.root) return '';
-
-    return extractText(editorState.root.children);
-}
-
-function extractText(children: SerializedLexicalNode[]): string {
-    return children
-        .map((node: any) => {
-            if (node.type === 'text') {
-                return node.text || '';
-            }
-            if (node.children) {
-                return extractText(node.children);
-            }
-            return '';
-        })
-        .join(' ');
-}
