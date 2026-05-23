@@ -270,7 +270,7 @@ a {
 	opacity: 0.95;
 	text-align: justify;
 	/* Crisp aesthetic */
-	overflow-wrap: break-word;
+	text-wrap: pretty;
 }
 
 .prose ul,
@@ -283,7 +283,6 @@ a {
 .prose li {
 	margin-bottom: 0.6rem;
 	padding-left: 0.5rem;
-	overflow-wrap: break-word;
 }
 
 .prose a {
@@ -295,7 +294,6 @@ a {
 	transition: all 0.2s;
 	padding-bottom: 1px;
 	overflow-wrap: anywhere;
-	word-break: break-word;
 }
 
 .prose a:hover {
@@ -417,7 +415,6 @@ a {
 	transition: color 0.3s ease;
 	margin-bottom: 0.25rem;
 	overflow-wrap: anywhere;
-	word-break: break-word;
 }
 
 .link-card-rich:hover .link-card-title {
@@ -434,7 +431,6 @@ a {
 	overflow: hidden;
 	opacity: 0.85;
 	overflow-wrap: anywhere;
-	word-break: break-word;
 }
 
 .link-card-youtube {
@@ -493,6 +489,7 @@ a {
 	background: var(--bg-surface-hover);
 	border-radius: var(--radius-sm);
 	font-size: 1.2rem;
+	text-wrap: pretty;
 }
 
 .prose img {
@@ -526,7 +523,7 @@ a {
 	font-size: 0.85em;
 	font-weight: 600;
 	border: 1px solid rgba(14, 165, 233, 0.15);
-	word-break: break-word;
+	overflow-wrap: anywhere;
 }
 
 [data-theme="dark"] .prose code {
@@ -574,17 +571,17 @@ a {
 	border: 1px solid var(--border-subtle);
 	text-align: left;
 	overflow-wrap: anywhere;
-	word-break: break-word;
 }
 
 .prose th {
 	background: var(--bg-surface-hover);
 	font-weight: 700;
+	text-wrap: balance;
 }
 
 .prose-wrapper,
 .content-container {
-	min-width: 0;
+	min-inline-size: 0;
 	max-width: 100%;
 }
 
