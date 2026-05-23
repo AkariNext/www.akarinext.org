@@ -236,6 +236,7 @@ a {
 	font-size: 1.05rem;
 	letter-spacing: 0.03em;
 	font-feature-settings: "palt";
+	overflow-wrap: break-word;
 }
 
 .prose>*:first-child {
@@ -269,6 +270,7 @@ a {
 	opacity: 0.95;
 	text-align: justify;
 	/* Crisp aesthetic */
+	overflow-wrap: break-word;
 }
 
 .prose ul,
@@ -281,6 +283,7 @@ a {
 .prose li {
 	margin-bottom: 0.6rem;
 	padding-left: 0.5rem;
+	overflow-wrap: break-word;
 }
 
 .prose a {
@@ -291,6 +294,8 @@ a {
 	/* Thinner underline */
 	transition: all 0.2s;
 	padding-bottom: 1px;
+	overflow-wrap: anywhere;
+	word-break: break-word;
 }
 
 .prose a:hover {
@@ -335,6 +340,7 @@ a {
 	border-bottom: 1px solid var(--border-glass) !important;
 	position: relative;
 	min-height: 140px;
+	max-width: 100%;
 	/* 固定高さを廃止し最小高さに */
 }
 
@@ -382,6 +388,8 @@ a {
 	letter-spacing: 0.05em;
 	margin-bottom: 0.5rem;
 	line-height: 1;
+	overflow-wrap: anywhere;
+	min-width: 0;
 }
 
 .link-card-favicon {
@@ -408,6 +416,8 @@ a {
 	color: var(--text-main);
 	transition: color 0.3s ease;
 	margin-bottom: 0.25rem;
+	overflow-wrap: anywhere;
+	word-break: break-word;
 }
 
 .link-card-rich:hover .link-card-title {
@@ -423,6 +433,8 @@ a {
 	-webkit-box-orient: vertical;
 	overflow: hidden;
 	opacity: 0.85;
+	overflow-wrap: anywhere;
+	word-break: break-word;
 }
 
 .link-card-youtube {
@@ -549,9 +561,11 @@ a {
 
 .prose table {
 	width: 100%;
+	max-width: 100%;
 	border-collapse: collapse;
 	margin: 2rem 0;
 	font-size: 0.95rem;
+	table-layout: fixed;
 }
 
 .prose th,
@@ -559,11 +573,19 @@ a {
 	padding: 0.75rem;
 	border: 1px solid var(--border-subtle);
 	text-align: left;
+	overflow-wrap: anywhere;
+	word-break: break-word;
 }
 
 .prose th {
 	background: var(--bg-surface-hover);
 	font-weight: 700;
+}
+
+.prose-wrapper,
+.content-container {
+	min-width: 0;
+	max-width: 100%;
 }
 
 /* Utility */
