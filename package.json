@@ -18,12 +18,12 @@
 		"start:all": "concurrently \"node ./dist/server/entry.mjs\" \"node ./dist/monitor.cjs\""
 	},
 	"dependencies": {
-		"@astrojs/node": "^9.5.3",
+		"@astrojs/node": "^10.0.0",
 		"@influxdata/influxdb-client": "^1.35.0",
 		"@lexical/headless": "^0.40.0",
 		"@lexical/html": "^0.40.0",
 		"@payloadcms/richtext-lexical": "^3.77.0",
-		"astro": "^5.17.1",
+		"astro": "^6.0.0",
 		"concurrently": "^9.2.1",
 		"hastscript": "^9.0.1",
 		"lexical": "^0.40.0",
