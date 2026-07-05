@@ -1,6 +1,6 @@
 # Strapi backend (Node 20 LTS)
 # Strapi 公式の Docker 例に寄せた構成（/opt 相当を /app に）
-FROM node:20-alpine AS base
+FROM node:26-alpine AS base
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 RUN corepack enable && corepack prepare pnpm@latest --activate
