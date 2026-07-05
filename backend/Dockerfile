@@ -3,7 +3,7 @@
 FROM node:26-alpine AS base
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN npm install -g pnpm
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
