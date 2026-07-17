@@ -6,8 +6,8 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy package files
-COPY package.json pnpm-lock.yaml* ./
+# Copy package files（pnpm-workspace.yaml の onlyBuiltDependencies を効かせるため同梱）
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
@@ -31,7 +31,7 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 # Copy necessary files from builder
-COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
+COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/dist ./dist
 # Only install production dependencies
 # Only install production dependencies
