@@ -8,10 +8,10 @@ import {
     MessageCircle,
     Shield,
 } from "lucide-astro";
-import { getMediaUrl, type StrapiPost, getCategoryInfo } from "../lib/strapi";
+import { getMediaUrl, type CmsPost, getCategoryInfo } from "../lib/cms";
 
 interface Props {
-    post: StrapiPost;
+    post: CmsPost;
 }
 
 const { post } = Astro.props;
@@ -44,7 +44,7 @@ const authorAvatar =
     typeof post.author === "object" && post.author ? post.author.avatar : null;
 const authorAvatarUrl = getMediaUrl(authorAvatar);
 const postImageUrl = getMediaUrl(post.image);
-const postPathSegment = post.slug || post.documentId || String(post.id);
+const postPathSegment = post.slug || post.id;
 ---
 
 <article class="post-card-premium">

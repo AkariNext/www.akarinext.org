@@ -1,6 +1,6 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { strapiClient, type StrapiPost } from "../../lib/strapi";
+import { cmsClient, type CmsPost } from "../../lib/cms";
 
 import {
     Image,
@@ -13,12 +13,12 @@ import {
 } from "lucide-astro";
 import PostCard from "../../components/PostCard.astro";
 
-let posts: StrapiPost[] = [];
+let posts: CmsPost[] = [];
 
 const tag = Astro.url.searchParams.get("tag");
 
 try {
-    const fetchedPosts = await strapiClient.items<StrapiPost>("posts").readByQuery({
+    const fetchedPosts = await cmsClient.items<CmsPost>("posts").readByQuery({
         sort: ["-published_date", "-createdAt", "-id"],
         limit: 100,
     });

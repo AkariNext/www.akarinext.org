@@ -10,7 +10,7 @@ import {
   Moon,
   BookOpen,
 } from "lucide-astro";
-import { strapiClient, getMediaUrl, type StrapiSetting } from "../lib/strapi";
+import { cmsClient, getMediaUrl, type CmsSettings } from "../lib/cms";
 
 interface Props {
   title: string;
@@ -25,7 +25,7 @@ let globalSettings = {
 };
 
 try {
-  const settings = await strapiClient.singleton<StrapiSetting>("settings").read();
+  const settings = await cmsClient.singleton<CmsSettings>("settings").read();
 
   if (settings) {
     if (settings.site_title) globalSettings.site_title = settings.site_title;

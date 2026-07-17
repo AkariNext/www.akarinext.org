@@ -16,8 +16,8 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Build-time env (override with Dokploy env vars)
-ARG PUBLIC_STRAPI_URL
-ENV PUBLIC_STRAPI_URL=${PUBLIC_STRAPI_URL}
+ARG PUBLIC_POCKETBASE_URL
+ENV PUBLIC_POCKETBASE_URL=${PUBLIC_POCKETBASE_URL}
 
 RUN pnpm run build
 RUN pnpm run build:monitor
@@ -42,10 +42,10 @@ RUN mkdir -p /app/.cache
 VOLUME ["/app/.cache"]
 
 # Expose Astro's default port (or Dokploy's PORT env)
-ARG PUBLIC_STRAPI_URL
+ARG PUBLIC_POCKETBASE_URL
 ENV HOST=0.0.0.0
 ENV PORT=4321
-ENV PUBLIC_STRAPI_URL=${PUBLIC_STRAPI_URL}
+ENV PUBLIC_POCKETBASE_URL=${PUBLIC_POCKETBASE_URL}
 EXPOSE 4321
 
 # Start SSR server and monitor concurrently

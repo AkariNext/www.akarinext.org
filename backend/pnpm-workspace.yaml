@@ -1,7 +1,0 @@
-# pnpm にビルドスクリプトの実行を許可する依存（これがないと CI で ERR_PNPM_IGNORED_BUILDS になる）
-allowBuilds:
-  "@swc/core": true
-  better-sqlite3: true
-  core-js-pure: true
-  esbuild: true
-  sharp: true
