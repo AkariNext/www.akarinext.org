@@ -9,14 +9,15 @@ WORKDIR /app
 
 # --- production dependencies only (runner に渡す node_modules) ---
 FROM base AS prod-deps
-RUN apk add --no-cache vips-dev
-COPY package.json pnpm-lock.yaml ./
+# build-base 等は better-sqlite3 のプリビルドバイナリが無い場合のソースビルド用
+RUN apk add --no-cache build-base python3 vips-dev
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 
 # --- build stage (admin build 等) ---
 FROM base AS build
-RUN apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev vips-dev
-COPY package.json pnpm-lock.yaml ./
+RUN apk add --no-cache build-base gcc autoconf automake python3 zlib-dev libpng-dev vips-dev
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm run build
