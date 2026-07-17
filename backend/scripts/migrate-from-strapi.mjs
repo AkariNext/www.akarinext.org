@@ -79,6 +79,16 @@ async function pbFindFirst(collection, filter) {
 	return data.items?.[0] || null;
 }
 
+/** 先頭バイトから実際の画像形式を判定する（拡張子や Content-Type は信用しない） */
+function sniffImageType(buf) {
+	if (buf[0] === 0xff && buf[1] === 0xd8) return "image/jpeg";
+	if (buf.subarray(0, 4).toString("hex") === "89504e47") return "image/png";
+	if (buf.subarray(8, 12).toString() === "WEBP") return "image/webp";
+	if (buf.subarray(0, 4).toString() === "GIF8") return "image/gif";
+	if (buf.subarray(0, 128).toString().includes("<svg")) return "image/svg+xml";
+	return null; // AVIF 等、PocketBase 側の許可リスト外
+}
+
 /** Strapi のメディアをダウンロードして FormData に追加する */
 async function appendMedia(form, field, media) {
 	if (!media?.url) return;
@@ -88,7 +98,17 @@ async function appendMedia(form, field, media) {
 	try {
 		const res = await fetch(url);
 		if (!res.ok) throw new Error(`HTTP ${res.status}`);
-		const blob = await res.blob();
+		const buf = Buffer.from(await res.arrayBuffer());
+		// 拡張子と中身が食い違うファイル（.jpg なのに AVIF 等）があると
+		// PocketBase の mime 検証で移行全体が落ちるため、中身で判定して弾く
+		const mime = sniffImageType(buf);
+		if (!mime) {
+			console.warn(
+				`  ! 非対応の画像形式のためスキップ（手動で変換して登録すること）: ${url}`,
+			);
+			return;
+		}
+		const blob = new Blob([buf], { type: mime });
 		form.append(field, blob, media.name || url.split("/").pop() || "file");
 	} catch (err) {
 		console.warn(`  ! メディアの取得に失敗（スキップ）: ${url}`, err.message);

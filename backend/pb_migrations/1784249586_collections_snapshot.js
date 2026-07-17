@@ -1348,6 +1348,27 @@ migrate((app) => {
           "type": "file"
         },
         {
+          "help": "本文（content）から参照されるインライン画像置き場",
+          "hidden": false,
+          "id": "file2483188338",
+          "maxSelect": 99,
+          "maxSize": 0,
+          "mimeTypes": [
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/gif",
+            "image/svg+xml"
+          ],
+          "name": "attachments",
+          "presentable": false,
+          "protected": false,
+          "required": false,
+          "system": false,
+          "thumbs": null,
+          "type": "file"
+        },
+        {
           "help": "",
           "hidden": false,
           "id": "bool3891428194",
