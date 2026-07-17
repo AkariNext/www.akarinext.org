@@ -1,32 +1,32 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import {
-    strapiClient,
+    cmsClient,
     getMediaUrl,
-    type StrapiGame,
-    type StrapiAuthor,
-} from "../../lib/strapi";
+    type CmsGame,
+    type CmsMember,
+} from "../../lib/cms";
 import { Users, Gamepad2, Search } from "lucide-astro";
 
 // Data Handling
-let games: StrapiGame[] = [];
+let games: CmsGame[] = [];
 interface PlayerData {
-    user: StrapiAuthor;
+    user: CmsMember;
     skill_level?: string;
     impression?: string;
     recruitment?: string;
 }
-const playersByGame = new Map<number, PlayerData[]>();
+const playersByGame = new Map<string, PlayerData[]>();
 
 try {
-    const gamesRes = await strapiClient.items<StrapiGame>("games").readByQuery({
+    const gamesRes = await cmsClient.items<CmsGame>("games").readByQuery({
         limit: 100,
         sort: ["name"],
     });
     games = gamesRes;
 
-    const authorsRes = await strapiClient
-        .items<StrapiAuthor>("authors")
+    const authorsRes = await cmsClient
+        .items<CmsMember>("authors")
         .readByQuery({ limit: 100 });
     const authors = authorsRes;
 

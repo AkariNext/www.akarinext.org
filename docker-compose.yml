@@ -1,17 +1,20 @@
-# Podman: podman compose up -d
-# Strapi (backend): DATABASE_URL=postgres://postgres:akarinext_password@localhost:5432/akarinext_backend
+# ローカル開発用: podman compose up -d / docker compose up -d
+# CMS (PocketBase): http://localhost:8090 （管理画面は /_/）
+# 初回はスーパーユーザーを作成すること:
+#   docker compose exec pocketbase /pb/pocketbase superuser upsert admin@example.com <password> --dir /pb/pb_data
 services:
-  postgres:
-    image: postgres:18-alpine
+  pocketbase:
+    build: ./backend
     restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: akarinext_password
-      POSTGRES_DB: akarinext_backend
     ports:
-      - "5432:5432"
+      - "8090:8090"
+    environment:
+      # Discord 通知（任意）
+      DISCORD_WEBHOOK_POSTS: ""
+      DISCORD_WEBHOOK_ANNOUNCEMENTS: ""
+      PUBLIC_SITE_URL: "http://localhost:4321"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pocketbase_data:/pb/pb_data
 
   influxdb:
     image: influxdb:2.7
@@ -27,5 +30,5 @@ services:
       - influxdb_data:/var/lib/influxdb2
 
 volumes:
-  postgres_data:
+  pocketbase_data:
   influxdb_data:

@@ -1,39 +1,38 @@
 # トラブルシューティング
 
-## ビルド時に 403 が出る
+## サイトにコンテンツが表示されない
 
-### 原因
+### 原因 1: PocketBase に接続できていない
 
-Directus の API が 403 Forbidden を返しています。主な原因は **Public ロールに Read 権限が付与されていない** ことです。
+- フロントの環境変数 `PUBLIC_POCKETBASE_URL` が正しいか確認
+- `curl <PUBLIC_POCKETBASE_URL>/api/health` が `200` を返すか確認
 
-### 解決方法
+### 原因 2: 投稿・お知らせが draft のまま
 
-#### 方法 1: Directus の権限を設定する（推奨）
+`posts` / `announcements` は `status = "published"` のものだけが公開 API に出ます。
+PocketBase 管理画面（`/_/`）でレコードの `status` を `published` に変更してください。
 
-1. Directus 管理画面にログイン
-2. **Settings** → **Access Policies** → **Public**
-3. 以下のコレクションに **Read** 権限を付与:
-   - global
-   - posts
-   - announcements
-   - games
-   - game_players
-   - authors
-   - directus_files
+### 原因 3: スキーマが適用されていない
 
-#### 方法 2: ビルド時に Directus をスキップする
+コレクションが存在しない場合、`backend/pb_migrations/` がコンテナにコピーされているか、
+起動コマンドに `--migrationsDir` が渡っているかを確認してください
+（`backend/Dockerfile` を使っていれば自動で適用されます）。
 
-Directus に接続せずにビルドする場合（空のデータでビルド）:
+## 管理画面にログインできない
+
+初回はスーパーユーザーの作成が必要です:
 
 ```bash
-# 環境変数でスキップ
-PUBLIC_SKIP_DIRECTUS_BUILD=true pnpm run build
+docker compose exec pocketbase /pb/pocketbase superuser upsert admin@example.com <password> --dir /pb/pb_data
 ```
 
-Dokploy の場合、環境変数に `PUBLIC_SKIP_DIRECTUS_BUILD=true` を追加してください。
+## デプロイのたびにデータが消える
 
-## デプロイ後にサイトが 403 になる
+PocketBase のデータは SQLite + アップロードファイルとして `/pb/pb_data` に保存されます。
+Dokploy などでは必ず `/pb/pb_data` にボリュームをマウントしてください。
 
-- nginx の設定を確認
-- ファイルのパーミッションを確認
-- Dokploy のポート設定（80）を確認
+## Discord に通知が飛ばない
+
+- PocketBase 側の環境変数（`DISCORD_WEBHOOK_POSTS` など）が設定されているか確認
+- 通知は「published になった瞬間」にだけ送られます（既に published のレコードの編集では送られない）
+- PocketBase のログにエラーが出ていないか確認（[docs/DISCORD_WEBHOOK.md](DISCORD_WEBHOOK.md) 参照）

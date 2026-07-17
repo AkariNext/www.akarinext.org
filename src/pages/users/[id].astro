@@ -1,12 +1,12 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import {
-    strapiClient,
+    cmsClient,
     getMediaUrl,
-    type StrapiAuthor,
-    type StrapiPost,
-    type StrapiGame,
-} from "../../lib/strapi";
+    type CmsMember,
+    type CmsPost,
+    type CmsGame,
+} from "../../lib/cms";
 import {
     Twitter,
     Github,
@@ -34,8 +34,8 @@ if (!id) {
 
 // Local GamePlayer Interface for View
 interface GamePlayer {
-    id: number;
-    game: StrapiGame;
+    id: string;
+    game: CmsGame;
     started_at: string;
     status: "playing" | "finished";
     skill_level?: string;
@@ -43,18 +43,15 @@ interface GamePlayer {
     recruitment?: string;
 }
 
-let user: StrapiAuthor | null = null;
+let user: CmsMember | null = null;
 let allGames: GamePlayer[] = [];
-let userPosts: StrapiPost[] = [];
+let userPosts: CmsPost[] = [];
 let avatarUrl: string | undefined = undefined;
 
 try {
-    const userId = parseInt(id);
-    if (Number.isNaN(userId)) {
-        return Astro.redirect("/404");
-    }
+    const userId = id;
 
-    const usersRes = await strapiClient.items<StrapiAuthor>("authors").readByQuery({
+    const usersRes = await cmsClient.items<CmsMember>("authors").readByQuery({
         where: { id: { equals: userId } },
         limit: 1,
     });
@@ -64,11 +61,11 @@ try {
         avatarUrl = getMediaUrl(user.avatar);
 
         if (user.playing_games && Array.isArray(user.playing_games)) {
-            user.playing_games.forEach((g: { game?: StrapiGame; skill_level?: string; impression?: string; recruitment?: string }) => {
+            user.playing_games.forEach((g: { game?: CmsGame; skill_level?: string; impression?: string; recruitment?: string }) => {
                 const gameObj = g.game;
                 if (gameObj && typeof gameObj === "object") {
                     allGames.push({
-                        id: 0,
+                        id: "",
                         game: gameObj,
                         started_at: "",
                         status: "playing",
@@ -82,11 +79,11 @@ try {
 
         // Transform Finished Games
         if (user.finished_games && Array.isArray(user.finished_games)) {
-            user.finished_games.forEach((g: { game?: StrapiGame; skill_level?: string; impression?: string; recruitment?: string }) => {
+            user.finished_games.forEach((g: { game?: CmsGame; skill_level?: string; impression?: string; recruitment?: string }) => {
                 const gameObj = g.game;
                 if (gameObj && typeof gameObj === "object") {
                     allGames.push({
-                        id: 0,
+                        id: "",
                         game: gameObj,
                         started_at: "",
                         status: "finished",
@@ -99,7 +96,7 @@ try {
         }
     }
 
-    const allPosts = await strapiClient.items<StrapiPost>("posts").readByQuery({
+    const allPosts = await cmsClient.items<CmsPost>("posts").readByQuery({
         sort: ["-published_date"],
         limit: 100,
     });

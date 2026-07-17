@@ -12,30 +12,30 @@ import {
     Megaphone,
 } from "lucide-astro";
 import {
-    strapiClient,
+    cmsClient,
     getMediaUrl,
-    type StrapiPost,
-    type StrapiGame,
-    type StrapiGameServer,
-    type StrapiSetting,
-    type StrapiAuthor,
-    type StrapiAnnouncement,
-} from "../lib/strapi";
+    type CmsPost,
+    type CmsGame,
+    type CmsGameServer,
+    type CmsSettings,
+    type CmsMember,
+    type CmsAnnouncement,
+} from "../lib/cms";
 import ServerCard from "../components/ServerCard.astro";
 import PostCard from "../components/PostCard.astro";
 
 // Fetch data
-let globalSettings: StrapiSetting = {
-    id: 0,
+let globalSettings: CmsSettings = {
+    id: "",
     site_title: "AkariNext",
     site_description: "Connect, Play, and Share Your Journey.",
 };
 
-let recentPosts: StrapiPost[] = [];
-let recentGames: StrapiGame[] = [];
-let gameServers: StrapiGameServer[] = [];
-let staffMembers: StrapiAuthor[] = [];
-let latestAnnouncement: StrapiAnnouncement | null = null;
+let recentPosts: CmsPost[] = [];
+let recentGames: CmsGame[] = [];
+let gameServers: CmsGameServer[] = [];
+let staffMembers: CmsMember[] = [];
+let latestAnnouncement: CmsAnnouncement | null = null;
 
 try {
     const [
@@ -46,36 +46,36 @@ try {
         staffData,
         announcementData,
     ] = await Promise.all([
-        strapiClient
-            .singleton<StrapiSetting>("settings")
+        cmsClient
+            .singleton<CmsSettings>("settings")
             .read()
             .catch(() => null),
-        strapiClient
-            .items<StrapiPost>("posts")
+        cmsClient
+            .items<CmsPost>("posts")
             .readByQuery({
                 sort: ["-published_date", "-createdAt", "-id"],
                 limit: 6,
             })
             .catch(() => []),
-        strapiClient
-            .items<StrapiGame>("games")
+        cmsClient
+            .items<CmsGame>("games")
             .readByQuery({
                 sort: ["-createdAt", "-id"],
                 limit: 4,
             })
             .catch(() => []),
-        strapiClient
-            .items<StrapiGameServer>("game-servers")
+        cmsClient
+            .items<CmsGameServer>("game-servers")
             .readByQuery({})
             .catch(() => []),
-        strapiClient
-            .items<StrapiAuthor>("authors")
+        cmsClient
+            .items<CmsMember>("authors")
             .readByQuery({
                 where: { is_staff: { equals: true } },
             })
             .catch(() => []),
-        strapiClient
-            .items<StrapiAnnouncement>("announcements")
+        cmsClient
+            .items<CmsAnnouncement>("announcements")
             .readByQuery({
                 sort: ["-published_date", "-id"],
                 limit: 1,
@@ -241,9 +241,8 @@ const formatDate = (dateStr: string | null | undefined) => {
                         現在、公開されているサーバー情報はありません。
                     </p>
                     <p class="empty-hint">
-                        ※ 管理者は Directus
-                        でサーバー情報を登録し、ステータスを「公開
-                        (Published)」に設定してください。
+                        ※ 管理者は PocketBase
+                        の管理画面でサーバー情報を登録してください。
                     </p>
                 </div>
             )
@@ -337,7 +336,7 @@ const formatDate = (dateStr: string | null | undefined) => {
                                     />
                                 ) : (
                                     <div class="staff-avatar-placeholder">
-                                        {staff.name.charAt(0)}
+                                        {(staff.name || staff.username).charAt(0)}
                                     </div>
                                 )}
                                 <div class="staff-badge">

@@ -1,17 +1,17 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { strapiClient, type StrapiAnnouncement } from "../../lib/strapi";
+import { cmsClient, type CmsAnnouncement } from "../../lib/cms";
 import { markdownToHtml } from "../../lib/richtext";
 import { Megaphone, Calendar, Clock, BellRing, Sparkles } from "lucide-astro";
 
 export const prerender = false;
 
-let announcements: StrapiAnnouncement[] = [];
-let processedAnnouncements: (StrapiAnnouncement & { processedContent: string })[] = [];
+let announcements: CmsAnnouncement[] = [];
+let processedAnnouncements: (CmsAnnouncement & { processedContent: string })[] = [];
 
 try {
-    const res = await strapiClient
-        .items<StrapiAnnouncement>("announcements")
+    const res = await cmsClient
+        .items<CmsAnnouncement>("announcements")
         .readByQuery({
             sort: ["-published_date", "-createdAt"],
             limit: 50,
