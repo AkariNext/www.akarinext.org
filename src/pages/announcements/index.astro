@@ -1,484 +1,82 @@
 ---
+import { BellRing } from "lucide-astro";
 import Layout from "../../layouts/Layout.astro";
 import { cmsClient, type CmsAnnouncement } from "../../lib/cms";
 import { markdownToHtml } from "../../lib/richtext";
-import { Megaphone, Calendar, Clock, BellRing, Sparkles } from "lucide-astro";
 
 export const prerender = false;
 
-let announcements: CmsAnnouncement[] = [];
 let processedAnnouncements: (CmsAnnouncement & { processedContent: string })[] = [];
 
 try {
-    const res = await cmsClient
-        .items<CmsAnnouncement>("announcements")
-        .readByQuery({
-            sort: ["-published_date", "-createdAt"],
-            limit: 50,
-        });
-    announcements = res;
-
-    processedAnnouncements = await Promise.all(
-        announcements.map(async (ann) => {
-            let content = "";
-            if (ann.content) {
-                content = await markdownToHtml(ann.content);
-            }
-            return { ...ann, processedContent: content };
-        })
-    );
-} catch (e) {
-    console.error("Error fetching announcements:", e);
-    announcements = [];
+  const announcements = await cmsClient.items<CmsAnnouncement>("announcements").readByQuery({ sort: ["-published_date", "-createdAt"], limit: 50 });
+  processedAnnouncements = await Promise.all(announcements.map(async (announcement) => ({
+    ...announcement,
+    processedContent: announcement.content ? await markdownToHtml(announcement.content) : "",
+  })));
+} catch (error) {
+  console.error("Error fetching announcements:", error);
 }
 
-const formatDate = (dateVal: string | null | undefined) => {
-    if (!dateVal) return "";
-    return new Date(dateVal).toLocaleDateString("ja-JP", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-    });
-};
+const announcementDate = (announcement: CmsAnnouncement) => announcement.published_date || announcement.createdAt;
+const formatDate = (value: string) => new Date(value).toLocaleDateString("ja-JP", { year: "numeric", month: "short", day: "numeric" });
 ---
 
-<Layout
-    title="News"
-    description="最新のニュースとアップデート情報をお届けします。"
->
-    <div class="hero-section">
-        <div class="hero-bg">
-            <div class="orb orb-1"></div>
-            <div class="orb orb-2"></div>
-        </div>
-        <div class="container hero-content">
-            <div class="badge-wrapper">
-                <span class="hero-badge">
-                    <Sparkles class="icon-sm" /> Latest News
-                </span>
-            </div>
-            <h1 class="hero-title">
-                最新の<br class="mobile-break" />
-                <span class="gradient-text">ニュース</span>
-            </h1>
-            <p class="hero-desc">
-                コミュニティの最新情報、イベントのお知らせ、<br
-                    class="desktop-break"
-                />
-                メンテナンス情報をいち早くお届けします。
-            </p>
-        </div>
-    </div>
+<Layout title="お知らせ" description="AkariNextからのお知らせと更新情報">
+  <div class="announcements-index container">
+    <header class="announcements-index__head">
+      <p>AkariNext Bulletin</p>
+      <h1>お知らせ</h1>
+      <div class="announcements-index__summary">
+        <p>コミュニティーからの連絡、イベント、メンテナンスなどの更新情報です。</p>
+        <span>{processedAnnouncements.length} 件</span>
+      </div>
+    </header>
 
-    <div class="container container-narrow content-wrapper">
-        {
-            processedAnnouncements.length > 0 ? (
-                <div class="timeline-container">
-                    {processedAnnouncements.map((ann) => {
-                        const annDate =
-                            ann.published_date || new Date().toISOString();
-                        const dateObj = new Date(annDate);
-                        const htmlContent = ann.processedContent;
-
-                        return (
-                            <article id={`ann-${ann.id}`} class="timeline-item">
-                                <div class="timeline-date-col">
-                                    <span class="date-badge">
-                                        <span class="date-month">
-                                            {dateObj.toLocaleDateString(
-                                                "en-US",
-                                                { month: "short" }
-                                            )}
-                                        </span>
-                                        <span class="date-day">
-                                            {dateObj.getDate()}
-                                        </span>
-                                    </span>
-                                </div>
-                                <div class="timeline-content glass-card">
-                                    <div class="card-header">
-                                        <h2 class="ann-title">{ann.title}</h2>
-                                        <div class="meta-inline">
-                                            <Clock class="icon-xs" />{" "}
-                                            {formatDate(annDate)}
-                                        </div>
-                                    </div>
-                                    <div class="prose" set:html={htmlContent} />
-                                </div>
-                            </article>
-                        );
-                    })}
-                </div>
-            ) : (
-                <div class="glass-card empty-state">
-                    <div class="empty-icon-wrapper">
-                        <BellRing class="empty-icon" />
-                    </div>
-                    <h3>まだお知らせはありません</h3>
-                    <p>新しい情報が追加されるのをお待ちください。</p>
-                </div>
-            )
-        }
-    </div>
+    {processedAnnouncements.length > 0 ? (
+      <div class="announcement-list">
+        {processedAnnouncements.map((announcement) => {
+          const date = announcementDate(announcement);
+          return (
+            <article id={`ann-${announcement.id}`} class="announcement-entry">
+              <time datetime={date}>{formatDate(date)}</time>
+              <div class="announcement-entry__content">
+                <h2>{announcement.title}</h2>
+                <div class="announcement-body prose" set:html={announcement.processedContent} />
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    ) : (
+      <div class="announcements-empty"><BellRing aria-hidden="true" /><h2>まだお知らせはありません</h2><p>新しい情報が追加されるまでお待ちください。</p></div>
+    )}
+  </div>
 </Layout>
 
 <style>
-    /* Hero Section */
-    .hero-section {
-        position: relative;
-        padding: 6rem 0 4rem;
-        overflow: hidden;
-        margin-bottom: 2rem;
-    }
-
-    .hero-bg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: -1;
-        pointer-events: none;
-    }
-
-    .orb {
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(80px);
-        opacity: 0.6;
-    }
-
-    .orb-1 {
-        top: -10%;
-        left: 20%;
-        width: 300px;
-        height: 300px;
-        background: radial-gradient(
-            circle,
-            var(--accent-secondary) 0%,
-            transparent 70%
-        );
-        animation: float 10s ease-in-out infinite;
-    }
-
-    .orb-2 {
-        bottom: 10%;
-        right: 20%;
-        width: 400px;
-        height: 400px;
-        background: radial-gradient(
-            circle,
-            var(--accent-primary) 0%,
-            transparent 70%
-        );
-        animation: float 12s ease-in-out infinite reverse;
-    }
-
-    @keyframes float {
-        0%,
-        100% {
-            transform: translate(0, 0);
-        }
-        50% {
-            transform: translate(20px, -20px);
-        }
-    }
-
-    .hero-content {
-        text-align: center;
-        position: relative;
-        z-index: 1;
-    }
-
-    .badge-wrapper {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 1.5rem;
-    }
-
-    .hero-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        background: var(--bg-surface);
-        border: 1px solid var(--border-glass);
-        border-radius: 99px;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--accent-primary);
-        box-shadow: var(--shadow-sm);
-        backdrop-filter: blur(4px);
-    }
-
-    .hero-title {
-        font-size: 3.5rem;
-        font-weight: 800;
-        line-height: 1.1;
-        margin-bottom: 1.5rem;
-        letter-spacing: -0.03em;
-    }
-
-    .gradient-text {
-        background: linear-gradient(
-            135deg,
-            var(--accent-primary),
-            var(--accent-secondary)
-        );
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        color: transparent;
-    }
-
-    .hero-desc {
-        font-size: 1.125rem;
-        color: var(--text-muted);
-        line-height: 1.7;
-        max-width: 600px;
-        margin: 0 auto;
-    }
-
-    .icon-sm {
-        width: 1rem;
-        height: 1rem;
-    }
-    .mobile-break {
-        display: none;
-    }
-
-    /* Content Layout */
-    .content-wrapper {
-        position: relative;
-        z-index: 1;
-    }
-
-    .container-narrow {
-        max-width: 800px;
-    }
-
-    .timeline-container {
-        display: flex;
-        flex-direction: column;
-        gap: 3rem;
-        padding-bottom: 5rem;
-        position: relative;
-    }
-
-    /* Center line */
-    .timeline-container::before {
-        content: "";
-        position: absolute;
-        top: 2rem;
-        bottom: 2rem;
-        left: 2.25rem; /* Align with date badges center */
-        width: 2px;
-        background: linear-gradient(
-            to bottom,
-            transparent,
-            var(--border-subtle) 10%,
-            var(--border-subtle) 90%,
-            transparent
-        );
-        z-index: 0;
-    }
-
-    .timeline-item {
-        display: flex;
-        gap: 2.5rem;
-        position: relative;
-        z-index: 1;
-    }
-
-    .timeline-date-col {
-        flex-shrink: 0;
-        width: 4.5rem;
-        padding-top: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        position: relative;
-    }
-
-    .date-badge {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 4.5rem;
-        height: 4.5rem;
-        background: var(--bg-surface);
-        border: 1px solid var(--border-light);
-        border-radius: 16px; /* Squircle-ish */
-        box-shadow: var(--shadow-sm);
-        color: var(--text-main);
-        z-index: 2;
-        backdrop-filter: blur(8px);
-    }
-
-    .date-day {
-        font-size: 1.5rem;
-        line-height: 1;
-        font-weight: 700;
-        color: var(--accent-primary);
-    }
-
-    .date-month {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        font-weight: 600;
-        opacity: 0.7;
-        margin-bottom: 0.1rem;
-    }
-
-    .timeline-content {
-        flex: 1;
-        padding: 0; /* Clear padding for card structure */
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .timeline-content:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-hover);
-    }
-
-    .card-header {
-        padding: 2rem 2rem 1.5rem;
-        border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .ann-title {
-        font-size: 1.75rem;
-        margin-bottom: 0.75rem;
-        line-height: 1.3;
-        font-weight: 700;
-        color: var(--text-main);
-    }
-
-    .meta-inline {
-        font-size: 0.9rem;
-        color: var(--text-muted);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .icon-xs {
-        width: 1rem;
-        height: 1rem;
-    }
-
-    .timeline-content .prose {
-        padding: 1.5rem 2rem 2rem;
-        font-size: 1rem;
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 6rem 2rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 1rem;
-    }
-
-    .empty-icon-wrapper {
-        width: 4rem;
-        height: 4rem;
-        border-radius: 50%;
-        background: var(--bg-surface-hover);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 1rem;
-        color: var(--text-muted);
-    }
-
-    .empty-icon {
-        width: 2rem;
-        height: 2rem;
-    }
-
-    .empty-state h3 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--text-main);
-        margin: 0;
-    }
-
-    .empty-state p {
-        color: var(--text-muted);
-        margin: 0;
-    }
-
-    @media (max-width: 768px) {
-        .hero-section {
-            padding: 4rem 0 3rem;
-        }
-
-        .hero-title {
-            font-size: 2.25rem;
-        }
-
-        .mobile-break {
-            display: block;
-        }
-        .desktop-break {
-            display: none;
-        }
-
-        .timeline-container {
-            gap: 2rem;
-            padding-left: 0;
-        }
-
-        .timeline-container::before {
-            left: 1.25rem; /* Adjust line position for mobile */
-            top: 3rem;
-        }
-
-        .timeline-item {
-            flex-direction: column;
-            gap: 1rem;
-            padding-left: 3rem; /* Space for the timeline line */
-        }
-
-        .timeline-date-col {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 2.5rem;
-            background: transparent;
-            align-items: flex-start;
-        }
-
-        .date-badge {
-            flex-direction: column;
-            width: 3rem;
-            height: 3rem;
-            padding: 0;
-            border-radius: 10px;
-        }
-
-        .date-day {
-            font-size: 1.1rem;
-        }
-        .date-month {
-            font-size: 0.6rem;
-        }
-
-        .card-header {
-            padding: 1.5rem;
-        }
-
-        .timeline-content .prose {
-            padding: 1rem 1.5rem 1.5rem;
-        }
-
-        .ann-title {
-            font-size: 1.4rem;
-        }
-    }
+  /* Hallmark · genre: editorial · macrostructure: Bulletin index · design-system: design.md · designed-as-app */
+  .announcements-index { padding-block: var(--space-2xl) var(--space-4xl); }
+  .announcements-index__head { display: grid; gap: var(--space-lg); padding-block-end: var(--space-2xl); border-block-end: var(--rule-medium) solid var(--color-ink); }
+  .announcements-index__head > p { color: var(--color-accent); font-weight: 700; }
+  .announcements-index__head h1 { font-size: var(--text-display); line-height: 1; letter-spacing: -0.04em; }
+  .announcements-index__summary { display: grid; gap: var(--space-md); align-items: end; }
+  .announcements-index__summary p { max-width: 58ch; color: var(--color-ink-2); font-size: var(--text-md); line-height: 1.8; }
+  .announcements-index__summary span { color: var(--color-muted); font-variant-numeric: tabular-nums; }
+  .announcement-entry { display: grid; gap: var(--space-lg); padding-block: var(--space-2xl); border-block-end: var(--rule-hair) solid var(--color-rule); }
+  .announcement-entry:last-child { border-block-end: 0; }
+  .announcement-entry > time { color: var(--color-muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+  .announcement-entry__content { display: grid; min-width: 0; gap: var(--space-lg); }
+  .announcement-entry h2 { max-width: 30ch; font-size: var(--text-xl); line-height: 1.35; overflow-wrap: anywhere; }
+  .announcement-body { max-width: 46rem; margin: 0; color: var(--color-ink-2); }
+  .announcement-body :global(h1), .announcement-body :global(h2), .announcement-body :global(h3) { margin-block: var(--space-xl) var(--space-md); color: var(--color-ink); font-size: var(--text-md); line-height: 1.5; }
+  .announcement-body :global(p), .announcement-body :global(ul), .announcement-body :global(ol), .announcement-body :global(blockquote) { margin-block: 0 var(--space-md); line-height: 1.9; }
+  .announcement-body :global(a) { color: var(--color-accent); text-decoration: underline; text-underline-offset: 0.18em; }
+  .announcement-body :global(img) { max-width: 100%; height: auto; margin-block: var(--space-lg); }
+  .announcement-body :global(hr) { margin-block: var(--space-xl); border: 0; border-block-start: var(--rule-hair) solid var(--color-rule); }
+  .announcements-empty { display: grid; justify-items: start; gap: var(--space-md); padding-block: var(--space-3xl); }
+  .announcements-empty svg { width: var(--space-xl); color: var(--color-muted); }
+  .announcements-empty p { color: var(--color-muted); }
+  @media (min-width: 40rem) { .announcements-index__summary { grid-template-columns: minmax(0, 1fr) auto; } .announcement-entry { grid-template-columns: 9rem minmax(0, 1fr); } }
+  @media (max-width: 39.99rem) { .announcements-index { padding-block-start: var(--space-xl); } .announcement-entry { padding-block: var(--space-xl); } }
 </style>

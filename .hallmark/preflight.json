@@ -1,0 +1,9 @@
+{
+	"date": "2026-08-22",
+	"framework": "Astro 5 SSR",
+	"fonts": ["Outfit", "Noto Sans JP", "JetBrains Mono"],
+	"palette": "CSS custom properties with light and dark modes",
+	"motion": "motion-cut; CSS transitions only",
+	"spacing": "no existing named scale",
+	"preserve": ["Astro routes", "PocketBase content", "light/dark theme"]
+}

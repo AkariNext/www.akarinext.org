@@ -1,0 +1,103 @@
+/* Hallmark · genre: editorial · macrostructure: existing Ecosystem Index / Catalogue / Long Document
+ * theme: custom cool editorial blue · anchor hue: sky blue 240 · variant: palette-only
+ * contrast: pass (40–41) · mobile: pass (34, 49–57) · enrichment: CMS imagery only
+ */
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
+:root {
+	--color-paper: oklch(97% 0.012 240);
+	--color-paper-2: oklch(93% 0.02 238);
+	--color-paper-3: oklch(88% 0.028 236);
+	--color-ink: oklch(22% 0.034 250);
+	--color-ink-2: oklch(36% 0.038 248);
+	--color-muted: oklch(47% 0.032 245);
+	--color-rule: oklch(76% 0.035 238);
+	--color-rule-strong: oklch(46% 0.046 244);
+	--color-accent: oklch(52% 0.16 240);
+	--color-accent-ink: oklch(98% 0.01 238);
+	--color-focus: oklch(58% 0.2 245);
+	--color-success: oklch(43% 0.105 150);
+	--color-error: oklch(49% 0.17 27);
+	--color-overlay: oklch(13% 0.028 250 / 0.72);
+	--color-transparent: oklch(97% 0.012 240 / 0);
+
+	--font-display: "M PLUS 1p", sans-serif;
+	--font-body: "Zen Kaku Gothic New", sans-serif;
+	--font-mono: "JetBrains Mono", monospace;
+
+	--space-3xs: 0.125rem;
+	--space-2xs: 0.25rem;
+	--space-xs: 0.5rem;
+	--space-sm: 0.75rem;
+	--space-md: 1rem;
+	--space-lg: 1.5rem;
+	--space-xl: 2.5rem;
+	--space-2xl: 4rem;
+	--space-3xl: 6rem;
+	--space-4xl: 9rem;
+
+	--text-xs: 0.72rem;
+	--text-sm: 0.84rem;
+	--text-base: 1rem;
+	--text-md: 1.2rem;
+	--text-lg: 1.5rem;
+	--text-xl: 1.9rem;
+	--text-2xl: 2.4rem;
+	--text-3xl: 3rem;
+	--text-display: clamp(2.75rem, 7vw, 5.25rem);
+
+	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+	--dur-micro: 120ms;
+	--dur-short: 220ms;
+	--dur-long: 420ms;
+
+	--rule-hair: 1px;
+	--rule-medium: 2px;
+	--radius-sm: 0.125rem;
+	--radius-md: 0.25rem;
+	--radius-lg: 0.5rem;
+	--z-base: 1;
+	--z-raised: 10;
+	--z-dropdown: 100;
+	--z-sticky: 200;
+	--z-modal: 400;
+}
+
+[data-theme="dark"] {
+	--color-paper: oklch(18% 0.028 250);
+	--color-paper-2: oklch(22% 0.034 248);
+	--color-paper-3: oklch(27% 0.04 245);
+	--color-ink: oklch(90% 0.018 235);
+	--color-ink-2: oklch(78% 0.024 237);
+	--color-muted: oklch(66% 0.03 240);
+	--color-rule: oklch(35% 0.042 246);
+	--color-rule-strong: oklch(58% 0.052 240);
+	--color-accent: oklch(72% 0.14 230);
+	--color-accent-ink: oklch(18% 0.028 250);
+	--color-focus: oklch(76% 0.145 235);
+	--color-success: oklch(64% 0.09 150);
+	--color-error: oklch(66% 0.12 27);
+	--color-overlay: oklch(10% 0.022 250 / 0.78);
+	--color-transparent: oklch(18% 0.028 250 / 0);
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--color-paper: oklch(18% 0.028 250);
+		--color-paper-2: oklch(22% 0.034 248);
+		--color-paper-3: oklch(27% 0.04 245);
+		--color-ink: oklch(90% 0.018 235);
+		--color-ink-2: oklch(78% 0.024 237);
+		--color-muted: oklch(66% 0.03 240);
+		--color-rule: oklch(35% 0.042 246);
+		--color-rule-strong: oklch(58% 0.052 240);
+		--color-accent: oklch(72% 0.14 230);
+		--color-accent-ink: oklch(18% 0.028 250);
+		--color-focus: oklch(76% 0.145 235);
+		--color-success: oklch(64% 0.09 150);
+		--color-error: oklch(66% 0.12 27);
+		--color-overlay: oklch(10% 0.022 250 / 0.78);
+		--color-transparent: oklch(18% 0.028 250 / 0);
+	}
+}

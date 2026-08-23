@@ -1,0 +1,17 @@
+[
+  {
+    "date": "2026-08-22",
+    "scope": "app",
+    "macrostructure": "Ecosystem Index / Catalogue / Long Document",
+    "theme": "Newsprint",
+    "enrichment": "CMS imagery only",
+    "brief": "Unified editorial redesign for landing page and blog"
+  },
+  {
+		"date": "2026-08-22",
+		"macrostructure": "Ecosystem Index",
+		"theme": "Newsprint",
+		"enrichment": "CMS imagery only",
+		"brief": "AkariNext community landing page and article-first blog index"
+	}
+]

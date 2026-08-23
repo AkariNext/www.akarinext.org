@@ -1,1160 +1,184 @@
 ---
+import { ArrowRight, Gamepad2, Github, Globe, MessageSquare, Twitch, Twitter, Youtube } from "lucide-astro";
 import Layout from "../../layouts/Layout.astro";
-import {
-    cmsClient,
-    getMediaUrl,
-    type CmsMember,
-    type CmsPost,
-    type CmsGame,
-} from "../../lib/cms";
-import {
-    Twitter,
-    Github,
-    Globe,
-    Twitch,
-    Youtube,
-    Gamepad2,
-    MessageSquare,
-    BookOpen,
-    Clock,
-    ArrowRight,
-    Shield,
-    Users,
-    UserSearch,
-    HelpCircle,
-    GraduationCap,
-} from "lucide-astro";
-import PostCard from "../../components/PostCard.astro";
+import { cmsClient, getMediaUrl, type CmsGame, type CmsMember, type CmsPost } from "../../lib/cms";
 
 const { id } = Astro.params;
+if (!id) return Astro.redirect("/404");
 
-if (!id) {
-    return Astro.redirect("/404");
-}
-
-// Local GamePlayer Interface for View
 interface GamePlayer {
-    id: string;
-    game: CmsGame;
-    started_at: string;
-    status: "playing" | "finished";
-    skill_level?: string;
-    impression?: string;
-    recruitment?: string;
+  game: CmsGame;
+  status: "playing" | "finished";
+  skill_level?: string;
+  impression?: string;
+  recruitment?: string;
 }
 
 let user: CmsMember | null = null;
-let allGames: GamePlayer[] = [];
-let userPosts: CmsPost[] = [];
-let avatarUrl: string | undefined = undefined;
+let games: GamePlayer[] = [];
+let posts: CmsPost[] = [];
 
 try {
-    const userId = id;
+  const users = await cmsClient.items<CmsMember>("authors").readByQuery({ where: { id: { equals: id } }, limit: 1 });
+  user = users[0] || null;
 
-    const usersRes = await cmsClient.items<CmsMember>("authors").readByQuery({
-        where: { id: { equals: userId } },
-        limit: 1,
-    });
+  if (user) {
+    const appendGames = (entries: CmsMember["playing_games"] | CmsMember["finished_games"], status: GamePlayer["status"]) => {
+      if (!Array.isArray(entries)) return;
+      entries.forEach((entry) => {
+        if (entry.game && typeof entry.game === "object") games.push({ game: entry.game, status, skill_level: entry.skill_level, impression: entry.impression, recruitment: entry.recruitment });
+      });
+    };
+    appendGames(user.playing_games, "playing");
+    appendGames(user.finished_games, "finished");
 
-    if (usersRes.length > 0) {
-        user = usersRes[0];
-        avatarUrl = getMediaUrl(user.avatar);
-
-        if (user.playing_games && Array.isArray(user.playing_games)) {
-            user.playing_games.forEach((g: { game?: CmsGame; skill_level?: string; impression?: string; recruitment?: string }) => {
-                const gameObj = g.game;
-                if (gameObj && typeof gameObj === "object") {
-                    allGames.push({
-                        id: "",
-                        game: gameObj,
-                        started_at: "",
-                        status: "playing",
-                        skill_level: g.skill_level,
-                        impression: g.impression,
-                        recruitment: g.recruitment,
-                    });
-                }
-            });
-        }
-
-        // Transform Finished Games
-        if (user.finished_games && Array.isArray(user.finished_games)) {
-            user.finished_games.forEach((g: { game?: CmsGame; skill_level?: string; impression?: string; recruitment?: string }) => {
-                const gameObj = g.game;
-                if (gameObj && typeof gameObj === "object") {
-                    allGames.push({
-                        id: "",
-                        game: gameObj,
-                        started_at: "",
-                        status: "finished",
-                        skill_level: g.skill_level,
-                        impression: g.impression,
-                        recruitment: g.recruitment,
-                    });
-                }
-            });
-        }
-    }
-
-    const allPosts = await cmsClient.items<CmsPost>("posts").readByQuery({
-        sort: ["-published_date"],
-        limit: 100,
-    });
-    userPosts = allPosts.filter((p) => p.author && typeof p.author === "object" && p.author.id === userId);
-} catch (e) {
-    console.error("Error fetching user profile:", e);
+    const allPosts = await cmsClient.items<CmsPost>("posts").readByQuery({ sort: ["-published_date", "-createdAt"], limit: 100 });
+    posts = allPosts.filter((post) => post.author && typeof post.author === "object" && post.author.id === id);
+  }
+} catch (error) {
+  console.error("Error fetching user profile:", error);
 }
 
-if (!user) {
-    return Astro.redirect("/404");
-}
+if (!user) return Astro.redirect("/404");
 
-// Contribution Graph Logic
-const generateContributionData = () => {
-    const data: Record<string, number> = {};
-    const today = new Date();
+const name = user.name || user.username;
+const avatar = getMediaUrl(user.avatar);
+const postUrl = (post: CmsPost) => `/posts/${post.slug || post.id}`;
+const postDate = (post: CmsPost) => new Date(post.published_date || post.createdAt).toLocaleDateString("ja-JP", { year: "numeric", month: "short", day: "numeric" });
+const excerpt = (post: CmsPost) => post.is_spoiler ? "この記事にはネタバレが含まれています。" : post.content?.replace(/[#*_`>\[\]!|]/g, " ").replace(/\s+/g, " ").trim().slice(0, 120) || "本文を読む";
 
-    // Combine activity dates from posts
-    userPosts.forEach((p) => {
-        if (p.published_date) {
-            const date = new Date(p.published_date).toISOString().split("T")[0];
-            data[date] = (data[date] || 0) + 1;
-        }
-    });
-
-    // Generate last 365 days
-    const days = [];
-    for (let i = 364; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(today.getDate() - i);
-        const dateStr = d.toISOString().split("T")[0];
-        const count = data[dateStr] || 0;
-
-        // Level 0-4
-        let level = 0;
-        if (count > 0) level = 1;
-        if (count > 2) level = 2;
-        if (count > 4) level = 3;
-        if (count > 8) level = 4;
-
-        days.push({ date: dateStr, count, level });
-    }
-    return days;
+const socialIcon = (platform: string) => {
+  switch (platform?.toLowerCase()) {
+    case "twitter": case "x": case "x (twitter)": return Twitter;
+    case "github": return Github;
+    case "twitch": return Twitch;
+    case "youtube": return Youtube;
+    case "discord": return MessageSquare;
+    default: return Globe;
+  }
 };
 
-const activityDays = generateContributionData();
-const totalContributions = Object.values(activityDays).reduce(
-    (sum, day) => sum + day.count,
-    0
-);
-
-const getSocialIcon = (platform: string) => {
-    switch (platform?.toLowerCase()) {
-        case "twitter":
-            return Twitter;
-        case "x":
-            return Twitter;
-        case "x (twitter)":
-            return Twitter;
-        case "github":
-            return Github;
-        case "twitch":
-            return Twitch;
-        case "youtube":
-            return Youtube;
-        case "discord":
-            return MessageSquare;
-        default:
-            return Globe;
-    }
-};
-
-const getStatusLabel = (status: string) => {
-    switch (status) {
-        case "playing":
-            return "プレイ中";
-        case "finished":
-            return "プレイ終了";
-        default:
-            return status;
-    }
-};
-
-const getSkillLabel = (level?: string) => {
-    switch (level) {
-        case "casual":
-            return "カジュアル";
-        case "intermediate":
-            return "中級";
-        case "expert":
-            return "エキスパート";
-        case "better_than_you":
-            return "あなたより上手";
-        default:
-            return null;
-    }
-};
-
-const getImpressionLabel = (imp?: string) => {
-    switch (imp) {
-        case "obsessed":
-            return "夢中";
-        case "love":
-            return "大好き";
-        case "like":
-            return "わりと好き";
-        case "meh":
-            return "ビミョーかも";
-        case "give_up":
-            return "ギブアップ";
-        default:
-            return null;
-    }
-};
-
-const getRecruitmentLabel = (val?: string) => {
-    switch (val) {
-        case "looking_for_group":
-            return { label: "グループ探してます", icon: UserSearch };
-        case "invite_anytime":
-            return { label: "いつでも誘って", icon: Users };
-        case "need_hints":
-            return { label: "ヒントを教えて", icon: HelpCircle };
-        case "can_teach":
-            return { label: "教えられるよ", icon: GraduationCap };
-        case "discussion_welcome":
-            return { label: "議論大歓迎", icon: MessageSquare };
-        default:
-            return null;
-    }
-};
+const skillLabel = (value?: string) => ({ casual: "カジュアル", intermediate: "中級", expert: "エキスパート", better_than_you: "あなたより上手" })[value || ""] || null;
+const impressionLabel = (value?: string) => ({ obsessed: "夢中", love: "大好き", like: "わりと好き", meh: "ビミョーかも", give_up: "ギブアップ" })[value || ""] || null;
+const recruitmentLabel = (value?: string) => ({ looking_for_group: "グループ募集中", invite_anytime: "いつでも誘って", need_hints: "ヒント歓迎", can_teach: "教えられます", discussion_welcome: "議論歓迎" })[value || ""] || null;
 ---
 
-<Layout
-    title={user.name || user.username}
-    description={`${user.name || user.username}さんのプロフィールとゲームコレクション。`}
->
-    <div class="profile-header">
-        <div class="container profile-container">
-            <div class="profile-avatar-wrapper">
-                {
-                    avatarUrl ? (
-                        <img
-                            src={avatarUrl}
-                            alt={user.name || user.username}
-                            class="profile-avatar"
-                        />
-                    ) : (
-                        <div class="profile-avatar-placeholder">
-                            <span class="avatar-initial">
-                                {(user.name || user.username).charAt(0).toUpperCase()}
-                            </span>
-                        </div>
-                    )
-                }
-            </div>
-
-            <div class="profile-info">
-                <div class="profile-title-row">
-                    <h1 class="profile-name">{user.name || user.username}</h1>
-                    {
-                        user.is_staff && (
-                            <span class="staff-tag-premium">
-                                <Shield class="icon-tiny" /> STAFF
-                            </span>
-                        )
-                    }
-                </div>
-                {user.bio && <p class="profile-bio">{user.bio}</p>}
-
-                <div class="profile-meta-row">
-                    <div class="profile-stats-card">
-                        <div class="stat-item">
-                            <span class="stat-value">{userPosts.length}</span>
-                            <span class="stat-label">Articles</span>
-                        </div>
-                        <div class="stat-divider"></div>
-                        <div class="stat-item">
-                            <span class="stat-value">{allGames.length}</span>
-                            <span class="stat-label">Games</span>
-                        </div>
-                    </div>
-
-                    {
-                        user.social_links && user.social_links.length > 0 && (
-                            <div class="social-links-premium">
-                                {user.social_links.map((link: any) => {
-                                    const Icon = getSocialIcon(link.platform);
-                                    return (
-                                        <a
-                                            href={link.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            class="social-link-btn"
-                                            title={link.platform}
-                                        >
-                                            <Icon class="social-icon-sm" />
-                                        </a>
-                                    );
-                                })}
-                            </div>
-                        )
-                    }
-                </div>
-            </div>
+<Layout title={name} description={`${name}のプロフィール、記事、ゲームコレクション`}>
+  <div class="member-page container">
+    <header class="member-hero">
+      <div class="member-avatar">
+        {avatar ? <img src={avatar} alt={name} /> : <span>{name.charAt(0).toUpperCase()}</span>}
+      </div>
+      <div class="member-identity">
+        <p>AkariNext Member{user.is_staff && <span class="member-role"> · 運営メンバー</span>}</p>
+        <div class="member-title">
+          <h1>{name}</h1>
         </div>
-    </div>
+        {user.bio && <p class="member-bio">{user.bio}</p>}
+        {user.social_links && user.social_links.length > 0 && <nav class="member-socials" aria-label={`${name}の外部リンク`}>
+          {user.social_links.map((link: any) => {
+            const Icon = socialIcon(link.platform);
+            return <a href={link.url} target="_blank" rel="noopener noreferrer"><Icon aria-hidden="true" /><span>{link.platform}</span></a>;
+          })}
+        </nav>}
+      </div>
+      <dl class="member-counts">
+        <div><dt>記事</dt><dd>{posts.length}</dd></div>
+        <div><dt>ゲーム</dt><dd>{games.length}</dd></div>
+      </dl>
+    </header>
 
-    <div class="container content-container">
-        <!-- Contribution Graph Section -->
-        <section class="activity-section">
-            <div class="section-header-row">
-                <h2 class="section-title-premium">
-                    <BookOpen class="title-icon" />
-                    執筆アクティビティ
-                </h2>
-                <span class="total-activity"
-                    >{totalContributions} articles published in the last year</span
-                >
+    <div class="member-content">
+      <section class="member-posts">
+        <header class="section-head">
+          <div><p>Writing</p><h2>執筆した記事</h2></div>
+          {posts.length > 0 && <a href="/posts">記事一覧 <ArrowRight aria-hidden="true" /></a>}
+        </header>
+        {posts.length > 0 ? <div class="member-post-list">
+          {posts.map((post) => <article class="member-post">
+            <time datetime={post.published_date || post.createdAt}>{postDate(post)}</time>
+            <div>
+              <h3><a href={postUrl(post)}>{post.title}</a></h3>
+              <p>{excerpt(post)}</p>
             </div>
+            <a class="member-post__read" href={postUrl(post)} aria-label={`${post.title}を読む`}>読む <ArrowRight aria-hidden="true" /></a>
+          </article>)}
+        </div> : <p class="section-empty">執筆した記事はまだありません。</p>}
+      </section>
 
-            <div class="contribution-card-premium">
-                <div class="graph-wrapper">
-                    <div class="graph-scroll">
-                        <div class="contribution-grid">
-                            {
-                                activityDays.map((day) => (
-                                    <div
-                                        class={`day-cell level-${day.level}`}
-                                        title={`${day.date}: ${day.count} activities`}
-                                    />
-                                ))
-                            }
-                        </div>
-                    </div>
-                </div>
-                <div class="graph-footer">
-                    <span>Less</span>
-                    <div class="legend">
-                        <div class="day-cell level-0"></div>
-                        <div class="day-cell level-1"></div>
-                        <div class="day-cell level-2"></div>
-                        <div class="day-cell level-3"></div>
-                        <div class="day-cell level-4"></div>
-                    </div>
-                    <span>More</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Authored Posts Section -->
-        {
-            userPosts.length > 0 && (
-                <section class="authored-posts-section">
-                    <div class="section-header-row">
-                        <h2 class="section-title-premium">
-                            <BookOpen class="title-icon" />
-                            執筆した記事
-                        </h2>
-                        <a href="/posts" class="view-all-link">
-                            すべて見る <ArrowRight class="icon-tiny" />
-                        </a>
-                    </div>
-
-                    <div class="posts-grid-compact">
-                        {userPosts.map((post) => (
-                            <PostCard post={post} />
-                        ))}
-                    </div>
-                </section>
-            )
-        }
-
-        <!-- Game Collection Gallery -->
-        {
-            allGames.length > 0 ? (
-                <section class="game-section">
-                    <div class="section-header-row">
-                        <h2 class="section-title-premium">
-                            <Gamepad2 class="title-icon" />
-                            ゲームコレクション
-                        </h2>
-                        <span class="collection-count">
-                            {allGames.length} タイトル
-                        </span>
-                    </div>
-
-                    <div class="games-gallery-grid">
-                        {allGames.map((p) => {
-                            const coverUrl = getMediaUrl(p.game.cover_image);
-                            return (
-                                <div class="game-poster-wrapper">
-                                    <div class="poster-card-premium">
-                                        <div class="poster-image-area">
-                                            {coverUrl ? (
-                                                <img
-                                                    src={coverUrl}
-                                                    alt={p.game.name}
-                                                    class="poster-img"
-                                                    loading="lazy"
-                                                />
-                                            ) : (
-                                                <div class="poster-empty">
-                                                    <Gamepad2 class="empty-icon" />
-                                                </div>
-                                            )}
-                                            <div class="poster-glow" />
-                                        </div>
-
-                                        <div class="poster-info-glass">
-                                            <div class="title-status-row">
-                                                <h3 class="game-name-display">
-                                                    {p.game.name}
-                                                </h3>
-                                                {p.status === "playing" && (
-                                                    <div
-                                                        class="playing-indicator-dot"
-                                                        title="Currently Playing"
-                                                    />
-                                                )}
-                                            </div>
-
-                                            <div class="expand-details">
-                                                {(p.skill_level ||
-                                                    p.impression ||
-                                                    p.recruitment) && (
-                                                    <div class="game-status-details">
-                                                        {p.skill_level && (
-                                                            <div class="pill-mini skill">
-                                                                <Shield class="icon-nano" />
-                                                                <span>
-                                                                    {getSkillLabel(
-                                                                        p.skill_level
-                                                                    )}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {p.impression && (
-                                                            <div class="pill-mini impression">
-                                                                <MessageSquare class="icon-nano" />
-                                                                <span>
-                                                                    {getImpressionLabel(
-                                                                        p.impression
-                                                                    )}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {p.recruitment &&
-                                                            (() => {
-                                                                const item =
-                                                                    getRecruitmentLabel(
-                                                                        p.recruitment
-                                                                    );
-                                                                if (!item)
-                                                                    return null;
-                                                                const Icon =
-                                                                    item.icon;
-                                                                return (
-                                                                    <div class="pill-mini recruitment">
-                                                                        <Icon class="icon-nano" />
-                                                                        <span>
-                                                                            {
-                                                                                item.label
-                                                                            }
-                                                                        </span>
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                    </div>
-                                                )}
-                                                <div class="status-footer">
-                                                    {getStatusLabel(p.status)}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </section>
-            ) : (
-                <div class="profile-empty-state glass-card">
-                    <Gamepad2 class="empty-icon-fancy" />
-                    <p>登録されているゲームはまだありません。</p>
-                </div>
-            )
-        }
+      <aside class="member-games">
+        <header class="section-head">
+          <div><p>Games</p><h2>ゲーム</h2></div>
+          <span>{games.length} タイトル</span>
+        </header>
+        {games.length > 0 ? <div class="member-game-grid">
+          {games.map((entry) => {
+            const cover = getMediaUrl(entry.game.cover_image);
+            const details = [skillLabel(entry.skill_level), impressionLabel(entry.impression), recruitmentLabel(entry.recruitment)].filter(Boolean);
+            return <article class="member-game">
+              <div class="member-game__cover">{cover ? <img src={cover} alt="" loading="lazy" decoding="async" /> : <div><Gamepad2 aria-hidden="true" /></div>}</div>
+              <div class="member-game__caption">
+                <h3>{entry.game.name}</h3>
+                <p>{entry.status === "playing" ? "プレイ中" : "プレイ終了"}</p>
+                {details.length > 0 && <small>{details.join(" ・ ")}</small>}
+              </div>
+            </article>;
+          })}
+        </div> : <p class="section-empty">登録されているゲームはまだありません。</p>}
+      </aside>
     </div>
-
-    <script>
-        const cards = document.querySelectorAll(".game-poster-wrapper");
-        cards.forEach((card) => {
-            card.addEventListener("click", (e) => {
-                // Check if we are on a touch device or mobile
-                if (window.innerWidth <= 768) {
-                    const isActive = card.classList.contains("is-active");
-
-                    // Close other cards
-                    cards.forEach((c) => c.classList.remove("is-active"));
-
-                    if (!isActive) {
-                        card.classList.add("is-active");
-                    }
-                }
-            });
-        });
-
-        // Close when clicking outside
-        document.addEventListener("click", (e) => {
-            if (!(e.target as HTMLElement).closest(".game-poster-wrapper")) {
-                cards.forEach((c) => c.classList.remove("is-active"));
-            }
-        });
-    </script>
+  </div>
 </Layout>
 
-<style>
-    .profile-header {
-        position: relative;
-        padding: 6rem 0;
-        background: var(--bg-surface);
-        border-bottom: 1px solid var(--border-subtle);
-        overflow: hidden;
-        margin-bottom: 6rem;
-    }
-
-    .profile-header::before {
-        content: "";
-        position: absolute;
-        top: -10%;
-        right: -5%;
-        width: 400px;
-        height: 400px;
-        background: radial-gradient(
-            circle,
-            var(--accent-soft) 0%,
-            transparent 70%
-        );
-        opacity: 0.6;
-        z-index: 0;
-    }
-
-    .profile-container {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: 3.5rem;
-    }
-
-    @media (min-width: 992px) {
-        .profile-container {
-            flex-direction: row;
-            text-align: left;
-            align-items: flex-start;
-            gap: 4rem;
-        }
-    }
-
-    .profile-avatar-wrapper {
-        position: relative;
-        flex-shrink: 0;
-    }
-
-    .profile-avatar,
-    .profile-avatar-placeholder {
-        width: 180px;
-        height: 180px;
-        border-radius: 48px;
-        object-fit: cover;
-        border: 4px solid var(--bg-surface-solid);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
-        background: var(--bg-surface-solid);
-        transition: transform 0.5s cubic-bezier(0.2, 1, 0.2, 1);
-    }
-
-    .profile-avatar-wrapper:hover .profile-avatar {
-        transform: rotate(-3deg) scale(1.05);
-    }
-
-    .avatar-initial {
-        font-size: 4rem;
-        color: var(--accent-primary);
-        font-weight: 900;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-    }
-
-    .profile-info {
-        flex: 1;
-    }
-
-    .profile-title-row {
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        margin-bottom: 1rem;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-
-    @media (min-width: 992px) {
-        .profile-title-row {
-            justify-content: flex-start;
-        }
-    }
-
-    .profile-name {
-        font-size: 3.5rem;
-        font-weight: 950;
-        color: var(--text-main);
-        letter-spacing: -0.04em;
-        line-height: 1;
-    }
-
-    .staff-tag-premium {
-        font-size: 0.75rem;
-        font-weight: 800;
-        padding: 0.4rem 1rem;
-        background: var(--accent-primary);
-        color: white;
-        border-radius: 100px;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
-    }
-
-    .profile-bio {
-        font-size: 1.1rem;
-        color: var(--text-muted);
-        line-height: 1.7;
-        margin-bottom: 2.5rem;
-        max-width: 650px;
-    }
-
-    .profile-meta-row {
-        display: flex;
-        align-items: center;
-        gap: 2.5rem;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-
-    @media (min-width: 992px) {
-        .profile-meta-row {
-            justify-content: flex-start;
-        }
-    }
-
-    .profile-stats-card {
-        display: flex;
-        align-items: center;
-        background: var(--bg-surface-solid);
-        padding: 0.75rem 1.5rem;
-        border-radius: 20px;
-        border: 1px solid var(--border-subtle);
-        box-shadow: var(--shadow-sm);
-    }
-
-    .stat-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 0 1.5rem;
-    }
-
-    .stat-value {
-        font-size: 1.5rem;
-        font-weight: 900;
-        color: var(--text-main);
-        line-height: 1.2;
-    }
-
-    .stat-label {
-        font-size: 0.7rem;
-        font-weight: 700;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-    }
-
-    .stat-divider {
-        width: 1px;
-        height: 30px;
-        background: var(--border-subtle);
-    }
-
-    .social-links-premium {
-        display: flex;
-        gap: 1rem;
-    }
-
-    .social-link-btn {
-        width: 44px;
-        height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--bg-surface-solid);
-        border: 1px solid var(--border-subtle);
-        border-radius: 14px;
-        color: var(--text-muted);
-        transition: all 0.3s cubic-bezier(0.2, 1, 0.2, 1);
-    }
-
-    .social-link-btn:hover {
-        transform: translateY(-5px);
-        background: var(--accent-primary);
-        color: white;
-        border-color: var(--accent-primary);
-        box-shadow: 0 10px 20px rgba(14, 165, 233, 0.2);
-    }
-
-    .social-icon-sm {
-        width: 1.25rem;
-        height: 1.25rem;
-    }
-
-    /* Activity Graph Styling */
-    .activity-section {
-        margin-bottom: 5rem;
-    }
-
-    .contribution-card-premium {
-        background: var(--bg-surface-solid);
-        border: 1px solid var(--border-subtle);
-        border-radius: 20px;
-        padding: 2rem;
-        box-shadow: var(--shadow-sm);
-    }
-
-    .graph-wrapper {
-        width: 100%;
-        overflow: hidden;
-    }
-
-    .graph-scroll {
-        overflow-x: auto;
-        padding-bottom: 1rem;
-        scrollbar-width: thin;
-        scrollbar-color: var(--border-subtle) transparent;
-    }
-
-    .contribution-grid {
-        display: grid;
-        grid-template-flow: column;
-        grid-template-rows: repeat(7, 12px);
-        grid-auto-columns: 12px;
-        grid-auto-flow: column;
-        gap: 4px;
-        width: max-content;
-    }
-
-    .day-cell {
-        width: 12px;
-        height: 12px;
-        border-radius: 2px;
-        transition: all 0.2s;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-    }
-
-    .level-0 {
-        background: var(--bg-surface-hover);
-        border-color: var(--border-subtle);
-    }
-    .level-1 {
-        background: #0e4429;
-        border-color: rgba(0, 255, 0, 0.1);
-    }
-    .level-2 {
-        background: #006d32;
-        border-color: rgba(0, 255, 0, 0.1);
-    }
-    .level-3 {
-        background: #26a641;
-        border-color: rgba(0, 255, 0, 0.1);
-    }
-    .level-4 {
-        background: #39d353;
-        border-color: rgba(0, 255, 0, 0.1);
-    }
-
-    :global([data-theme="light"]) .day-cell {
-        border-color: rgba(27, 31, 35, 0.06);
-    }
-
-    :global([data-theme="light"]) .level-0 {
-        background: #ebedf0;
-    }
-    :global([data-theme="light"]) .level-1 {
-        background: #9be9a8;
-    }
-    :global([data-theme="light"]) .level-2 {
-        background: #40c463;
-    }
-    :global([data-theme="light"]) .level-3 {
-        background: #30a14e;
-    }
-    :global([data-theme="light"]) .level-4 {
-        background: #216e39;
-    }
-
-    :global([data-theme="dark"]) .level-0 {
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    .day-cell:hover {
-        transform: scale(1.3);
-        z-index: 10;
-        box-shadow: 0 0 8px var(--accent-primary);
-    }
-
-    .graph-footer {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.5rem;
-        margin-top: 1rem;
-        font-size: 0.75rem;
-        color: var(--text-muted);
-    }
-
-    .legend {
-        display: flex;
-        gap: 4px;
-    }
-
-    .total-activity {
-        font-size: 0.85rem;
-        color: var(--text-muted);
-        font-weight: 500;
-    }
-
-    /* Authored Posts Styling */
-    .authored-posts-section {
-        margin-bottom: 6rem;
-    }
-
-    .posts-grid-compact {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 2rem;
-    }
-
-    .view-all-link {
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: var(--accent-primary);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all 0.2s;
-    }
-
-    .view-all-link:hover {
-        color: var(--accent-secondary);
-        gap: 0.75rem;
-    }
-
-    /* Game Collection Improvements */
-    .game-section {
-        margin-bottom: 5rem;
-    }
-
-    @media (max-width: 768px) {
-        .posts-grid-compact {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .section-header-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-bottom: 2rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .section-title-premium {
-        font-size: 1.75rem;
-        font-weight: 800;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        color: var(--text-main);
-        margin: 0;
-    }
-
-    .title-icon {
-        color: var(--accent-primary);
-        width: 2rem;
-        height: 2rem;
-    }
-
-    .collection-count {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .games-gallery-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: 2.5rem;
-    }
-
-    .game-poster-wrapper {
-        transition: transform 0.4s cubic-bezier(0.2, 1, 0.2, 1);
-    }
-
-    .poster-card-premium {
-        background: var(--bg-surface-solid);
-        border-radius: 20px;
-        overflow: hidden;
-        position: relative;
-        box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.15);
-        border: 1px solid var(--border-subtle);
-        transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
-    }
-
-    .game-poster-wrapper:hover .poster-card-premium,
-    .game-poster-wrapper.is-active .poster-card-premium {
-        transform: translateY(-12px);
-        box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.3);
-        border-color: var(--accent-primary);
-    }
-
-    .poster-image-area {
-        position: relative;
-        aspect-ratio: 3 / 4;
-        overflow: hidden;
-        background: #000;
-    }
-
-    .poster-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.8s cubic-bezier(0.2, 1, 0.2, 1);
-    }
-
-    .game-poster-wrapper:hover .poster-img {
-        transform: scale(1.1);
-        opacity: 0.8;
-    }
-
-    .poster-glow {
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(
-            circle at 50% 50%,
-            var(--accent-primary) 0%,
-            transparent 70%
-        );
-        opacity: 0;
-        transition: opacity 0.4s ease;
-        mix-blend-mode: soft-light;
-    }
-
-    .game-poster-wrapper:hover .poster-glow {
-        opacity: 0.4;
-    }
-
-    .poster-empty {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--bg-surface-hover);
-        color: var(--text-muted);
-    }
-
-    .empty-icon {
-        width: 4rem;
-        height: 4rem;
-        opacity: 0.2;
-    }
-
-    .poster-info-glass {
-        position: absolute;
-        bottom: 12px;
-        left: 12px;
-        right: 12px;
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 16px;
-        padding: 1rem;
-        transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
-        z-index: 10;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    }
-
-    :global([data-theme="dark"]) .poster-info-glass {
-        background: rgba(30, 41, 59, 0.8);
-        border-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .game-poster-wrapper:hover .poster-info-glass,
-    .game-poster-wrapper.is-active .poster-info-glass {
-        bottom: 18px;
-        padding-bottom: 1.5rem;
-        background: rgba(255, 255, 255, 0.9);
-    }
-
-    :global([data-theme="dark"]) .game-poster-wrapper:hover .poster-info-glass,
-    :global([data-theme="dark"]) .game-poster-wrapper.is-active .poster-info-glass {
-        background: rgba(15, 23, 42, 0.95);
-    }
-
-    .title-status-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .game-name-display {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: var(--text-main);
-        line-height: 1.25;
-        margin: 0;
-        transition: color 0.3s;
-    }
-
-    .playing-indicator-dot {
-        width: 10px;
-        height: 10px;
-        background: #00ff88;
-        border-radius: 50%;
-        box-shadow: 0 0 10px #00ff88;
-        animation: pulse-dot 2s infinite;
-        flex-shrink: 0;
-    }
-
-    @keyframes pulse-dot {
-        0% {
-            transform: scale(0.95);
-            opacity: 0.8;
-        }
-        50% {
-            transform: scale(1.2);
-            opacity: 1;
-        }
-        100% {
-            transform: scale(0.95);
-            opacity: 0.8;
-        }
-    }
-
-    .expand-details {
-        height: 0;
-        opacity: 0;
-        overflow: hidden;
-        transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
-        margin-top: 0;
-    }
-
-    .game-poster-wrapper:hover .expand-details,
-    .game-poster-wrapper.is-active .expand-details {
-        height: auto;
-        opacity: 1;
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--border-subtle);
-    }
-
-    .game-status-details {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .pill-mini {
-        font-size: 0.65rem;
-        font-weight: 700;
-        padding: 0.2rem 0.5rem;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        backdrop-filter: blur(4px);
-    }
-
-    .pill-mini.skill {
-        background: rgba(14, 165, 233, 0.15);
-        color: #0369a1;
-        border: 1px solid rgba(14, 165, 233, 0.3);
-    }
-    :global([data-theme="dark"]) .pill-mini.skill {
-        background: rgba(14, 165, 233, 0.3);
-        color: #bae6fd;
-        border: 1px solid rgba(14, 165, 233, 0.4);
-    }
-
-    .pill-mini.impression {
-        background: rgba(236, 72, 153, 0.15);
-        color: #be185d;
-        border: 1px solid rgba(236, 72, 153, 0.3);
-    }
-    :global([data-theme="dark"]) .pill-mini.impression {
-        background: rgba(236, 72, 153, 0.3);
-        color: #fbcfe8;
-        border: 1px solid rgba(236, 72, 153, 0.4);
-    }
-
-    .pill-mini.recruitment {
-        background: rgba(16, 185, 129, 0.15);
-        color: #047857;
-        border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-    :global([data-theme="dark"]) .pill-mini.recruitment {
-        background: rgba(16, 185, 129, 0.3);
-        color: #a7f3d0;
-        border: 1px solid rgba(16, 185, 129, 0.4);
-    }
-
-    .icon-nano {
-        width: 0.7rem;
-        height: 0.7rem;
-    }
-
-    .status-footer {
-        font-size: 0.7rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-    }
-
-    :global([data-theme="dark"]) .status-footer {
-        color: rgba(255, 255, 255, 0.6);
-    }
-
-    .profile-empty-state {
-        text-align: center;
-        padding: 4rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1.5rem;
-        color: var(--text-muted);
-    }
-
-    .empty-icon-fancy {
-        width: 4rem;
-        height: 4rem;
-        opacity: 0.2;
-    }
+<style is:global>
+  /* Hallmark · genre: editorial · macrostructure: Member dossier · design-system: design.md · designed-as-app */
+  .member-page { padding-block: var(--space-2xl) var(--space-4xl); }
+  .member-hero { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: var(--space-xl); align-items: start; padding-block-end: var(--space-2xl); border-block-end: var(--rule-medium) solid var(--color-ink); }
+  .member-avatar { display: grid; width: 8rem; aspect-ratio: 1; place-items: center; overflow: hidden; background: var(--color-paper-2); color: var(--color-muted); font-family: var(--font-display); font-size: var(--text-2xl); }
+  .member-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .member-identity { display: grid; align-content: start; gap: var(--space-md); min-width: 0; }
+  .member-identity > p:first-child, .section-head > div > p { color: var(--color-accent); font-size: var(--text-sm); font-weight: 700; }
+  .member-role { color: var(--color-muted); font-weight: 500; }
+  .member-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm) var(--space-md); }
+  .member-title h1 { min-width: 0; font-size: clamp(2.4rem, 7vw, 4.75rem); line-height: 1; letter-spacing: -0.04em; overflow-wrap: anywhere; }
+  .member-bio { max-width: 52ch; color: var(--color-ink-2); font-size: var(--text-md); line-height: 1.8; }
+  .member-socials { display: flex; flex-wrap: wrap; gap: var(--space-sm) var(--space-lg); }
+  .member-socials a { display: inline-flex; align-items: center; gap: var(--space-xs); color: var(--color-muted); font-size: var(--text-sm); border-block-end: var(--rule-hair) solid var(--color-rule); }
+  .member-socials svg { width: 1rem; height: 1rem; }
+  .member-counts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-block-start: var(--rule-hair) solid var(--color-rule); }
+  .member-counts div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md); padding-block-start: var(--space-md); }
+  .member-counts div + div { padding-inline-start: var(--space-lg); border-inline-start: var(--rule-hair) solid var(--color-rule); }
+  .member-counts dt { color: var(--color-muted); font-size: var(--text-sm); }
+  .member-counts dd { font-family: var(--font-display); font-size: var(--text-lg); font-variant-numeric: tabular-nums; }
+  .member-content { display: grid; gap: var(--space-3xl); padding-block-start: var(--space-2xl); }
+  .member-posts, .member-games { min-width: 0; }
+  .section-head { display: flex; align-items: end; justify-content: space-between; gap: var(--space-md); padding-block-end: var(--space-md); border-block-end: var(--rule-hair) solid var(--color-rule-strong); }
+  .section-head > div { display: grid; gap: var(--space-xs); }
+  .section-head h2 { font-size: var(--text-xl); line-height: 1.25; }
+  .section-head > a { display: inline-flex; align-items: center; gap: var(--space-xs); color: var(--color-accent); font-size: var(--text-sm); white-space: nowrap; }
+  .section-head > a svg { width: 1em; height: 1em; }
+  .section-head > span { color: var(--color-muted); font-size: var(--text-sm); white-space: nowrap; }
+  .member-post { display: grid; gap: var(--space-md); padding-block: var(--space-xl); border-block-end: var(--rule-hair) solid var(--color-rule); }
+  .member-post:last-child { border-block-end: 0; }
+  .member-post time { color: var(--color-muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+  .member-post > div { display: grid; align-content: start; gap: var(--space-sm); min-width: 0; }
+  .member-post h3 { font-size: var(--text-lg); line-height: 1.4; overflow-wrap: anywhere; }
+  .member-post > div > p { max-width: 62ch; color: var(--color-ink-2); line-height: 1.8; }
+  .member-post__read { display: inline-flex; align-items: center; justify-self: end; gap: var(--space-xs); color: var(--color-accent); white-space: nowrap; }
+  .member-post__read svg { width: 1em; height: 1em; }
+  .member-game-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-xl) var(--space-md); padding-block-start: var(--space-xl); }
+  .member-game { display: grid; align-content: start; gap: var(--space-sm); min-width: 0; }
+  .member-game__cover { width: 100%; aspect-ratio: 3 / 4; overflow: hidden; background: var(--color-paper-2); }
+  .member-game__cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .member-game__cover > div { display: grid; height: 100%; place-items: center; color: var(--color-muted); }
+  .member-game__cover svg { width: var(--space-xl); height: var(--space-xl); }
+  .member-game__caption { display: grid; gap: var(--space-2xs); }
+  .member-game h3 { font-size: var(--text-base); line-height: 1.45; overflow-wrap: anywhere; }
+  .member-game__caption p { color: var(--color-accent); font-size: var(--text-sm); }
+  .member-game__caption small { color: var(--color-muted); font-size: var(--text-xs); line-height: 1.5; }
+  .section-empty { padding-block: var(--space-2xl); color: var(--color-muted); }
+  @media (hover: hover) and (pointer: fine) { .member-post h3 a:hover, .member-socials a:hover { color: var(--color-accent); } }
+  @media (min-width: 48rem) { .member-hero { grid-template-columns: 10rem minmax(0, 1fr) auto; align-items: end; } .member-avatar { width: 10rem; } .member-counts { grid-column: 3; grid-row: 1; align-self: stretch; min-width: 12rem; grid-template-columns: minmax(0, 1fr); border-block: 0; border-inline-start: var(--rule-hair) solid var(--color-rule); } .member-counts div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center; align-items: baseline; gap: var(--space-lg); padding: var(--space-md) 0 var(--space-md) var(--space-lg); } .member-counts div + div { padding-inline-start: var(--space-lg); border-inline-start: 0; border-block-start: var(--rule-hair) solid var(--color-rule); } .member-counts dd { font-size: var(--text-xl); text-align: end; } .member-post { grid-template-columns: 8rem minmax(0, 1fr); } .member-post__read { grid-column: 2; } }
+  @media (min-width: 64rem) { .member-content { grid-template-columns: minmax(0, 1.7fr) minmax(20rem, 0.85fr); align-items: start; } .member-games { position: sticky; inset-block-start: 7rem; } }
+  @media (max-width: 39.99rem) { .member-page { padding-block-start: var(--space-xl); } .member-hero { grid-template-columns: 5.5rem minmax(0, 1fr); gap: var(--space-lg) var(--space-md); } .member-avatar { width: 5.5rem; } .member-title h1 { font-size: var(--text-2xl); } .member-bio { font-size: var(--text-base); } .member-content { gap: var(--space-2xl); } .member-post h3 { font-size: var(--text-md); } }
 </style>
