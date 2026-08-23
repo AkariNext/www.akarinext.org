@@ -675,7 +675,8 @@ button {
 	flex: 1;
 }
 
-/* Hallmark · component: navigation indicator · genre: editorial · theme: Newsprint
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V4
+ * component: site header · genre: editorial · theme: cool editorial blue
  * states: default · hover · focus · active · motion: shared-element
  */
 .site-edge-header {
@@ -710,7 +711,16 @@ button {
 	width: 2rem;
 	height: 2rem;
 	margin-inline-end: var(--space-sm);
-	object-fit: contain;
+	object-fit: cover;
+	object-position: center;
+	clip-path: polygon(
+		50% 12%, 58% 18%, 65% 18%, 67% 24%, 73% 29%,
+		70% 35%, 73% 42%, 67% 47%, 65% 54%, 58% 53%,
+		50% 58%, 42% 54%, 35% 54%, 33% 47%, 27% 42%,
+		30% 36%, 27% 29%, 33% 24%, 35% 18%, 43% 18%
+	);
+	transform: scale(1.55);
+	transform-origin: 50% 35%;
 }
 
 .edge-actions,
