@@ -719,7 +719,7 @@ button {
 		50% 58%, 42% 54%, 35% 54%, 33% 47%, 27% 42%,
 		30% 36%, 27% 29%, 33% 24%, 35% 18%, 43% 18%
 	);
-	transform: scale(1.55);
+	transform: translateY(var(--space-xs)) scale(1.55);
 	transform-origin: 50% 35%;
 }
 
