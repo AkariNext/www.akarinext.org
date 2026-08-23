@@ -784,9 +784,13 @@ button {
 	height: 1.1rem;
 }
 
-[data-theme="light"] .moon-icon,
-[data-theme="dark"] .sun-icon {
+.theme-toggle .moon-icon,
+[data-theme="dark"] .theme-toggle .sun-icon {
 	display: none;
+}
+
+[data-theme="dark"] .theme-toggle .moon-icon {
+	display: block;
 }
 
 .site-colophon {
