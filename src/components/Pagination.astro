@@ -1,0 +1,25 @@
+---
+import { ArrowLeft, ArrowRight } from "lucide-astro";
+
+interface Props {
+	page: number;
+	totalPages: number;
+	basePath: string;
+}
+const { page, totalPages, basePath } = Astro.props;
+const href = (target: number) =>
+	target === 1 ? basePath : `${basePath}?page=${target}`;
+---
+
+{totalPages > 1 && <nav class="pagination" aria-label="ページ送り">
+  {page > 1 ? <a rel="prev" href={href(page - 1)}><ArrowLeft aria-hidden="true" />前へ</a> : <span></span>}
+  <span>{page} / {totalPages}</span>
+  {page < totalPages ? <a rel="next" href={href(page + 1)}>次へ<ArrowRight aria-hidden="true" /></a> : <span></span>}
+</nav>}
+
+<style>
+  .pagination { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--space-md); padding-block-start: var(--space-xl); border-block-start: var(--rule-hair) solid var(--color-rule); color: var(--color-muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+  .pagination a { display: inline-flex; align-items: center; gap: var(--space-xs); min-height: 2.75rem; color: var(--color-accent); }
+  .pagination a:last-child { justify-self: end; }
+  .pagination svg { width: 1em; height: 1em; }
+</style>

@@ -1,0 +1,86 @@
+---
+import { ArrowLeft } from "lucide-astro";
+import Pagination from "../../components/Pagination.astro";
+import PostIndexList from "../../components/PostIndexList.astro";
+import Layout from "../../layouts/Layout.astro";
+import { type CmsPost, type CmsTag, cmsClient } from "../../lib/cms";
+
+export const prerender = false;
+const slug = (Astro.params.slug || "").trim();
+const page = Math.max(
+	1,
+	Number.parseInt(Astro.url.searchParams.get("page") || "1", 10) || 1,
+);
+const perPage = 10;
+let tag: CmsTag | null = null;
+let result = {
+	items: [] as CmsPost[],
+	page,
+	perPage,
+	totalItems: 0,
+	totalPages: 0,
+};
+
+try {
+	const tags = slug
+		? await cmsClient
+				.items<CmsTag>("tags")
+				.readByQuery({ limit: 1, where: { slug: { equals: slug } } })
+		: [];
+	tag = tags[0] || null;
+	if (tag)
+		result = await cmsClient.items<CmsPost>("posts").readPage({
+			page,
+			perPage,
+			sort: ["-published_date", "-createdAt", "-id"],
+			where: { "tags.id": { contains: tag.id } },
+		});
+} catch (error) {
+	console.error("[Tag] Error fetching data", error);
+}
+
+const notFound =
+	!tag || result.totalItems === 0 || page > Math.max(1, result.totalPages);
+if (notFound) {
+	Astro.response.status = 404;
+	Astro.response.statusText = "Not Found";
+}
+const tagName = tag?.name || slug;
+const title = notFound
+	? "タグが見つかりません"
+	: page > 1
+		? `「${tagName}」の記事 ${page}ページ目`
+		: `「${tagName}」の記事`;
+const description = notFound
+	? "指定されたタグの記事は見つかりませんでした。"
+	: `AkariNextの「${tagName}」に関する記事を${result.totalItems}本掲載しています。`;
+const basePath = `/tags/${encodeURIComponent(tag?.slug || slug)}`;
+const canonical = page === 1 ? basePath : `${basePath}?page=${page}`;
+---
+
+<Layout title={title} description={description} canonical={canonical} noindex={notFound}>
+  <div class="tag-index container">
+    <header class="tag-index__head">
+      <a href="/posts"><ArrowLeft aria-hidden="true" />記事一覧</a>
+      <p>AkariNext Journal</p>
+      <h1>{notFound ? "タグが見つかりません" : tagName}</h1>
+      <div class="tag-index__summary"><p>{notFound ? "指定されたタグは存在しないか、記事がまだありません。" : `「${tagName}」についてメンバーが書いた記事を、新しい順に掲載しています。`}</p>{!notFound && <span>{result.totalItems} 本</span>}</div>
+    </header>
+    <PostIndexList posts={notFound ? [] : result.items} emptyMessage="このタグの記事は見つかりませんでした" />
+    {!notFound && <Pagination page={result.page} totalPages={result.totalPages} basePath={basePath} />}
+  </div>
+</Layout>
+
+<style>
+  .tag-index { padding-block: var(--space-2xl) var(--space-4xl); }
+  .tag-index__head { display: grid; gap: var(--space-lg); padding-block-end: var(--space-2xl); border-block-end: var(--rule-medium) solid var(--color-ink); }
+  .tag-index__head > a { display: inline-flex; align-items: center; justify-self: start; gap: var(--space-xs); min-height: 2.75rem; color: var(--color-accent); }
+  .tag-index__head > a svg { width: 1em; height: 1em; }
+  .tag-index__head > p { color: var(--color-accent); font-weight: 700; }
+  .tag-index__head h1 { max-width: 18ch; font-size: var(--text-display); line-height: 1.08; letter-spacing: -0.04em; overflow-wrap: anywhere; }
+  .tag-index__summary { display: grid; gap: var(--space-md); align-items: end; }
+  .tag-index__summary p { max-width: 58ch; color: var(--color-ink-2); font-size: var(--text-md); line-height: 1.8; }
+  .tag-index__summary span { color: var(--color-muted); font-variant-numeric: tabular-nums; }
+  @media (min-width: 40rem) { .tag-index__summary { grid-template-columns: minmax(0, 1fr) auto; } }
+  @media (max-width: 39.99rem) { .tag-index { padding-block-start: var(--space-xl); } }
+</style>

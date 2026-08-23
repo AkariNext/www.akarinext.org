@@ -39,12 +39,37 @@ interface PbRecord {
 
 interface PbListResult {
 	items: PbRecord[];
+	page?: number;
+	perPage?: number;
+	totalItems?: number;
+	totalPages?: number;
+}
+
+interface PbPageResult {
+	items: PbRecord[];
+	page: number;
+	perPage: number;
+	totalItems: number;
+	totalPages: number;
 }
 
 export interface CmsQuery {
 	sort?: string | string[];
 	limit?: number;
 	where?: Record<string, unknown>;
+}
+
+export interface CmsPage<T> {
+	items: T[];
+	page: number;
+	perPage: number;
+	totalItems: number;
+	totalPages: number;
+}
+
+export interface CmsPageQuery extends CmsQuery {
+	page?: number;
+	perPage?: number;
 }
 
 /** ソートキーを PocketBase のフィールド名に変換 */
@@ -68,9 +93,44 @@ function buildFilter(where?: Record<string, unknown>): string | undefined {
 			} else {
 				parts.push(`${key} = '${String(raw).replace(/'/g, "\\'")}'`);
 			}
+		} else if (val && typeof val === "object" && "contains" in val) {
+			const raw = (val as { contains: unknown }).contains;
+			parts.push(`${key} ?= '${String(raw).replace(/'/g, "\\'")}'`);
 		}
 	}
 	return parts.length > 0 ? parts.join(" && ") : undefined;
+}
+
+async function pbFetchPage(
+	collection: string,
+	options: CmsPageQuery & { expand?: string } = {},
+): Promise<PbPageResult> {
+	const search = new URLSearchParams();
+	search.set("page", String(Math.max(1, options.page ?? 1)));
+	search.set("perPage", String(options.perPage ?? options.limit ?? 12));
+	if (options.sort) {
+		const sortArr = Array.isArray(options.sort) ? options.sort : [options.sort];
+		search.set("sort", sortArr.map(mapSortField).join(","));
+	}
+	const filter = buildFilter(options.where);
+	if (filter) search.set("filter", filter);
+	if (options.expand) search.set("expand", options.expand);
+
+	const url = `${POCKETBASE_URL}/api/collections/${collection}/records?${search}`;
+	const res = await fetch(url, { cache: "no-store" });
+	if (!res.ok) {
+		throw new Error(
+			`CMS API Error: ${res.status} ${res.statusText} (${collection})`,
+		);
+	}
+	const data = (await res.json()) as PbListResult;
+	return {
+		items: Array.isArray(data.items) ? data.items : [],
+		page: Number(data.page || options.page || 1),
+		perPage: Number(data.perPage || options.perPage || options.limit || 12),
+		totalItems: Number(data.totalItems || 0),
+		totalPages: Number(data.totalPages || 0),
+	};
 }
 
 async function pbFetchList(
@@ -273,6 +333,20 @@ export const cmsClient = {
 				expand: config.expand,
 			});
 			return records.map(config.shape) as T[];
+		},
+		readPage: async (query: CmsPageQuery = {}): Promise<CmsPage<T>> => {
+			const config = collectionConfig[collection];
+			if (!config || collection === "users" || collection === "authors") {
+				throw new Error(`Pagination is not supported for collection: ${collection}`);
+			}
+			const result = await pbFetchPage(config.collection, {
+				...query,
+				expand: config.expand,
+			});
+			return {
+				...result,
+				items: result.items.map(config.shape) as T[],
+			};
 		},
 	}),
 	singleton: <T>(slug: string) => ({

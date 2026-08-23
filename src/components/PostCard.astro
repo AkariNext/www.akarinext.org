@@ -19,7 +19,7 @@ const excerpt = post.is_spoiler ? "この記事にはネタバレが含まれて
   {excerpt && <p class="journal-card__excerpt">{excerpt}</p>}
   <div class="journal-card__foot">
     {post.is_spoiler && <span class="journal-card__spoiler"><Shield aria-hidden="true" /> ネタバレ</span>}
-    {post.tags && post.tags.length > 0 && <div class="journal-card__tags">{post.tags.slice(0, 2).map((tag) => <a href={`/posts?tag=${tag.slug}`}>#{tag.name}</a>)}</div>}
+    {post.tags && post.tags.length > 0 && <div class="journal-card__tags">{post.tags.slice(0, 2).map((tag) => <a href={`/tags/${tag.slug}`}>#{tag.name}</a>)}</div>}
   </div>
 </article>
 

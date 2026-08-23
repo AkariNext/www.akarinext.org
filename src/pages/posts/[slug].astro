@@ -12,7 +12,10 @@ try {
   if (!found.length && value) found = await cmsClient.items<CmsPost>("posts").readByQuery({ limit: 1, where: { id: { equals: value } } });
   post = found[0] || null;
 } catch (error) { console.error("Error fetching post", error); }
-if (!post) return Astro.redirect("/posts");
+if (!post) {
+  Astro.response.status = 404;
+  return new Response("記事が見つかりませんでした", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+}
 const content = await markdownToHtml(post.content);
 const image = getMediaUrl(post.image);
 const published = post.published_date || post.createdAt;
@@ -22,8 +25,20 @@ const authorName = author?.name || author?.username || "AkariNext";
 const authorImage = getMediaUrl(author?.avatar);
 const readMinutes = Math.max(1, Math.ceil((post.content?.length || 0) / 500));
 const socialIcon = (platform?: string) => ({ twitter: Twitter, x: Twitter, github: Github, twitch: Twitch, youtube: Youtube, discord: MessageSquare }[platform?.toLowerCase() || ""] || Globe);
+const canonicalPath = `/posts/${post.slug || post.id}`;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: post.title,
+  datePublished: new Date(published).toISOString(),
+  dateModified: new Date(post.updatedAt).toISOString(),
+  mainEntityOfPage: new URL(canonicalPath, "https://www.akarinext.org").href,
+  author: { "@type": "Person", name: authorName, ...(author ? { url: new URL(`/users/${author.id}`, "https://www.akarinext.org").href } : {}) },
+  publisher: { "@type": "Organization", name: "AkariNext", url: "https://www.akarinext.org/" },
+  ...(image ? { image: [image] } : {}),
+};
 ---
-<Layout title={post.title} description={post.is_spoiler ? post.spoiler_warning || "この記事にはネタバレが含まれています。" : post.content?.replace(/<[^>]*>/g, "").slice(0, 160)} image={image || undefined}>
+<Layout title={post.title} description={post.is_spoiler ? post.spoiler_warning || "この記事にはネタバレが含まれています。" : post.content?.replace(/<[^>]*>/g, "").slice(0, 160)} image={image || undefined} canonical={canonicalPath} ogType="article" structuredData={structuredData}>
   <article class="reading-page">
     <header class="reading-head container">
       <a href="/posts" class="back-link"><ArrowLeft aria-hidden="true" />記事一覧</a>
@@ -41,7 +56,7 @@ const socialIcon = (platform?: string) => ({ twitter: Twitter, x: Twitter, githu
       <div class:list={["prose-wrapper", { "is-concealed": post.is_spoiler }]} id="post-content-wrapper"><div class="prose" set:html={content}></div></div>
       {post.is_spoiler && <aside class="spoiler-notice" id="spoiler-overlay"><Shield aria-hidden="true" /><h2>ネタバレを含みます</h2><p>{post.spoiler_warning || "この記事にはネタバレが含まれています。"}</p><button type="button" id="btn-reveal-spoiler"><Eye aria-hidden="true" />内容を表示</button></aside>}
 
-      {post.tags && post.tags.length > 0 && <nav class="article-tags" aria-label="記事タグ">{post.tags.map((tag) => <a href={`/posts?tag=${tag.slug}`}>#{tag.name}</a>)}</nav>}
+      {post.tags && post.tags.length > 0 && <nav class="article-tags" aria-label="記事タグ">{post.tags.map((tag) => <a href={`/tags/${tag.slug}`}>#{tag.name}</a>)}</nav>}
 
       {author && <aside class="author-note">
         <div class="author-note__identity">{authorImage ? <img src={authorImage} alt="" /> : <span class="byline-placeholder"><User aria-hidden="true" /></span>}<div><h2>{authorName}</h2>{author.staff_title && <p>{author.staff_title}</p>}</div></div>
