@@ -251,13 +251,16 @@ function shapeTag(record: PbRecord): CmsTag {
 	};
 }
 
-function shapeSeries(record: PbRecord): CmsSeries {
+export function shapeSeries(record: PbRecord): CmsSeries {
 	return {
 		id: record.id,
 		title: String(record.title ?? ""),
 		slug: String(record.slug ?? ""),
 		description: (record.description as string) || null,
 		cover_image: toMedia(record, "cover_image"),
+		status: (record.status as string) || null,
+		owner: (record.owner as string) || null,
+		editors: Array.isArray(record.editors) ? (record.editors as string[]) : [],
 		...timestamps(record),
 	};
 }

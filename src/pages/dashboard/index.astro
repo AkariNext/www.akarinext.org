@@ -10,13 +10,19 @@ import {
 } from "lucide-astro";
 import Layout from "../../layouts/Layout.astro";
 import { cmsClient, getMediaUrl } from "../../lib/cms";
-import type { CmsGame, CmsGameEntry, CmsPost } from "../../lib/cms-types";
+import type {
+	CmsGame,
+	CmsGameEntry,
+	CmsPost,
+	CmsSeries,
+} from "../../lib/cms-types";
 import {
 	DashboardError,
 	getDashboardToken,
 	isSameOriginRequest,
 	listOwnGameEntries,
 	listOwnPosts,
+	listOwnSeries,
 	mutateGameEntry,
 } from "../../lib/dashboard.server";
 
@@ -57,14 +63,16 @@ if (Astro.request.method === "POST") {
 
 let posts: CmsPost[] = [],
 	entries: CmsGameEntry[] = [],
-	games: CmsGame[] = [];
+	games: CmsGame[] = [],
+	ownSeries: CmsSeries[] = [];
 let loadError = "";
 try {
 	const token = getDashboardToken(Astro.cookies);
-	[posts, entries, games] = await Promise.all([
+	[posts, entries, games, ownSeries] = await Promise.all([
 		listOwnPosts(token, user.id),
 		listOwnGameEntries(token, user.id),
 		cmsClient.items<CmsGame>("games").readByQuery({ sort: "name", limit: 500 }),
+		listOwnSeries(token, user.id),
 	]);
 } catch (cause) {
 	console.error("[Dashboard] Error loading dashboard", cause);
@@ -85,6 +93,7 @@ const stats = [
 	{ label: "公開", value: publishedCount },
 	{ label: "下書き", value: draftCount },
 	{ label: "ゲーム", value: entries.length },
+	{ label: "シリーズ", value: ownSeries.length },
 ];
 
 const notices: Record<string, string> = {
@@ -92,6 +101,7 @@ const notices: Record<string, string> = {
 	"game-added": "ゲームを追加しました。",
 	"game-saved": "ゲーム情報を保存しました。",
 	"game-deleted": "ゲームを削除しました。",
+	"series-deleted": "シリーズを削除しました。",
 };
 const notice = notices[Astro.url.searchParams.get("notice") ?? ""];
 const error = Astro.url.searchParams.get("error") || loadError;
@@ -227,6 +237,49 @@ const date = new Intl.DateTimeFormat("ja-JP", {
           <div class="empty__actions">
             <a class="button button--primary" href="/dashboard/posts/new"><Plus aria-hidden="true" />最初の記事を書く</a>
             <a class="link" href="/posts">公開されている記事を見る</a>
+          </div>
+        </div>
+      )}
+    </section>
+
+    <section class="section" id="series" aria-labelledby="series-heading">
+      <header class="section__head">
+        <div class="section__title"><h2 id="series-heading">シリーズ</h2></div>
+        <div class="section__tools">
+          <a class="button button--primary" href="/dashboard/series/new"><Plus aria-hidden="true" />新しいシリーズ</a>
+        </div>
+      </header>
+
+      {ownSeries.length ? (
+        <ol class="posts">
+          {ownSeries.map((item) => (
+            <li>
+              <div class="posts__meta">
+                <span class="posts__badge-row">
+                  <span class:list={["status", { "status--live": item.status === "published" }]}>
+                    {item.status === "published" ? "公開" : "下書き"}
+                  </span>
+                  {item.owner !== user.id && <span>共同編集</span>}
+                  <time datetime={item.updatedAt}>{date.format(new Date(item.updatedAt))} 更新</time>
+                </span>
+              </div>
+              <div class="posts__body">
+                <h3>
+                  <a href={item.status === "published" ? `/series/${item.slug || item.id}` : `/dashboard/series/${item.id}`}>
+                    {item.title}
+                  </a>
+                </h3>
+                <a class="posts__edit" href={`/dashboard/series/${item.id}`}><Edit3 aria-hidden="true" />編集</a>
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <div class="empty">
+          <h3>まだシリーズはありません</h3>
+          <p>続きものを書くときにまとめられます。ほかのメンバーと一緒に編集することもできます。</p>
+          <div class="empty__actions">
+            <a class="button button--primary" href="/dashboard/series/new"><Plus aria-hidden="true" />シリーズを作る</a>
           </div>
         </div>
       )}

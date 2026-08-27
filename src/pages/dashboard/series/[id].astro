@@ -1,0 +1,64 @@
+---
+import SeriesEditor from "../../../components/dashboard/SeriesEditor.astro";
+import Layout from "../../../layouts/Layout.astro";
+import { cmsClient } from "../../../lib/cms";
+import type { CmsMember, CmsSeries } from "../../../lib/cms-types";
+import {
+	DashboardError,
+	getDashboardToken,
+	getOwnSeries,
+} from "../../../lib/dashboard.server";
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+const id = Astro.params.id ?? "";
+if (!user)
+	return Astro.redirect(`/auth/login?next=/dashboard/series/${id}`, 302);
+
+let series: CmsSeries | null = null;
+let members: CmsMember[] = [];
+let loadError = "";
+try {
+	const token = getDashboardToken(Astro.cookies);
+	const [found, all] = await Promise.all([
+		getOwnSeries(token, user.id, id),
+		cmsClient.items<CmsMember>("users").readByQuery({ limit: 200 }),
+	]);
+	series = found;
+	members = all.filter((member) => member.id !== user.id);
+} catch (cause) {
+	if (cause instanceof DashboardError && cause.status === 404) {
+		return Astro.redirect("/dashboard?error=series-missing#series", 303);
+	}
+	console.error("[Dashboard] Failed to load series", cause);
+	loadError =
+		cause instanceof DashboardError
+			? cause.message
+			: "シリーズを読み込めませんでした。";
+}
+
+const notices: Record<string, string> = {
+	"series-created": "シリーズを作成しました。",
+	"series-saved": "保存しました。",
+};
+const notice = notices[Astro.url.searchParams.get("notice") ?? ""];
+---
+
+<Layout title={series ? `${series.title}を編集` : "シリーズ"} noindex={true}>
+  {series ? (
+    <SeriesEditor
+      action={`/api/dashboard/series/${id}`}
+      series={series}
+      members={members}
+      currentUserId={user.id}
+      error={Astro.url.searchParams.get("error") || loadError}
+      notice={notice}
+    />
+  ) : (
+    <main class="container" style="padding-block: var(--space-2xl);">
+      <p>{loadError || "シリーズが見つかりません。"}</p>
+      <p><a href="/dashboard#series">ダッシュボードへ戻る</a></p>
+    </main>
+  )}
+</Layout>

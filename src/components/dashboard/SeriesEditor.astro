@@ -1,0 +1,233 @@
+---
+import { ArrowLeft, ExternalLink, Save, Trash2, Users } from "lucide-astro";
+import type { CmsMember, CmsSeries } from "../../lib/cms-types";
+
+interface Props {
+	action: string;
+	series?: CmsSeries;
+	/** 共同編集者に選べるメンバー（自分を除く） */
+	members: CmsMember[];
+	currentUserId: string;
+	error?: string | null;
+	notice?: string | null;
+}
+
+const { action, series, members, currentUserId, error, notice } = Astro.props;
+const isPublished = series?.status === "published";
+const editors = new Set(series?.editors ?? []);
+// 作成者だけが消せる。新規作成中は自分が作成者になる
+const isOwner = !series || series.owner === currentUserId;
+---
+
+<main class="editor">
+  <header class="editor__bar">
+    <div class="editor__bar-inner">
+      <a class="editor__back" href="/dashboard#series"><ArrowLeft aria-hidden="true" /><span>ダッシュボード</span></a>
+
+      <p class="editor__crumb">{series ? "シリーズを編集" : "新しいシリーズ"}</p>
+
+      <div class="editor__bar-actions">
+        {isPublished && series && (
+          <a class="editor__view" href={`/series/${series.slug || series.id}`} target="_blank" rel="noopener noreferrer">
+            <span>公開ページ</span><ExternalLink aria-hidden="true" />
+          </a>
+        )}
+
+        <div class="segmented" role="group" aria-label="状態">
+          <label>
+            <input type="radio" name="status" value="draft" form="series-form" checked={!isPublished} />
+            <span>下書き</span>
+          </label>
+          <label>
+            <input type="radio" name="status" value="published" form="series-form" checked={isPublished} />
+            <span>公開</span>
+          </label>
+        </div>
+
+        <button class="button button--primary" type="submit" form="series-form">
+          <Save aria-hidden="true" /><span>{series ? "保存" : "作成"}</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  {(error || notice) && (
+    <div class="editor__alert">
+      <p class:list={["message", { "message--error": error }]} role={error ? "alert" : "status"}>
+        {error || "保存しました。"}
+      </p>
+    </div>
+  )}
+
+  <div class="editor__layout">
+    <form id="series-form" class="editor__form" method="POST" action={action} enctype="multipart/form-data" data-astro-reload>
+      <label class="editor__title">
+        <span class="visually-hidden">シリーズ名</span>
+        <input name="title" value={series?.title ?? ""} maxlength="160" required aria-required="true" placeholder="シリーズ名を入力" />
+      </label>
+
+      <label class="field">
+        <span>説明</span>
+        <textarea name="description" rows="4" placeholder="どんな連載かを一言で。一覧と詳細ページに出ます。">{series?.description ?? ""}</textarea>
+        <small>空でも構いません。</small>
+      </label>
+
+      <div class="editor__grid">
+        <label class="field">
+          <span>URL名</span>
+          <input class="field--mono" name="slug" value={series?.slug ?? ""} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="my-series" />
+          <small>半角英数字とハイフン。空ならシリーズ ID を使います。</small>
+        </label>
+
+        <label class="field">
+          <span>カバー画像</span>
+          <input type="file" name="cover_image" accept="image/jpeg,image/png,image/webp,image/gif" />
+          <small>一覧と詳細ページの見出しに使われます。</small>
+        </label>
+      </div>
+
+      {series?.cover_image && (
+        <div class="field cover">
+          <span>現在のカバー</span>
+          <img src={series.cover_image.url} alt="" width="240" height="135" />
+          <label><input type="checkbox" name="remove_cover" />削除する</label>
+        </div>
+      )}
+
+      <fieldset class="field field--editors">
+        <legend><Users aria-hidden="true" />一緒に編集する人</legend>
+        {isOwner ? (
+          <>
+            <p>選んだ人はこのシリーズの設定を直せます。記事を寄せるだけなら選ぶ必要はありません。</p>
+            <div>
+              {members.length > 0 ? members.map((member) => (
+                <label>
+                  <input type="checkbox" name="editors" value={member.id} checked={editors.has(member.id)} />
+                  {member.name || member.username}
+                </label>
+              )) : <small>ほかのメンバーがいません。</small>}
+            </div>
+          </>
+        ) : (
+          <>
+            <p>顔ぶれを変えられるのは作成者だけです。</p>
+            <div class="field--editors-readonly">
+              {[...editors].map((id) => {
+                const member = members.find((m) => m.id === id);
+                return <span>{member ? member.name || member.username : "メンバー"}</span>;
+              })}
+              <span>ほか作成者</span>
+            </div>
+          </>
+        )}
+      </fieldset>
+    </form>
+
+    {series && isOwner && (
+      <details class="danger">
+        <summary><Trash2 aria-hidden="true" /><span>このシリーズを削除</span></summary>
+        <div class="danger__body">
+          <p>削除してもシリーズに入っていた記事は残ります。所属だけが外れます。確認のためシリーズ名を入力してください。</p>
+          <form method="POST" action={action} data-astro-reload>
+            <input type="hidden" name="_action" value="delete" />
+            <label class="field">
+              <span class="visually-hidden">シリーズ名</span>
+              <input name="confirm_title" autocomplete="off" required placeholder={series.title} />
+            </label>
+            <button class="button button--danger" type="submit"><Trash2 aria-hidden="true" />削除する</button>
+          </form>
+        </div>
+      </details>
+    )}
+
+    {series && !isOwner && (
+      <p class="note">このシリーズの作成者はほかのメンバーです。設定は編集できますが、削除はできません。</p>
+    )}
+  </div>
+</main>
+
+<style>
+  /* Hallmark · genre: editorial · macrostructure: Workbench · design-system: design.md
+   * 記事エディタと同じ骨格。項目が少ないので 1 列に収める。
+   */
+  .editor { display: grid; align-content: start; min-height: 100dvh; }
+
+  .editor__bar { position: sticky; inset-block-start: 0; z-index: 5; border-block-end: var(--rule-hair) solid var(--color-rule); background: var(--color-paper); }
+  .editor__bar-inner { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-md); max-width: 72rem; margin-inline: auto; padding: var(--space-sm) var(--space-lg); }
+  .editor__back { display: inline-flex; align-items: center; gap: var(--space-xs); min-height: 2.75rem; color: var(--color-accent); white-space: nowrap; }
+  .editor__back svg { width: 1em; height: 1em; }
+  .editor__crumb { color: var(--color-muted); font-size: var(--text-sm); text-align: center; white-space: nowrap; }
+  .editor__bar-actions { display: flex; align-items: center; gap: var(--space-sm); }
+  .editor__view { display: inline-flex; align-items: center; gap: var(--space-xs); min-height: 2.75rem; color: var(--color-accent); font-size: var(--text-sm); white-space: nowrap; }
+  .editor__view svg { width: 1em; height: 1em; }
+
+  .segmented { display: flex; overflow: hidden; border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); }
+  .segmented label { display: inline-flex; }
+  .segmented input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .segmented span { display: inline-flex; min-height: 2.75rem; align-items: center; padding-inline: var(--space-md); background: var(--color-paper); color: var(--color-ink-2); font-size: var(--text-sm); white-space: nowrap; cursor: pointer; }
+  .segmented label + label span { border-inline-start: var(--rule-hair) solid var(--color-rule-strong); }
+  .segmented input:checked + span { background: var(--color-ink); color: var(--color-accent-ink); font-weight: 700; }
+  .segmented input:focus-visible + span { outline: var(--rule-medium) solid var(--color-focus); outline-offset: -2px; }
+
+  .button { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; gap: var(--space-xs); padding-inline: var(--space-lg); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-ink); font: inherit; font-size: var(--text-sm); cursor: pointer; white-space: nowrap; }
+  .button svg { width: 1em; height: 1em; }
+  .button--primary { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); }
+  .button--danger { border-color: var(--color-error); background: var(--color-paper); color: var(--color-error); }
+
+  .editor__alert { width: 100%; max-width: 72rem; margin-inline: auto; padding: var(--space-md) var(--space-lg) 0; }
+  .message { padding: var(--space-sm) var(--space-md); border: var(--rule-hair) solid var(--color-success); font-size: var(--text-sm); }
+  .message--error { border-color: var(--color-error); color: var(--color-error); }
+
+  .editor__layout { display: grid; gap: var(--space-xl); width: 100%; max-width: 72rem; margin-inline: auto; padding: var(--space-lg) var(--space-lg) var(--space-2xl); }
+  .editor__form { display: grid; align-content: start; gap: var(--space-lg); min-width: 0; }
+  .editor__grid { display: grid; gap: var(--space-lg); }
+  .editor__title input { width: 100%; min-height: 3.5rem; padding: var(--space-sm) 0; border: 0; border-block-end: var(--rule-hair) solid var(--color-rule); border-radius: 0; background: transparent; color: var(--color-ink); font-family: var(--font-display); font-size: var(--text-xl); font-weight: 700; letter-spacing: -0.02em; }
+  .editor__title input:focus { outline: 0; border-block-end-color: var(--color-accent); }
+  .editor__title input::placeholder { color: var(--color-muted); font-weight: 400; }
+
+  .field { display: grid; min-width: 0; gap: var(--space-xs); }
+  .field > span, .field legend { font-size: var(--text-sm); font-weight: 700; }
+  .field legend { display: flex; align-items: center; gap: var(--space-xs); }
+  .field legend svg { width: 1em; height: 1em; color: var(--color-accent); }
+  .field input:not([type="checkbox"]), .field textarea { width: 100%; min-height: 2.75rem; padding: var(--space-sm) var(--space-md); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); outline: var(--rule-medium) solid transparent; outline-offset: var(--space-3xs); background: var(--color-paper); color: var(--color-ink); font: inherit; }
+  .field textarea { line-height: 1.8; resize: vertical; }
+  .field--mono { font-family: var(--font-mono); font-size: var(--text-sm); }
+  .field input:focus, .field textarea:focus { outline-color: var(--color-focus); }
+  .field small { color: var(--color-muted); font-size: var(--text-xs); }
+  .field--editors { border: 0; padding: 0; }
+  .field--editors p { max-width: 60ch; color: var(--color-muted); font-size: var(--text-xs); }
+  .field--editors > div { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-md); padding-block-start: var(--space-2xs); }
+  .field--editors-readonly span { padding: var(--space-3xs) var(--space-xs); border: var(--rule-hair) solid var(--color-rule); font-size: var(--text-sm); }
+  .field--editors label { display: inline-flex; min-height: 2.75rem; align-items: center; gap: var(--space-xs); font-size: var(--text-sm); }
+  input[type="checkbox"] { width: 1rem; height: 1rem; accent-color: var(--color-accent); }
+  .cover img { width: 100%; max-width: 15rem; height: auto; aspect-ratio: 16 / 9; object-fit: cover; background: var(--color-paper-2); }
+  .cover label { display: inline-flex; min-height: 2.75rem; align-items: center; gap: var(--space-xs); font-size: var(--text-sm); }
+
+  .danger { border: var(--rule-hair) solid var(--color-error); border-radius: var(--radius-sm); }
+  .danger > summary { display: flex; align-items: center; gap: var(--space-xs); min-height: 2.75rem; padding: var(--space-sm) var(--space-md); color: var(--color-error); font-size: var(--text-sm); font-weight: 700; cursor: pointer; }
+  .danger > summary svg { width: 1em; height: 1em; }
+  .danger__body { display: grid; gap: var(--space-md); padding: var(--space-md); border-block-start: var(--rule-hair) solid var(--color-error); }
+  .danger__body p { max-width: 65ch; color: var(--color-muted); font-size: var(--text-sm); }
+  .danger__body form { display: grid; gap: var(--space-sm); }
+  .note { max-width: 65ch; color: var(--color-muted); font-size: var(--text-sm); }
+
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  @media (hover: hover) and (pointer: fine) {
+    .button--primary:hover { border-color: var(--color-ink); background: var(--color-ink); }
+    .button--danger:hover { background: var(--color-error); color: var(--color-accent-ink); }
+    .field input:not([type="checkbox"]):hover, .field textarea:hover { background: var(--color-paper-2); }
+  }
+
+  @media (min-width: 48rem) {
+    .editor__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .danger__body form { grid-template-columns: minmax(16rem, 28rem) auto; align-items: start; }
+  }
+
+  @media (max-width: 47.99rem) {
+    .editor__bar-inner { grid-template-columns: auto auto; row-gap: var(--space-xs); padding-inline: var(--space-md); }
+    .editor__crumb { grid-column: 1 / -1; order: 3; text-align: start; }
+    .editor__bar-actions { justify-content: end; }
+    .editor__layout { padding-inline: var(--space-md); }
+  }
+</style>

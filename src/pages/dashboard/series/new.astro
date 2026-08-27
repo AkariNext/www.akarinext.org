@@ -1,0 +1,30 @@
+---
+import SeriesEditor from "../../../components/dashboard/SeriesEditor.astro";
+import Layout from "../../../layouts/Layout.astro";
+import { cmsClient } from "../../../lib/cms";
+import type { CmsMember } from "../../../lib/cms-types";
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect("/auth/login?next=/dashboard/series/new", 302);
+
+let members: CmsMember[] = [];
+try {
+	const all = await cmsClient
+		.items<CmsMember>("users")
+		.readByQuery({ limit: 200 });
+	members = all.filter((member) => member.id !== user.id);
+} catch (error) {
+	console.error("[Dashboard] Failed to load members", error);
+}
+---
+
+<Layout title="新しいシリーズ" noindex={true}>
+  <SeriesEditor
+    action="/api/dashboard/series"
+    members={members}
+    currentUserId={user.id}
+    error={Astro.url.searchParams.get("error")}
+  />
+</Layout>

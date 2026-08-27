@@ -1,7 +1,13 @@
 import type { AstroCookies } from "astro";
 import { AUTH_COOKIE } from "./auth";
-import { type PbRecord, POCKETBASE_URL, shapeGame, shapePost } from "./cms";
-import type { CmsGameEntry, CmsPost } from "./cms-types";
+import {
+	type PbRecord,
+	POCKETBASE_URL,
+	shapeGame,
+	shapePost,
+	shapeSeries,
+} from "./cms";
+import type { CmsGameEntry, CmsPost, CmsSeries } from "./cms-types";
 
 interface PbListResult {
 	items?: PbRecord[];
@@ -145,7 +151,7 @@ export async function listOwnGameEntries(
 
 export async function createRecord(
 	token: string,
-	collection: "posts" | "user_games" | "media",
+	collection: "posts" | "user_games" | "media" | "series",
 	body: FormData,
 ): Promise<PbRecord> {
 	return (await requestPocketBase(token, collection, {
@@ -156,7 +162,7 @@ export async function createRecord(
 
 export async function updateRecord(
 	token: string,
-	collection: "posts" | "user_games",
+	collection: "posts" | "user_games" | "series",
 	id: string,
 	body: FormData,
 ): Promise<PbRecord> {
@@ -169,7 +175,7 @@ export async function updateRecord(
 
 export async function deleteRecord(
 	token: string,
-	collection: "posts" | "user_games",
+	collection: "posts" | "user_games" | "series",
 	id: string,
 ): Promise<void> {
 	await requestPocketBase(token, collection, { id, method: "DELETE" });
@@ -261,4 +267,168 @@ export async function mutateGameEntry(
 		throw new DashboardError("このゲームはすでに登録されています。", 400);
 	await createRecord(token, "user_games", gameRecordBody(input, userId));
 	return "game-added";
+}
+
+// ---------------------------------------------------------------------------
+// シリーズ
+//
+// 連載は 1 人のものとは限らない。作成者（owner）に加えて editors を持ち、
+// どちらも設定を編集できる。消せるのは owner だけ。
+// ---------------------------------------------------------------------------
+
+const SERIES_STATUS = new Set(["draft", "published"]);
+
+/**
+ * 記事から選べるシリーズ。
+ * 認証付きで引くと listRule により「公開済み + 自分が関わるもの」が返るので、
+ * 書きかけのシリーズにも記事を入れられる。
+ */
+export async function listSelectableSeries(
+	token: string,
+): Promise<CmsSeries[]> {
+	const search = new URLSearchParams({
+		page: "1",
+		perPage: "200",
+		sort: "title",
+	});
+	const result = (await requestPocketBase(token, "series", {
+		search,
+	})) as PbListResult;
+	return (result.items ?? []).map(shapeSeries);
+}
+
+/** 自分が作った、または共同編集者に入っているシリーズ */
+export async function listOwnSeries(
+	token: string,
+	userId: string,
+): Promise<CmsSeries[]> {
+	const id = escapeFilter(userId);
+	const search = new URLSearchParams({
+		page: "1",
+		perPage: "200",
+		sort: "-updated",
+		filter: `owner = '${id}' || editors.id ?= '${id}'`,
+	});
+	const result = (await requestPocketBase(token, "series", {
+		search,
+	})) as PbListResult;
+	return (result.items ?? []).map(shapeSeries);
+}
+
+export async function getOwnSeries(
+	token: string,
+	userId: string,
+	seriesId: string,
+): Promise<CmsSeries> {
+	const record = (await requestPocketBase(token, "series", {
+		id: seriesId,
+	})) as PbRecord | null;
+	if (!record) throw new DashboardError("シリーズが見つかりません。", 404);
+	const shaped = shapeSeries(record);
+	const canEdit =
+		shaped.owner === userId || (shaped.editors ?? []).includes(userId);
+	if (!canEdit) throw new DashboardError("このシリーズは編集できません。", 403);
+	return shaped;
+}
+
+function seriesRecordBody(
+	input: FormData,
+	options: { ownerId?: string; canManageEditors: boolean },
+): FormData {
+	const title = formText(input, "title");
+	if (!title) throw new DashboardError("タイトルを入力してください。", 400);
+
+	const status = formText(input, "status") || "draft";
+	if (!SERIES_STATUS.has(status)) {
+		throw new DashboardError("状態が正しくありません。", 400);
+	}
+
+	const slug = formText(input, "slug");
+	if (slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+		throw new DashboardError(
+			"URL名は半角英数字とハイフンで入力してください。",
+			400,
+		);
+	}
+
+	const body = new FormData();
+	body.set("title", title);
+	body.set("status", status);
+	body.set("description", formText(input, "description"));
+	// 空なら PocketBase 側の一意制約に触れないよう、ID を後で使う
+	if (slug) body.set("slug", slug);
+
+	// 共同編集者を触れるのは owner だけ。
+	// 編集者自身が保存したときに body へ含めると、フォームに自分の項目が無いぶん
+	// 自分が一覧から外れ、以後そのシリーズを開けなくなる。送らなければ現状が保たれる。
+	if (options.canManageEditors) {
+		const editors = input
+			.getAll("editors")
+			.filter(
+				(value): value is string =>
+					typeof value === "string" &&
+					value !== "" &&
+					value !== options.ownerId,
+			);
+		// 全部外した場合も反映したいので、空でも JSON で送る
+		body.set("editors", JSON.stringify(editors));
+	}
+
+	const cover = input.get("cover_image");
+	if (cover instanceof File && cover.size > 0) body.set("cover_image", cover);
+	if (input.get("remove_cover")) body.set("cover_image", "");
+
+	if (options.ownerId) body.set("owner", options.ownerId);
+	return body;
+}
+
+/** シリーズの作成・更新・削除。戻り値は通知に使うキー */
+export async function mutateSeries(
+	token: string,
+	userId: string,
+	input: FormData,
+): Promise<{ notice: string; id?: string }> {
+	const action = formText(input, "_action");
+	const id = formText(input, "id");
+
+	if (action === "delete") {
+		if (!id) throw new DashboardError("削除対象がわかりません。", 400);
+		const current = await getOwnSeries(token, userId, id);
+		if (current.owner !== userId) {
+			throw new DashboardError("削除できるのは作成者だけです。", 403);
+		}
+		// 確認のため入力されたタイトルと突き合わせる
+		if (formText(input, "confirm_title") !== current.title) {
+			throw new DashboardError("タイトルが一致しません。", 400);
+		}
+		await deleteRecord(token, "series", id);
+		return { notice: "series-deleted" };
+	}
+
+	if (id) {
+		const current = await getOwnSeries(token, userId, id); // 編集権限の確認
+		const record = await updateRecord(
+			token,
+			"series",
+			id,
+			seriesRecordBody(input, {
+				ownerId: current.owner ?? undefined,
+				canManageEditors: current.owner === userId,
+			}),
+		);
+		return { notice: "series-saved", id: record.id };
+	}
+
+	const record = await createRecord(
+		token,
+		"series",
+		seriesRecordBody(input, { ownerId: userId, canManageEditors: true }),
+	);
+	// slug が空なら ID を割り当てて URL を安定させる
+	if (!formText(input, "slug")) {
+		const patch = new FormData();
+		patch.set("slug", record.id);
+		await updateRecord(token, "series", record.id, patch);
+	}
+	return { notice: "series-created", id: record.id };
 }

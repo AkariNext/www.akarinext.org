@@ -69,6 +69,11 @@ export interface CmsSeries {
 	slug: string;
 	description?: string | null;
 	cover_image?: CmsMedia | null;
+	status?: string | null;
+	/** 作成者。消せるのはこの人だけ */
+	owner?: string | null;
+	/** 共同編集者。設定を一緒に直せる */
+	editors?: string[];
 	createdAt: string;
 	updatedAt: string;
 }
