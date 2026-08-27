@@ -1,5 +1,11 @@
 ---
-import { ArrowLeft, ExternalLink, Save, Settings2, Trash2 } from "lucide-astro";
+import {
+	ArrowLeft,
+	ExternalLink,
+	Save,
+	SlidersHorizontal,
+	Trash2,
+} from "lucide-astro";
 import type { CmsPost, CmsSeries, CmsTag } from "../../lib/cms-types";
 
 interface Props {
@@ -14,6 +20,7 @@ interface Props {
 const { action, post, tags, series, error, notice } = Astro.props;
 const selectedTags = new Set(post?.tags?.map((tag) => tag.id) ?? []);
 const selectedSeries = post?.series?.id ?? "";
+const isPublished = post?.status === "published";
 
 function localDateTime(value?: string | null): string {
 	if (!value) return "";
@@ -31,9 +38,16 @@ function localDateTime(value?: string | null): string {
 	return parts.replace(" ", "T");
 }
 
-// 記事以外の設定は普段たたんでおく。書き始める前に触るものが多く、
-// 執筆中はほとんど開かないため
-const settingsOpen = Boolean(error);
+/** ツールバー。glyph はアイコンではなく記法そのものを見せる */
+const tools = [
+	{ command: "bold", glyph: "B", label: "太字", hint: "Ctrl/⌘ + B" },
+	{ command: "italic", glyph: "I", label: "斜体", hint: "Ctrl/⌘ + I" },
+	{ command: "link", glyph: "[ ]", label: "リンク", hint: "Ctrl/⌘ + K" },
+	{ command: "heading", glyph: "H2", label: "見出し", hint: "見出しにする" },
+	{ command: "list", glyph: "•", label: "箇条書き", hint: "箇条書きにする" },
+	{ command: "quote", glyph: "❝", label: "引用", hint: "引用にする" },
+	{ command: "code", glyph: "</>", label: "コード", hint: "コードブロック" },
+] as const;
 ---
 
 <main class="editor">
@@ -42,189 +56,225 @@ const settingsOpen = Boolean(error);
     <div class="editor__bar-inner">
       <a class="editor__back" href="/dashboard"><ArrowLeft aria-hidden="true" /><span>ダッシュボード</span></a>
 
-      <p class="editor__crumb">{post ? "記事を編集" : "新しい記事"}</p>
+      <div class="editor__status-line">
+        <p class="editor__crumb">{post ? "記事を編集" : "新しい記事"}</p>
+        <small data-preview-state aria-live="polite"></small>
+      </div>
 
       <div class="editor__bar-actions">
-        {post?.status === "published" && (
-          <a class="editor__view" href={`/posts/${post.slug || post.id}`} target="_blank">
+        {isPublished && post && (
+          <a class="editor__view" href={`/posts/${post.slug || post.id}`} target="_blank" rel="noopener noreferrer">
             <span>公開ページ</span><ExternalLink aria-hidden="true" />
           </a>
         )}
-        <label class="editor__status">
-          <span class="visually-hidden">状態</span>
-          <select name="status" form="post-form">
-            <option value="draft" selected={!post || post.status === "draft"}>下書き</option>
-            <option value="published" selected={post?.status === "published"}>公開</option>
-          </select>
-        </label>
-        <button class="editor__save" type="submit" form="post-form">
+
+        <div class="segmented" role="group" aria-label="状態">
+          <label>
+            <input type="radio" name="status" value="draft" form="post-form" checked={!isPublished} />
+            <span>下書き</span>
+          </label>
+          <label>
+            <input type="radio" name="status" value="published" form="post-form" checked={isPublished} />
+            <span>公開</span>
+          </label>
+        </div>
+
+        <button class="button button--primary" type="submit" form="post-form">
           <Save aria-hidden="true" /><span>{post ? "保存" : "作成"}</span>
         </button>
       </div>
     </div>
   </header>
 
-  <div class="editor__messages" aria-live="polite">
-    {error && <p class="editor__message editor__message--error" role="alert">{error}</p>}
-    {notice && <p class="editor__message" role="status">保存しました。</p>}
-  </div>
-
-  <form id="post-form" class="editor__form" method="POST" action={action} enctype="multipart/form-data" data-astro-reload>
-    <label class="editor__title">
-      <span class="visually-hidden">タイトル</span>
-      <input name="title" value={post?.title ?? ""} maxlength="160" required aria-required="true" placeholder="タイトルを入力" />
-    </label>
-
-    <div class="editor__panes" data-mode="write">
-      <div class="editor__tabs" role="tablist" aria-label="本文の表示">
-        <button type="button" role="tab" data-pane="write" aria-selected="true" aria-controls="pane-write">書く</button>
-        <button type="button" role="tab" data-pane="preview" aria-selected="false" aria-controls="pane-preview">プレビュー</button>
-      </div>
-
-      <div class="editor__pane editor__pane--write" id="pane-write">
-        <span class="editor__pane-label">本文 <small>Markdown</small></span>
-        <div class="editor__mount" data-editor-mount>
-          <textarea id="editor-content" name="content" spellcheck="true" placeholder="Markdown で書けます。画像は貼り付け・ドロップで挿入されます。">{post?.content ?? ""}</textarea>
-        </div>
-      </div>
-
-      <section class="editor__pane editor__pane--preview" id="pane-preview" aria-label="プレビュー">
-        <span class="editor__pane-label">
-          プレビュー
-          <small data-preview-state aria-live="polite"></small>
-        </span>
-        <div class="editor__preview-body">
-          <div class="prose" data-preview-body></div>
-        </div>
-      </section>
+  {(error || notice) && (
+    <div class="editor__alert">
+      <p class:list={["message", { "message--error": error }]} role={error ? "alert" : "status"}>
+        {error || "保存しました。"}
+      </p>
     </div>
+  )}
 
-    <details class="editor__settings" open={settingsOpen}>
-      <summary><Settings2 aria-hidden="true" /><span>公開設定</span></summary>
+  <div class="editor__layout" data-mode="split">
+    <form id="post-form" class="editor__form" method="POST" action={action} enctype="multipart/form-data" data-astro-reload>
+      <label class="editor__title">
+        <span class="visually-hidden">タイトル</span>
+        <input name="title" value={post?.title ?? ""} maxlength="160" required aria-required="true" placeholder="タイトルを入力" />
+      </label>
 
-      <div class="editor__settings-grid">
-        <label class="field">
-          <span>カテゴリー</span>
-          <select name="category">
-            <option value="tech" selected={post?.category === "tech"}>技術・開発</option>
-            <option value="game" selected={post?.category === "game"}>ゲーム</option>
-            <option value="misc" selected={!post || post.category === "misc"}>雑談</option>
-          </select>
-          <small aria-hidden="true">&nbsp;</small>
-        </label>
+      <div class="editor__controls">
+        <div class="toolbar" role="toolbar" aria-label="本文の書式">
+          {tools.map((tool) => (
+            <button type="button" data-command={tool.command} aria-label={tool.label} title={`${tool.label}（${tool.hint}）`}>
+              {tool.glyph}
+            </button>
+          ))}
+          <span class="toolbar__hint">画像は貼り付け・ドロップで入ります</span>
+        </div>
 
+        <div class="viewtabs" role="tablist" aria-label="表示">
+          <button type="button" role="tab" data-view="split" aria-selected="true">2列</button>
+          <button type="button" role="tab" data-view="write" aria-selected="false">書くだけ</button>
+          <button type="button" role="tab" data-view="preview" aria-selected="false" class="viewtabs__preview">プレビュー</button>
+          <button type="button" role="tab" data-view="settings" aria-selected="false" class="viewtabs__settings">設定</button>
+        </div>
+      </div>
+
+      <div class="editor__panes">
+        <div class="pane pane--write" id="pane-write">
+          <span class="pane__label">
+            <span>本文 <small>Markdown</small></span>
+            <small data-char-count>0 字</small>
+          </span>
+          <div class="editor__mount" data-editor-mount>
+            <textarea id="editor-content" name="content" spellcheck="true" placeholder="Markdown で書けます。画像は貼り付け・ドロップで挿入されます。">{post?.content ?? ""}</textarea>
+          </div>
+        </div>
+
+        <section class="pane pane--preview" id="pane-preview" aria-label="プレビュー">
+          <span class="pane__label"><span>プレビュー</span></span>
+          <div class="editor__preview-body">
+            <div class="prose" data-preview-body></div>
+          </div>
+        </section>
+      </div>
+    </form>
+
+    <aside class="settings" id="pane-settings" aria-label="公開設定">
+      <div class="settings__head">
+        <SlidersHorizontal aria-hidden="true" />
+        <span>公開設定</span>
+      </div>
+
+      <div class="settings__body">
         <label class="field">
           <span>公開日時</span>
-          <input type="datetime-local" name="published_date" value={localDateTime(post?.published_date)} />
+          <input type="datetime-local" name="published_date" form="post-form" value={localDateTime(post?.published_date)} />
           <small>空のまま公開すると保存時刻が入ります。</small>
         </label>
 
         <label class="field">
           <span>URL名</span>
-          <input name="slug" value={post?.slug ?? ""} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="my-first-post" />
+          <input class="field--mono" name="slug" form="post-form" value={post?.slug ?? ""} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="my-first-post" />
           <small>半角英数字とハイフン。空なら記事 ID を使います。</small>
         </label>
-
-        <label class="field">
-          <span>シリーズ</span>
-          <select name="series">
-            <option value="">所属なし</option>
-            {series.map((item) => <option value={item.id} selected={selectedSeries === item.id}>{item.title}</option>)}
-          </select>
-          <small>公開済みのシリーズから選べます。</small>
-        </label>
-
-        <label class="field">
-          <span>シリーズ内の順番</span>
-          <input type="number" name="series_order" min="0" step="1" value={post?.series_order ?? ""} />
-          <small aria-hidden="true">&nbsp;</small>
-        </label>
-
-        <fieldset class="field field--checks field--wide">
-          <legend>タグ</legend>
-          <div>
-            {tags.length > 0 ? tags.map((tag) => (
-              <label><input type="checkbox" name="tags" value={tag.id} checked={selectedTags.has(tag.id)} />{tag.name}</label>
-            )) : <small>利用できるタグはありません。</small>}
-          </div>
-          <small aria-hidden="true">&nbsp;</small>
-        </fieldset>
-
-        <label class="field">
-          <span>サムネイル</span>
-          <input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif" />
-          <small>JPEG・PNG・WebP・GIF、8 MB まで。</small>
-        </label>
-
-        {post?.image && (
-          <div class="field editor__current-image">
-            <span>現在のサムネイル</span>
-            <img src={post.image.url} alt="" width="160" height="90" />
-            <label><input type="checkbox" name="remove_image" />削除する</label>
-          </div>
-        )}
-
-        <fieldset class="field field--checks">
-          <legend>ネタバレ</legend>
-          <div><label><input type="checkbox" name="is_spoiler" checked={post?.is_spoiler} />この記事にネタバレを含む</label></div>
-          <small aria-hidden="true">&nbsp;</small>
-        </fieldset>
-
-        <label class="field field--wide">
-          <span>ネタバレ警告文</span>
-          <input name="spoiler_warning" maxlength="300" value={post?.spoiler_warning ?? ""} placeholder="終盤の内容を含みます" />
-          <small>ネタバレを含む場合だけ入力します。</small>
-        </label>
       </div>
-    </details>
-  </form>
 
-  {post && (
-    <details class="editor__danger">
-      <summary><Trash2 aria-hidden="true" /><span>記事を削除</span></summary>
-      <div class="editor__danger-body">
-        <p>削除後は元に戻せません。確認のため記事タイトルを入力してください。</p>
-        <form method="POST" action={action} data-astro-reload>
-          <input type="hidden" name="_action" value="delete" />
+      <details class="settings__group" open>
+        <summary>分類</summary>
+        <div class="settings__body">
           <label class="field">
-            <span>記事タイトル</span>
-            <input name="confirm_title" autocomplete="off" required />
-            <small aria-hidden="true">&nbsp;</small>
+            <span>カテゴリー</span>
+            <select name="category" form="post-form">
+              <option value="tech" selected={post?.category === "tech"}>技術・開発</option>
+              <option value="game" selected={post?.category === "game"}>ゲーム</option>
+              <option value="misc" selected={!post || post.category === "misc"}>雑談</option>
+            </select>
           </label>
-          <button type="submit"><Trash2 aria-hidden="true" />削除する</button>
-        </form>
-      </div>
-    </details>
-  )}
+
+          <label class="field">
+            <span>シリーズ</span>
+            <select name="series" form="post-form">
+              <option value="">所属なし</option>
+              {series.map((item) => <option value={item.id} selected={selectedSeries === item.id}>{item.title}</option>)}
+            </select>
+          </label>
+
+          <label class="field">
+            <span>シリーズ内の順番</span>
+            <input type="number" name="series_order" form="post-form" min="0" step="1" value={post?.series_order ?? ""} />
+          </label>
+
+          <fieldset class="field field--checks">
+            <legend>タグ</legend>
+            <div>
+              {tags.length > 0 ? tags.map((tag) => (
+                <label><input type="checkbox" name="tags" form="post-form" value={tag.id} checked={selectedTags.has(tag.id)} />{tag.name}</label>
+              )) : <small>利用できるタグはありません。</small>}
+            </div>
+          </fieldset>
+        </div>
+      </details>
+
+      <details class="settings__group">
+        <summary>サムネイル</summary>
+        <div class="settings__body">
+          <label class="field">
+            <span class="visually-hidden">画像を選ぶ</span>
+            <input type="file" name="image" form="post-form" accept="image/jpeg,image/png,image/webp,image/gif" />
+            <small>JPEG・PNG・WebP・GIF、8 MB まで。</small>
+          </label>
+          {post?.image && (
+            <div class="settings__thumb">
+              <img src={post.image.url} alt="" width="160" height="90" />
+              <label><input type="checkbox" name="remove_image" form="post-form" />現在の画像を削除</label>
+            </div>
+          )}
+        </div>
+      </details>
+
+      <details class="settings__group">
+        <summary>ネタバレ</summary>
+        <div class="settings__body">
+          <fieldset class="field field--checks">
+            <legend class="visually-hidden">ネタバレ</legend>
+            <div><label><input type="checkbox" name="is_spoiler" form="post-form" checked={post?.is_spoiler} />この記事にネタバレを含む</label></div>
+          </fieldset>
+          <label class="field">
+            <span>警告文</span>
+            <input name="spoiler_warning" form="post-form" maxlength="300" value={post?.spoiler_warning ?? ""} placeholder="終盤の内容を含みます" />
+            <small>ネタバレを含む場合だけ入力します。</small>
+          </label>
+        </div>
+      </details>
+
+      {post && (
+        <details class="settings__group settings__group--danger">
+          <summary>この記事を削除</summary>
+          <div class="settings__body">
+            <p>削除後は元に戻せません。確認のため記事タイトルを入力してください。</p>
+            <form method="POST" action={action} data-astro-reload>
+              <input type="hidden" name="_action" value="delete" />
+              <label class="field">
+                <span class="visually-hidden">記事タイトル</span>
+                <input name="confirm_title" autocomplete="off" required placeholder={post.title} />
+              </label>
+              <button class="button button--danger" type="submit"><Trash2 aria-hidden="true" />削除する</button>
+            </form>
+          </div>
+        </details>
+      )}
+    </aside>
+  </div>
 </main>
 
 <script>
   import { onEachPage } from "../../scripts/on-page";
   import {
     createMarkdownEditor,
+    editorCommands,
     syncScroll,
   } from "../../scripts/markdown-editor";
 
-  // 本文のライブプレビュー。
-  // 変換はサーバー側の markdownToHtml に任せる（公開ページと同じ結果にするため）。
   onEachPage(() => {
-  const panes = document.querySelector<HTMLElement>(".editor__panes");
-  const textarea = document.querySelector<HTMLTextAreaElement>("#editor-content");
-  const previewBody = document.querySelector<HTMLElement>("[data-preview-body]");
-  const previewState = document.querySelector<HTMLElement>("[data-preview-state]");
-
-  if (panes && textarea && previewBody && previewState && textarea.dataset.bound !== "true") {
+    const layout = document.querySelector<HTMLElement>(".editor__layout");
+    const textarea = document.querySelector<HTMLTextAreaElement>("#editor-content");
+    const previewBody = document.querySelector<HTMLElement>("[data-preview-body]");
+    const previewState = document.querySelector<HTMLElement>("[data-preview-state]");
+    const charCount = document.querySelector<HTMLElement>("[data-char-count]");
+    if (!layout || !textarea || !previewBody || !previewState) return;
+    if (textarea.dataset.bound === "true") return;
     textarea.dataset.bound = "true";
+
     let timer: ReturnType<typeof setTimeout> | undefined;
     let lastRendered: string | null = null;
     let inFlight = false;
     let pending = false;
 
+    // 変換は公開ページと同じ markdownToHtml に任せる。ブラウザ側で別実装を持つと見え方がズレる
     const render = async (): Promise<void> => {
       const content = textarea.value;
       if (content === lastRendered) return;
       if (inFlight) {
-        // 変換中に打鍵が続いた場合は、終わってから最新の内容で描き直す
         pending = true;
         return;
       }
@@ -239,7 +289,7 @@ const settingsOpen = Boolean(error);
         if (!res.ok) throw new Error(String(res.status));
         const data = (await res.json()) as { html?: string };
         previewBody.innerHTML =
-          data.html || '<p class="editor__preview-empty">まだ何も書かれていません。</p>';
+          data.html || '<p class="preview-empty">まだ何も書かれていません。</p>';
         lastRendered = content;
         previewState.textContent = "";
       } catch {
@@ -253,35 +303,27 @@ const settingsOpen = Boolean(error);
       }
     };
 
-    // タブ（狭い画面用。広い画面では CSS で両方表示する）
-    for (const tab of panes.querySelectorAll<HTMLButtonElement>("[data-pane]")) {
-      tab.addEventListener("click", () => {
-        const mode = tab.dataset.pane ?? "write";
-        panes.dataset.mode = mode;
-        for (const other of panes.querySelectorAll<HTMLButtonElement>("[data-pane]")) {
-          other.setAttribute("aria-selected", String(other === tab));
-        }
-        if (mode === "preview") void render();
-      });
-    }
+    const schedule = () => {
+      if (charCount) {
+        charCount.textContent = `${textarea.value.length.toLocaleString("ja-JP")} 字`;
+      }
+      clearTimeout(timer);
+      // 打鍵のたびに叩かない。リンクカードは外部取得を伴うため間隔を広めに取る
+      timer = setTimeout(() => void render(), 500);
+    };
 
-    // 本文欄は CodeMirror。textarea は値の入れ物として残り、そのまま送信される
-    const mount = document.querySelector<HTMLElement>("[data-editor-mount]");
     const editor = createMarkdownEditor({
       textarea,
-      parent: mount ?? textarea.parentElement ?? document.body,
-      onChange: () => {
-        clearTimeout(timer);
-        timer = setTimeout(() => void render(), 500);
-      },
+      parent:
+        document.querySelector<HTMLElement>("[data-editor-mount]") ??
+        textarea.parentElement ??
+        document.body,
+      onChange: schedule,
       uploadImage: async (file: File) => {
         const form = new FormData();
         form.set("file", file);
         try {
-          const res = await fetch("/api/dashboard/media", {
-            method: "POST",
-            body: form,
-          });
+          const res = await fetch("/api/dashboard/media", { method: "POST", body: form });
           const data = (await res.json()) as { url?: string; error?: string };
           if (!res.ok || !data.url) {
             previewState.textContent = data.error || "画像を保存できませんでした";
@@ -295,117 +337,173 @@ const settingsOpen = Boolean(error);
       },
     });
 
-    // 書いている位置にプレビューを追従させる
+    // 書式ボタン。ショートカットと同じ実装を呼ぶ
+    for (const button of document.querySelectorAll<HTMLButtonElement>("[data-command]")) {
+      // クリックでフォーカスが移ると選択範囲が消えてしまうので、既定動作を止める
+      button.addEventListener("mousedown", (event) => event.preventDefault());
+      button.addEventListener("click", () => {
+        const run = editorCommands[button.dataset.command as keyof typeof editorCommands];
+        if (run) run(editor);
+      });
+    }
+
+    // 表示の切り替え。狭い画面では「書く / プレビュー / 設定」の 3 択になる
+    const tabs = [...document.querySelectorAll<HTMLButtonElement>("[data-view]")];
+    for (const tab of tabs) {
+      tab.addEventListener("click", () => {
+        const view = tab.dataset.view ?? "split";
+        layout.dataset.mode = view;
+        for (const other of tabs) {
+          other.setAttribute("aria-selected", String(other === tab));
+        }
+        if (view === "preview" || view === "split") void render();
+      });
+    }
+
     const previewScroller = previewBody.closest<HTMLElement>(".editor__preview-body");
     if (previewScroller) syncScroll(editor, previewScroller);
 
-    // 編集画面を開いた時点の内容を一度描画しておく
+    schedule();
     void render();
-  }
   });
 </script>
 
 <style>
   /* Hallmark · genre: editorial · macrostructure: Workbench · design-system: design.md · designed-as-app
-   * 執筆中に見えるべきものだけを残し、本文とプレビューに横幅を明け渡す構成。
+   * 書いている間に触るものだけを上に固定し、本文とプレビューに横幅を渡す。
+   * 公開設定は右の柱にまとめ、狭い画面ではタブの 1 つとして開く。
    */
   .editor { display: grid; align-content: start; min-height: 100dvh; }
 
-  /* --- 上部バー：戻る・状態・保存だけを常時表示する --- */
+  /* --- 上部バー --- */
   .editor__bar { position: sticky; inset-block-start: 0; z-index: 5; border-block-end: var(--rule-hair) solid var(--color-rule); background: var(--color-paper); }
   .editor__bar-inner { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-md); max-width: 120rem; margin-inline: auto; padding: var(--space-sm) var(--space-lg); }
   .editor__back { display: inline-flex; align-items: center; gap: var(--space-xs); min-height: 2.75rem; color: var(--color-accent); white-space: nowrap; }
   .editor__back svg { width: 1em; height: 1em; }
-  .editor__crumb { color: var(--color-muted); font-size: var(--text-sm); text-align: center; }
+  .editor__status-line { display: flex; align-items: center; justify-content: center; gap: var(--space-sm); min-width: 0; }
+  .editor__crumb { color: var(--color-muted); font-size: var(--text-sm); white-space: nowrap; }
+  .editor__status-line small { color: var(--color-muted); font-family: var(--font-mono); font-size: var(--text-xs); white-space: nowrap; }
   .editor__bar-actions { display: flex; align-items: center; gap: var(--space-sm); }
-  .editor__view { display: inline-flex; align-items: center; gap: var(--space-xs); min-height: 2.75rem; color: var(--color-accent); white-space: nowrap; }
+  .editor__view { display: inline-flex; align-items: center; gap: var(--space-xs); min-height: 2.75rem; color: var(--color-accent); font-size: var(--text-sm); white-space: nowrap; }
   .editor__view svg { width: 1em; height: 1em; }
-  .editor__status select { min-height: 2.75rem; padding-inline: var(--space-md); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-ink); font: inherit; }
-  .editor__save { display: inline-flex; align-items: center; gap: var(--space-xs); min-height: 2.75rem; padding-inline: var(--space-lg); border: var(--rule-hair) solid var(--color-accent); border-radius: var(--radius-sm); background: var(--color-accent); color: var(--color-accent-ink); font: inherit; cursor: pointer; white-space: nowrap; }
-  .editor__save svg { width: 1em; height: 1em; }
-  .editor__save:active { background: var(--color-ink); border-color: var(--color-ink); }
 
-  .editor__messages:not(:empty) { max-width: 120rem; margin-inline: auto; padding-inline: var(--space-lg); }
-  .editor__message { margin-block-start: var(--space-md); padding: var(--space-sm) var(--space-md); border: var(--rule-hair) solid var(--color-success); }
-  .editor__message--error { border-color: var(--color-error); }
+  /* 状態は radio で組む。JS が無くても切り替えて送信できる */
+  .segmented { display: flex; overflow: hidden; border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); }
+  .segmented label { display: inline-flex; }
+  .segmented input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .segmented span { display: inline-flex; min-height: 2.75rem; align-items: center; padding-inline: var(--space-md); background: var(--color-paper); color: var(--color-ink-2); font-size: var(--text-sm); white-space: nowrap; cursor: pointer; }
+  .segmented label + label span { border-inline-start: var(--rule-hair) solid var(--color-rule-strong); }
+  .segmented input:checked + span { background: var(--color-ink); color: var(--color-accent-ink); font-weight: 700; }
+  .segmented input:focus-visible + span { outline: var(--rule-medium) solid var(--color-focus); outline-offset: -2px; }
 
-  /* --- 本文とプレビュー --- */
-  .editor__form { display: grid; align-content: start; gap: var(--space-lg); width: 100%; max-width: 120rem; margin-inline: auto; padding: var(--space-lg) var(--space-lg) var(--space-2xl); }
-  .editor__title input { width: 100%; min-height: 3.5rem; padding: var(--space-sm) var(--space-md); border: 0; border-block-end: var(--rule-hair) solid var(--color-rule); border-radius: 0; background: transparent; color: var(--color-ink); font-family: inherit; font-size: var(--text-xl); font-weight: 700; letter-spacing: -0.02em; }
+  .button { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; gap: var(--space-xs); padding-inline: var(--space-lg); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-ink); font: inherit; font-size: var(--text-sm); cursor: pointer; white-space: nowrap; }
+  .button svg { width: 1em; height: 1em; }
+  .button--primary { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); }
+  .button--danger { border-color: var(--color-error); background: var(--color-paper); color: var(--color-error); }
+
+  .editor__alert { max-width: 120rem; margin-inline: auto; width: 100%; padding: var(--space-md) var(--space-lg) 0; }
+  .message { padding: var(--space-sm) var(--space-md); border: var(--rule-hair) solid var(--color-success); font-size: var(--text-sm); }
+  .message--error { border-color: var(--color-error); color: var(--color-error); }
+
+  /* --- 本文まわり --- */
+  .editor__layout { display: grid; gap: var(--space-xl); width: 100%; max-width: 120rem; margin-inline: auto; padding: var(--space-lg) var(--space-lg) var(--space-2xl); }
+  .editor__form { display: grid; align-content: start; gap: var(--space-md); min-width: 0; }
+  .editor__title input { width: 100%; min-height: 3.5rem; padding: var(--space-sm) 0; border: 0; border-block-end: var(--rule-hair) solid var(--color-rule); border-radius: 0; background: transparent; color: var(--color-ink); font-family: var(--font-display); font-size: var(--text-xl); font-weight: 700; letter-spacing: -0.02em; }
   .editor__title input:focus { outline: 0; border-block-end-color: var(--color-accent); }
   .editor__title input::placeholder { color: var(--color-muted); font-weight: 400; }
 
-  .editor__panes { display: grid; min-width: 0; gap: var(--space-md); }
-  .editor__tabs { display: flex; gap: var(--space-xs); }
-  .editor__tabs button { min-height: 2.75rem; padding-inline: var(--space-md); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-muted); font: inherit; cursor: pointer; }
-  .editor__tabs button[aria-selected="true"] { border-color: var(--color-ink); background: var(--color-paper-2); color: var(--color-ink); font-weight: 700; }
-  .editor__panes[data-mode="write"] .editor__pane--preview,
-  .editor__panes[data-mode="preview"] .editor__pane--write { display: none; }
-  .editor__pane { display: grid; min-width: 0; grid-template-rows: auto minmax(0, 1fr); gap: var(--space-xs); }
-  .editor__pane-label { display: flex; align-items: baseline; gap: var(--space-sm); color: var(--color-muted); font-size: var(--text-xs); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-  .editor__pane-label small { font-weight: 400; letter-spacing: 0; text-transform: none; }
+  .editor__controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-md); }
+  .toolbar { display: flex; align-items: center; gap: var(--space-2xs); min-width: 0; }
+  .toolbar button { display: grid; width: 2.5rem; height: 2.5rem; place-items: center; border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-ink-2); font-family: var(--font-mono); font-size: var(--text-sm); cursor: pointer; }
+  .toolbar__hint { padding-inline-start: var(--space-sm); color: var(--color-muted); font-size: var(--text-xs); }
+  .viewtabs { display: flex; gap: var(--space-xs); }
+  .viewtabs button { display: inline-flex; min-height: 2.5rem; align-items: center; padding-inline: var(--space-md); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-muted); font: inherit; font-size: var(--text-sm); cursor: pointer; white-space: nowrap; }
+  .viewtabs button[aria-selected="true"] { border-color: var(--color-ink); background: var(--color-paper-2); color: var(--color-ink); font-weight: 700; }
 
-  /* 画面の高さに合わせて伸ばす。書いている間に縦を最大限使えるように */
+  .editor__panes { display: grid; gap: var(--space-lg); min-width: 0; }
+  .pane { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: var(--space-xs); min-width: 0; }
+  .pane__label { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-sm); color: var(--color-muted); font-size: var(--text-xs); font-weight: 700; letter-spacing: .04em; }
+  .pane__label small { font-family: var(--font-mono); font-weight: 400; letter-spacing: 0; }
+  .pane__label span small { font-family: inherit; }
+
+  /* 画面の高さに合わせて伸ばす */
   .editor__mount,
-  .editor__preview-body { block-size: clamp(24rem, calc(100dvh - 18rem), 64rem); }
+  .editor__preview-body { block-size: clamp(24rem, calc(100dvh - 22rem), 64rem); }
   .editor__mount { min-width: 0; }
-  /* CodeMirror が無効なとき（JS 未実行）でも書けるよう、素の textarea にも同じ体裁を与える */
-  .editor__mount textarea { width: 100%; height: 100%; padding: var(--space-md) var(--space-lg); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); outline: var(--rule-medium) solid transparent; outline-offset: var(--space-3xs); background: var(--color-paper); color: var(--color-ink); font: inherit; line-height: 1.8; resize: none; }
-  .editor__mount textarea:focus { outline-color: var(--color-focus); }
+  /* JS が動かないときも書けるよう、素の textarea にも体裁を与える */
+  .editor__mount textarea { width: 100%; height: 100%; padding: var(--space-md) var(--space-lg); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-ink); font: inherit; line-height: 1.8; resize: none; }
   .editor__preview-body { overflow-y: auto; padding: var(--space-md) var(--space-lg); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); }
   .editor__preview-body .prose { max-width: none; }
-  .editor__preview-empty { color: var(--color-muted); }
+  .preview-empty { color: var(--color-muted); }
 
-  /* --- 公開設定（たたんでおく） --- */
-  .editor__settings, .editor__danger { border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-sm); }
-  .editor__settings > summary, .editor__danger > summary { display: flex; align-items: center; gap: var(--space-xs); min-height: 2.75rem; padding: var(--space-sm) var(--space-md); font-size: var(--text-sm); font-weight: 700; cursor: pointer; }
-  .editor__settings > summary svg, .editor__danger > summary svg { width: 1em; height: 1em; color: var(--color-accent); }
-  .editor__settings-grid { display: grid; gap: var(--space-lg); padding: var(--space-md) var(--space-md) var(--space-lg); border-block-start: var(--rule-hair) solid var(--color-rule); }
-  .field { display: grid; min-width: 0; align-content: start; gap: var(--space-xs); }
+  /* --- 公開設定 --- */
+  .settings { display: grid; align-content: start; border: var(--rule-hair) solid var(--color-rule-strong); background: var(--color-paper); }
+  .settings__head { display: flex; align-items: center; gap: var(--space-xs); min-height: 2.75rem; padding: var(--space-sm) var(--space-md); border-block-end: var(--rule-hair) solid var(--color-rule); font-size: var(--text-sm); font-weight: 700; }
+  .settings__head svg { width: 1em; height: 1em; color: var(--color-accent); }
+  .settings__body { display: grid; gap: var(--space-md); padding: var(--space-md); }
+  .settings__group { border-block-start: var(--rule-hair) solid var(--color-rule); }
+  .settings__group > summary { display: flex; align-items: center; justify-content: space-between; min-height: 2.75rem; padding: var(--space-xs) var(--space-md); font-size: var(--text-sm); font-weight: 700; cursor: pointer; }
+  .settings__group--danger > summary { color: var(--color-error); }
+  .settings__group--danger p { color: var(--color-muted); font-size: var(--text-sm); }
+  .settings__group--danger form { display: grid; gap: var(--space-sm); }
+  .settings__thumb { display: grid; gap: var(--space-xs); }
+  .settings__thumb img { width: 100%; max-width: 10rem; height: auto; aspect-ratio: 16 / 9; object-fit: cover; background: var(--color-paper-2); }
+
+  .field { display: grid; min-width: 0; gap: var(--space-xs); }
   .field > span, .field legend { font-size: var(--text-sm); font-weight: 700; }
   .field input:not([type="checkbox"]), .field select { width: 100%; min-height: 2.75rem; padding: var(--space-sm) var(--space-md); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); outline: var(--rule-medium) solid transparent; outline-offset: var(--space-3xs); background: var(--color-paper); color: var(--color-ink); font: inherit; }
-  .field input:not([type="checkbox"]):focus, .field select:focus { outline-color: var(--color-focus); }
-  .field small { min-height: 1lh; color: var(--color-muted); font-size: var(--text-xs); }
+  .field--mono { font-family: var(--font-mono); font-size: var(--text-sm); }
+  .field input:focus, .field select:focus { outline-color: var(--color-focus); }
+  .field small { color: var(--color-muted); font-size: var(--text-xs); }
   .field--checks { border: 0; padding: 0; }
   .field--checks > div { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-md); }
-  .field--checks label, .editor__current-image label { display: inline-flex; min-height: 2.75rem; align-items: center; gap: var(--space-xs); }
+  .field--checks label, .settings__thumb label { display: inline-flex; min-height: 2.75rem; align-items: center; gap: var(--space-xs); font-size: var(--text-sm); }
   input[type="checkbox"] { width: 1rem; height: 1rem; accent-color: var(--color-accent); }
-  .editor__current-image img { width: 10rem; height: auto; aspect-ratio: 16 / 9; object-fit: cover; background: var(--color-paper-2); }
-
-  /* --- 削除 --- */
-  .editor__danger { max-width: 120rem; margin-inline: auto; margin-block-end: var(--space-2xl); width: calc(100% - var(--space-lg) * 2); border-color: var(--color-error); }
-  .editor__danger > summary { color: var(--color-error); }
-  .editor__danger > summary svg { color: var(--color-error); }
-  .editor__danger-body { display: grid; gap: var(--space-md); padding: var(--space-md); border-block-start: var(--rule-hair) solid var(--color-error); }
-  .editor__danger-body p { max-width: 65ch; color: var(--color-muted); font-size: var(--text-sm); }
-  .editor__danger-body form { display: grid; gap: var(--space-md); }
-  .editor__danger-body button { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs); min-height: 2.75rem; padding-inline: var(--space-lg); border: var(--rule-hair) solid var(--color-error); border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-error); font: inherit; cursor: pointer; }
-  .editor__danger-body button svg { width: 1em; height: 1em; }
 
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
   @media (hover: hover) and (pointer: fine) {
-    .editor__save:hover { background: var(--color-ink); border-color: var(--color-ink); }
-    .editor__danger-body button:hover { background: var(--color-error); color: var(--color-accent-ink); }
+    .button--primary:hover { border-color: var(--color-ink); background: var(--color-ink); }
+    .button--danger:hover { background: var(--color-error); color: var(--color-accent-ink); }
+    .toolbar button:hover { border-color: var(--color-ink); background: var(--color-paper-2); color: var(--color-ink); }
+    .viewtabs button:hover { color: var(--color-ink); }
+    .segmented input:not(:checked) + span:hover { background: var(--color-paper-2); }
     .field input:not([type="checkbox"]):hover, .field select:hover { background: var(--color-paper-2); }
   }
 
-  /* 本文とプレビューを左右に並べる。設定はたたまれているので全幅を使える */
+  /* --- 広い画面: 本文とプレビューを並べ、設定は右の柱に --- */
   @media (min-width: 64rem) {
-    .editor__panes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-lg); }
-    .editor__tabs { display: none; }
-    .editor__panes[data-mode="write"] .editor__pane--preview,
-    .editor__panes[data-mode="preview"] .editor__pane--write { display: grid; }
-    .editor__settings-grid { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
-    .field--wide { grid-column: 1 / -1; }
-    .editor__danger-body form { grid-template-columns: minmax(16rem, 28rem) auto; align-items: end; }
+    .editor__layout { grid-template-columns: minmax(0, 1fr) 22rem; align-items: start; }
+    .editor__layout[data-mode="split"] .editor__panes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .editor__layout[data-mode="write"] .pane--preview,
+    .editor__layout[data-mode="preview"] .pane--write { display: none; }
+    .settings { position: sticky; inset-block-start: 5rem; }
+    /* 広い画面では設定もプレビューも常に見えるので、切り替えの選択肢から外す。
+       .viewtabs button の display に勝てるよう、同じ詳細度で書く */
+    .viewtabs button.viewtabs__settings,
+    .viewtabs button.viewtabs__preview { display: none; }
+  }
+
+  /* --- 狭い画面: 書く / プレビュー / 設定 の 3 択 --- */
+  @media (max-width: 63.99rem) {
+    .editor__layout[data-mode="split"] .pane--preview,
+    .editor__layout[data-mode="write"] .pane--preview,
+    .editor__layout[data-mode="preview"] .pane--write,
+    .editor__layout[data-mode="settings"] .editor__panes { display: none; }
+    .editor__layout:not([data-mode="settings"]) .settings { display: none; }
+    /* 狭い画面に 2 列は入らない */
+    .viewtabs button[data-view="split"] { display: none; }
+    /* 「書くだけ」は狭い画面では「書く」と同義なので言い換える */
+    .viewtabs button[data-view="write"] { font-size: 0; }
+    .viewtabs button[data-view="write"]::after { content: "書く"; font-size: var(--text-sm); }
   }
 
   @media (max-width: 47.99rem) {
     .editor__bar-inner { grid-template-columns: auto auto; row-gap: var(--space-xs); padding-inline: var(--space-md); }
-    .editor__crumb { display: none; }
+    .editor__status-line { grid-column: 1 / -1; justify-content: start; order: 3; }
     .editor__bar-actions { justify-content: end; }
-    .editor__form { padding-inline: var(--space-md); }
-    .editor__danger { width: calc(100% - var(--space-md) * 2); }
+    .editor__layout { padding-inline: var(--space-md); }
+    .toolbar { overflow-x: auto; }
+    .toolbar__hint { display: none; }
   }
 </style>

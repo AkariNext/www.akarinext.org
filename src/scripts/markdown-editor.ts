@@ -113,6 +113,65 @@ function wrap(
 	return true;
 }
 
+/** 選択している行の先頭に marker を付ける。既に付いていれば外す */
+function toggleLinePrefix(view: EditorView, marker: string): boolean {
+	const { state } = view;
+	const changes: { from: number; to: number; insert: string }[] = [];
+	const seen = new Set<number>();
+
+	for (const range of state.selection.ranges) {
+		const first = state.doc.lineAt(range.from).number;
+		const last = state.doc.lineAt(range.to).number;
+		for (let n = first; n <= last; n++) {
+			if (seen.has(n)) continue;
+			seen.add(n);
+			const line = state.doc.line(n);
+			if (line.text.startsWith(marker)) {
+				changes.push({
+					from: line.from,
+					to: line.from + marker.length,
+					insert: "",
+				});
+			} else {
+				changes.push({ from: line.from, to: line.from, insert: marker });
+			}
+		}
+	}
+	view.dispatch({ changes });
+	view.focus();
+	return true;
+}
+
+/** 選択範囲をコードブロックで囲む */
+function fence(view: EditorView): boolean {
+	const { state } = view;
+	view.dispatch(
+		state.changeByRange((range) => {
+			const selected = state.sliceDoc(range.from, range.to);
+			const body = selected || "";
+			const insert = `\`\`\`\n${body}\n\`\`\``;
+			return {
+				changes: { from: range.from, to: range.to, insert },
+				// 言語名を書き足せるよう、開きフェンスの末尾にカーソルを置く
+				range: EditorSelection.cursor(range.from + 3),
+			};
+		}),
+	);
+	view.focus();
+	return true;
+}
+
+/** ツールバーから呼ぶ操作。キーボードショートカットと同じ実装を使う */
+export const editorCommands = {
+	bold: (view: EditorView) => wrap(view, "**", "**", "太字"),
+	italic: (view: EditorView) => wrap(view, "*", "*", "斜体"),
+	link: (view: EditorView) => wrap(view, "[", "](url)", "リンク"),
+	heading: (view: EditorView) => toggleLinePrefix(view, "## "),
+	list: (view: EditorView) => toggleLinePrefix(view, "- "),
+	quote: (view: EditorView) => toggleLinePrefix(view, "> "),
+	code: (view: EditorView) => fence(view),
+} satisfies Record<string, (view: EditorView) => boolean>;
+
 interface EditorOptions {
 	/** 値を保持する textarea。hidden にして残し、フォーム送信に使う */
 	textarea: HTMLTextAreaElement;
