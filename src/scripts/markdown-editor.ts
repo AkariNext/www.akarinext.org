@@ -50,8 +50,11 @@ const theme = EditorView.theme({
 		outlineOffset: "var(--space-3xs)",
 	},
 	".cm-scroller": {
-		fontFamily: "inherit",
-		lineHeight: "1.8",
+		// 記号や英数字は等幅で。プロポーショナルだと ``` や記号が詰まって読めない。
+		// 日本語は等幅フォントに字形が無いので、本文と同じ書体に落ちる
+		fontFamily: 'var(--font-mono), "Zen Kaku Gothic New", monospace',
+		fontSize: "0.95rem",
+		lineHeight: "1.9",
 		padding: "var(--space-md) var(--space-lg)",
 	},
 	".cm-content": { caretColor: "var(--color-ink)" },
