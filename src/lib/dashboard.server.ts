@@ -174,3 +174,91 @@ export async function deleteRecord(
 ): Promise<void> {
 	await requestPocketBase(token, collection, { id, method: "DELETE" });
 }
+
+const GAME_LISTS = new Set(["playing", "finished"]);
+const GAME_SKILLS = new Set([
+	"",
+	"casual",
+	"intermediate",
+	"expert",
+	"better_than_you",
+]);
+const GAME_IMPRESSIONS = new Set([
+	"",
+	"obsessed",
+	"love",
+	"like",
+	"meh",
+	"give_up",
+]);
+const GAME_RECRUITMENT = new Set([
+	"",
+	"looking_for_group",
+	"invite_anytime",
+	"need_hints",
+	"can_teach",
+	"discussion_welcome",
+]);
+
+function formText(form: FormData, key: string): string {
+	const value = form.get(key);
+	return typeof value === "string" ? value.trim() : "";
+}
+
+function gameRecordBody(input: FormData, userId?: string): FormData {
+	const list = formText(input, "list");
+	const skill = formText(input, "skill_level");
+	const impression = formText(input, "impression");
+	const recruitment = formText(input, "recruitment");
+	if (
+		!GAME_LISTS.has(list) ||
+		!GAME_SKILLS.has(skill) ||
+		!GAME_IMPRESSIONS.has(impression) ||
+		!GAME_RECRUITMENT.has(recruitment)
+	) {
+		throw new DashboardError("ゲームの設定値が正しくありません。", 400);
+	}
+	const body = new FormData();
+	body.set("list", list);
+	body.set("skill_level", skill);
+	body.set("impression", impression);
+	body.set("recruitment", recruitment);
+	if (userId) {
+		const game = formText(input, "game");
+		if (!game) throw new DashboardError("ゲームを選んでください。", 400);
+		body.set("user", userId);
+		body.set("game", game);
+	}
+	return body;
+}
+
+/** ダッシュボードと互換APIで共用するゲーム棚の保存処理。 */
+export async function mutateGameEntry(
+	token: string,
+	userId: string,
+	input: FormData,
+): Promise<"game-added" | "game-saved" | "game-deleted"> {
+	const action = formText(input, "_action");
+	const id = formText(input, "id");
+	const entries = await listOwnGameEntries(token, userId);
+	const current = id ? entries.find((entry) => entry.id === id) : undefined;
+
+	if (action === "delete") {
+		if (!current)
+			throw new DashboardError("削除するゲームが見つかりません。", 404);
+		await deleteRecord(token, "user_games", id);
+		return "game-deleted";
+	}
+	if (action === "update") {
+		if (!current)
+			throw new DashboardError("編集するゲームが見つかりません。", 404);
+		await updateRecord(token, "user_games", id, gameRecordBody(input));
+		return "game-saved";
+	}
+
+	const gameId = formText(input, "game");
+	if (entries.some((entry) => entry.game.id === gameId))
+		throw new DashboardError("このゲームはすでに登録されています。", 400);
+	await createRecord(token, "user_games", gameRecordBody(input, userId));
+	return "game-added";
+}

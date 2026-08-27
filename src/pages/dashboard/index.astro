@@ -13,14 +13,47 @@ import Layout from "../../layouts/Layout.astro";
 import { cmsClient, getMediaUrl } from "../../lib/cms";
 import type { CmsGame, CmsGameEntry, CmsPost } from "../../lib/cms-types";
 import {
+	DashboardError,
 	getDashboardToken,
+	isSameOriginRequest,
 	listOwnGameEntries,
 	listOwnPosts,
+	mutateGameEntry,
 } from "../../lib/dashboard.server";
 
 export const prerender = false;
 const user = Astro.locals.user;
 if (!user) return Astro.redirect("/auth/login?next=/dashboard", 302);
+
+if (Astro.request.method === "POST") {
+	if (!isSameOriginRequest(Astro.request, Astro.site))
+		return new Response("Forbidden", { status: 403 });
+	try {
+		const token = getDashboardToken(Astro.cookies);
+		const notice = await mutateGameEntry(
+			token,
+			user.id,
+			await Astro.request.formData(),
+		);
+		void notice;
+		return new Response(null, {
+			status: 303,
+			headers: { Location: `/dashboard?notice=${notice}#games` },
+		});
+	} catch (cause) {
+		const message =
+			cause instanceof DashboardError
+				? cause.message
+				: "ゲームを保存できませんでした。";
+		void message;
+		return new Response(null, {
+			status: 303,
+			headers: {
+				Location: `/dashboard?error=${encodeURIComponent(message)}#games`,
+			},
+		});
+	}
+}
 
 let posts: CmsPost[] = [],
 	entries: CmsGameEntry[] = [],
@@ -110,7 +143,7 @@ const date = new Intl.DateTimeFormat("ja-JP", {
 
     <section class="dashboard__section" id="games" aria-labelledby="games-heading">
       <header class="dashboard__section-head"><div><p>Game shelf</p><h2 id="games-heading"><Gamepad2 aria-hidden="true" />ゲーム</h2></div><span>{entries.length} タイトル</span></header>
-      {entries.length ? <div class="game-index">{entries.map((entry) => <form method="POST" action="/api/dashboard/games" class="game-row">
+      {entries.length ? <div class="game-index">{entries.map((entry) => <form method="POST" action="/dashboard" class="game-row">
         <input type="hidden" name="id" value={entry.id} />
         <div class="game-row__identity">{entry.game.cover_image ? <img src={entry.game.cover_image.url} alt="" width="72" height="96" loading="lazy" /> : <span aria-hidden="true"><Gamepad2 /></span>}<h3>{entry.game.name}</h3></div>
         <label><span>状態</span><select name="list"><option value="playing" selected={entry.list === "playing"}>プレイ中</option><option value="finished" selected={entry.list === "finished"}>プレイ終了</option></select></label>
@@ -121,7 +154,7 @@ const date = new Intl.DateTimeFormat("ja-JP", {
       </form>)}</div> : <p class="empty">まだゲームは登録されていません。</p>}
 
       <details class="game-add"><summary><Plus aria-hidden="true" />ゲームを追加</summary>
-        <form method="POST" action="/api/dashboard/games">
+        <form method="POST" action="/dashboard">
           <label><span>ゲーム</span><select name="game" required><option value="">選択してください</option>{availableGames.map((game) => <option value={game.id}>{game.name}</option>)}</select></label>
           <label><span>状態</span><select name="list"><option value="playing">プレイ中</option><option value="finished">プレイ終了</option></select></label>
           <label><span>遊び方</span><select name="skill_level">{skillOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select></label>
