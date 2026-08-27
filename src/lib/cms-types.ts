@@ -30,6 +30,8 @@ export interface CmsGame {
 export type GameListKind = "playing" | "finished";
 
 export interface CmsGameEntry {
+	id: string;
+	list: GameListKind;
 	game: CmsGame;
 	skill_level?: string;
 	impression?: string;
@@ -88,6 +90,7 @@ export interface CmsPost {
 	image?: CmsMedia | null;
 	is_spoiler?: boolean;
 	spoiler_warning?: string | null;
+	status: "draft" | "published";
 	createdAt: string;
 	updatedAt: string;
 }

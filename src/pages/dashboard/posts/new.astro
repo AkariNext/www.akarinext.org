@@ -1,0 +1,27 @@
+---
+import PostEditor from "../../../components/dashboard/PostEditor.astro";
+import Layout from "../../../layouts/Layout.astro";
+import { cmsClient } from "../../../lib/cms";
+import type { CmsSeries, CmsTag } from "../../../lib/cms-types";
+
+export const prerender = false;
+
+if (!Astro.locals.user)
+	return Astro.redirect("/auth/login?next=/dashboard/posts/new", 302);
+let tags: CmsTag[] = [];
+let series: CmsSeries[] = [];
+try {
+	[tags, series] = await Promise.all([
+		cmsClient.items<CmsTag>("tags").readByQuery({ sort: "name", limit: 200 }),
+		cmsClient
+			.items<CmsSeries>("series")
+			.readByQuery({ sort: "title", limit: 200 }),
+	]);
+} catch (error) {
+	console.error("[Dashboard] Failed to load post options", error);
+}
+---
+
+<Layout title="新しい記事" noindex={true}>
+  <PostEditor action="/api/dashboard/posts" tags={tags} series={series} error={Astro.url.searchParams.get("error")} />
+</Layout>

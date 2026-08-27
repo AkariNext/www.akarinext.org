@@ -222,7 +222,7 @@ function timestamps(record: PbRecord): {
 // レコード → CMS 型への整形
 // ---------------------------------------------------------------------------
 
-function shapeGame(record: PbRecord): CmsGame {
+export function shapeGame(record: PbRecord): CmsGame {
 	return {
 		id: record.id,
 		name: String(record.name ?? ""),
@@ -271,7 +271,7 @@ export function shapeMember(record: PbRecord): CmsMember {
 	};
 }
 
-function shapePost(record: PbRecord): CmsPost {
+export function shapePost(record: PbRecord): CmsPost {
 	const author = record.expand?.author as PbRecord | undefined;
 	const tags = record.expand?.tags as PbRecord[] | undefined;
 	const series = record.expand?.series as PbRecord | undefined;
@@ -290,6 +290,7 @@ function shapePost(record: PbRecord): CmsPost {
 		image: toMedia(record, "image"),
 		is_spoiler: Boolean(record.is_spoiler),
 		spoiler_warning: (record.spoiler_warning as string) || null,
+		status: record.status === "draft" ? "draft" : "published",
 		...timestamps(record),
 	};
 }
@@ -345,6 +346,8 @@ async function fetchMembers(query: CmsQuery): Promise<CmsMember[]> {
 		const gameRecord = entry.expand?.game as PbRecord | undefined;
 		if (!member || !gameRecord) continue;
 		const shaped: CmsGameEntry = {
+			id: entry.id,
+			list: entry.list === "finished" ? "finished" : "playing",
 			game: shapeGame(gameRecord),
 			skill_level: (entry.skill_level as string) || undefined,
 			impression: (entry.impression as string) || undefined,
@@ -365,7 +368,11 @@ const collectionConfig: Record<
 	string,
 	{ collection: string; expand?: string; shape: Shaper }
 > = {
-	posts: { collection: "posts", expand: "author,tags,series", shape: shapePost },
+	posts: {
+		collection: "posts",
+		expand: "author,tags,series",
+		shape: shapePost,
+	},
 	announcements: { collection: "announcements", shape: shapeAnnouncement },
 	games: { collection: "games", shape: shapeGame },
 	tags: { collection: "tags", shape: shapeTag },
@@ -390,7 +397,9 @@ export const cmsClient = {
 		readPage: async (query: CmsPageQuery = {}): Promise<CmsPage<T>> => {
 			const config = collectionConfig[collection];
 			if (!config || collection === "users" || collection === "authors") {
-				throw new Error(`Pagination is not supported for collection: ${collection}`);
+				throw new Error(
+					`Pagination is not supported for collection: ${collection}`,
+				);
 			}
 			const result = await pbFetchPage(config.collection, {
 				...query,

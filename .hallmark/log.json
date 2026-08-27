@@ -13,5 +13,13 @@
 		"theme": "Newsprint",
 		"enrichment": "CMS imagery only",
 		"brief": "AkariNext community landing page and article-first blog index"
+	},
+	{
+		"date": "2026-08-28",
+		"scope": "member dashboard",
+		"macrostructure": "Index-First",
+		"theme": "custom cool editorial blue",
+		"enrichment": "member and CMS imagery only",
+		"brief": "Owner-scoped article and game editing dashboard"
 	}
 ]

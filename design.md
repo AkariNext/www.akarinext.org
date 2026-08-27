@@ -12,6 +12,7 @@ Editorial. The site behaves like a living community journal, not a product-marke
 - Marketing/home: Ecosystem Index — featured, latest, games, servers, and people as distinct editorial rails.
 - Content indexes: Catalogue — repeatable article entries with image, date, author, and title.
 - Content pages: Long Document — title, factual metadata, hero image, readable prose, author colophon.
+- Member dashboard: Index-First — editable article and game rows first, with settings revealed only where needed.
 
 ## Theme
 
@@ -68,6 +69,7 @@ The named 4-point scale in `tokens.css` is mandatory. No arbitrary spacing value
 - Home may use CMS imagery only.
 - Article indexes use CMS imagery or a neutral typographic placeholder.
 - Article pages use typography and the article's own image only.
+- Dashboard forms use hairline field borders, 44 px controls, and quiet inline success or error messages.
 
 ## What pages must share
 

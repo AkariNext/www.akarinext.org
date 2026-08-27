@@ -1,0 +1,38 @@
+---
+import PostEditor from "../../../components/dashboard/PostEditor.astro";
+import Layout from "../../../layouts/Layout.astro";
+import { cmsClient } from "../../../lib/cms";
+import type { CmsPost, CmsSeries, CmsTag } from "../../../lib/cms-types";
+import { getDashboardToken, getOwnPost } from "../../../lib/dashboard.server";
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+const id = Astro.params.id ?? "";
+if (!user)
+	return Astro.redirect(`/auth/login?next=/dashboard/posts/${id}`, 302);
+
+let post: CmsPost;
+let tags: CmsTag[] = [];
+let series: CmsSeries[] = [];
+try {
+	const token = getDashboardToken(Astro.cookies);
+	[post, tags, series] = await Promise.all([
+		getOwnPost(token, user.id, id),
+		cmsClient.items<CmsTag>("tags").readByQuery({ sort: "name", limit: 200 }),
+		cmsClient
+			.items<CmsSeries>("series")
+			.readByQuery({ sort: "title", limit: 200 }),
+	]);
+} catch (error) {
+	console.error("[Dashboard] Failed to load post", error);
+	return Astro.redirect(
+		`/dashboard?error=${encodeURIComponent("記事を読み込めませんでした。")}`,
+		302,
+	);
+}
+---
+
+<Layout title={`${post.title}を編集`} noindex={true}>
+  <PostEditor action={`/api/dashboard/posts/${post.id}`} post={post} tags={tags} series={series} error={Astro.url.searchParams.get("error")} notice={Astro.url.searchParams.get("notice")} />
+</Layout>

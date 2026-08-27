@@ -9,7 +9,7 @@ import {
 import { type PbRecord, shapeMember } from "./lib/cms";
 
 /** ログインが必要なパス */
-const PROTECTED = ["/dashboard"];
+const PROTECTED = ["/dashboard", "/api/dashboard"];
 
 export const onRequest = defineMiddleware(async (context, next) => {
 	context.locals.user = null;
@@ -32,8 +32,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
 	const path = context.url.pathname;
 	if (!context.locals.user && PROTECTED.some((p) => path.startsWith(p))) {
+		const nextPath = path.startsWith("/api/dashboard") ? "/dashboard" : path;
 		return context.redirect(
-			`/auth/login?next=${encodeURIComponent(path)}`,
+			`/auth/login?next=${encodeURIComponent(nextPath)}`,
 			302,
 		);
 	}

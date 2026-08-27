@@ -75,6 +75,8 @@ pnpm dev
 
 ### CMS（PocketBase）
 
+Discord ログイン後のメンバーダッシュボードから、本人の記事とゲーム棚を編集できます。権限と運用方法は [docs/DASHBOARD.md](docs/DASHBOARD.md) を参照してください。
+
 1. 同じリポジトリを Build Path `backend/` の Dockerfile でデプロイ
 2. `/pb/pb_data` にボリュームをマウント
 3. ドメインを割り当てず、内部ネットワークからのみ到達できるようにする
