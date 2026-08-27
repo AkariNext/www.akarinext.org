@@ -57,11 +57,29 @@ function localDateTime(value?: string | null): string {
         <small>一覧と記事ページに表示されます。</small>
       </label>
 
-      <label class="field">
-        <span>本文 <b>Markdown</b></span>
-        <textarea name="content" rows="24" spellcheck="true">{post?.content ?? ""}</textarea>
-        <small>見出し、リスト、リンク、画像など Markdown 記法を使えます。</small>
-      </label>
+      <div class="editor__panes" data-mode="write">
+        <div class="editor__tabs" role="tablist" aria-label="本文の表示">
+          <button type="button" role="tab" data-pane="write" aria-selected="true" aria-controls="pane-write">書く</button>
+          <button type="button" role="tab" data-pane="preview" aria-selected="false" aria-controls="pane-preview">プレビュー</button>
+        </div>
+
+        <label class="field editor__pane editor__pane--write" id="pane-write">
+          <span>本文 <b>Markdown</b></span>
+          <textarea id="editor-content" name="content" rows="24" spellcheck="true">{post?.content ?? ""}</textarea>
+          <small>見出し、リスト、リンク、画像など Markdown 記法を使えます。</small>
+        </label>
+
+        <section class="editor__pane editor__pane--preview" id="pane-preview" aria-label="プレビュー">
+          <span class="editor__pane-label">
+            プレビュー
+            <small data-preview-state aria-live="polite"></small>
+          </span>
+          <div class="editor__preview-body">
+            <div class="prose" data-preview-body></div>
+          </div>
+          <small>公開ページと同じ変換・同じ配色で表示しています。</small>
+        </section>
+      </div>
     </div>
 
     <aside class="editor__settings" aria-label="公開設定">
@@ -169,6 +187,76 @@ function localDateTime(value?: string | null): string {
   )}
 </main>
 
+<script>
+  // 本文のライブプレビュー。
+  // 変換はサーバー側の markdownToHtml に任せる（公開ページと同じ結果にするため）。
+  const panes = document.querySelector<HTMLElement>(".editor__panes");
+  const textarea = document.querySelector<HTMLTextAreaElement>("#editor-content");
+  const previewBody = document.querySelector<HTMLElement>("[data-preview-body]");
+  const previewState = document.querySelector<HTMLElement>("[data-preview-state]");
+
+  if (panes && textarea && previewBody && previewState) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let lastRendered: string | null = null;
+    let inFlight = false;
+    let pending = false;
+
+    const render = async (): Promise<void> => {
+      const content = textarea.value;
+      if (content === lastRendered) return;
+      if (inFlight) {
+        // 変換中に打鍵が続いた場合は、終わってから最新の内容で描き直す
+        pending = true;
+        return;
+      }
+      inFlight = true;
+      previewState.textContent = "更新中…";
+      try {
+        const res = await fetch("/api/dashboard/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        });
+        if (!res.ok) throw new Error(String(res.status));
+        const data = (await res.json()) as { html?: string };
+        previewBody.innerHTML =
+          data.html || '<p class="editor__preview-empty">まだ何も書かれていません。</p>';
+        lastRendered = content;
+        previewState.textContent = "";
+      } catch {
+        previewState.textContent = "プレビューを取得できませんでした";
+      } finally {
+        inFlight = false;
+        if (pending) {
+          pending = false;
+          void render();
+        }
+      }
+    };
+
+    // タブ（狭い画面用。広い画面では CSS で両方表示する）
+    for (const tab of panes.querySelectorAll<HTMLButtonElement>("[data-pane]")) {
+      tab.addEventListener("click", () => {
+        const mode = tab.dataset.pane ?? "write";
+        panes.dataset.mode = mode;
+        for (const other of panes.querySelectorAll<HTMLButtonElement>("[data-pane]")) {
+          other.setAttribute("aria-selected", String(other === tab));
+        }
+        if (mode === "preview") void render();
+      });
+    }
+
+    textarea.addEventListener("input", () => {
+      clearTimeout(timer);
+      // 打鍵のたびに叩かない。リンクカードは外部取得を伴うため間隔を広めに取る
+      timer = setTimeout(() => void render(), 500);
+    });
+
+    // 編集画面を開いた時点の内容を一度描画しておく
+    void render();
+  }
+</script>
+
 <style>
   /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V4
    * genre: editorial · macrostructure: Index-First · tone: practical cool blue · contrast: pass (40–41)
@@ -185,6 +273,19 @@ function localDateTime(value?: string | null): string {
   .editor__writing, .editor__settings { display: grid; min-width: 0; align-content: start; gap: var(--space-lg); }
   .editor__settings { padding-block-start: var(--space-lg); border-block-start: var(--rule-hair) solid var(--color-rule); }
   .editor__settings h2 { font-size: var(--text-lg); }
+  .editor__panes { display: grid; min-width: 0; gap: var(--space-md); }
+  .editor__tabs { display: flex; gap: var(--space-xs); }
+  .editor__tabs button { min-height: 2.75rem; padding-inline: var(--space-md); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-muted); font: inherit; cursor: pointer; }
+  .editor__tabs button[aria-selected="true"] { border-color: var(--color-ink); background: var(--color-paper-2); color: var(--color-ink); font-weight: 700; }
+  .editor__panes[data-mode="write"] .editor__pane--preview,
+  .editor__panes[data-mode="preview"] .editor__pane--write { display: none; }
+  .editor__pane { display: grid; min-width: 0; gap: var(--space-xs); align-content: start; }
+  .editor__pane-label { display: flex; align-items: baseline; gap: var(--space-sm); font-size: var(--text-sm); font-weight: 700; }
+  .editor__pane-label small { color: var(--color-muted); font-size: var(--text-xs); font-weight: 400; }
+  /* 本文と同じ高さで並べ、長い記事はこの中だけスクロールさせる */
+  .editor__preview-body { min-height: 32rem; max-height: 48rem; overflow-y: auto; padding: var(--space-md) var(--space-lg); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); }
+  .editor__preview-body .prose { max-width: none; }
+  .editor__preview-empty { color: var(--color-muted); }
   .field { display: grid; min-width: 0; gap: var(--space-xs); }
   .field > span, .field legend { font-size: var(--text-sm); font-weight: 700; }
   .field > span b { margin-inline-start: var(--space-xs); color: var(--color-muted); font-size: var(--text-xs); }
@@ -218,6 +319,12 @@ function localDateTime(value?: string | null): string {
     .editor__head { grid-template-columns: auto minmax(0, 1fr) auto; }
     .editor__head > div { padding-inline-start: var(--space-lg); }
     .editor__danger form { grid-template-columns: minmax(16rem, 28rem) auto; align-items: end; }
+  }
+  @media (min-width: 90rem) {
+    .editor__panes { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-lg); }
+    .editor__tabs { display: none; }
+    .editor__panes[data-mode="write"] .editor__pane--preview,
+    .editor__panes[data-mode="preview"] .editor__pane--write { display: grid; }
   }
   @media (min-width: 60rem) {
     .editor__form { grid-template-columns: minmax(0, 2fr) minmax(18rem, .85fr); gap: var(--space-2xl); }

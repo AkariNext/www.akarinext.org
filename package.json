@@ -19,6 +19,7 @@
 	"dependencies": {
 		"@astrojs/node": "^9.5.3",
 		"@influxdata/influxdb-client": "^1.35.0",
+		"@shikijs/rehype": "^4.4.3",
 		"astro": "^5.17.1",
 		"concurrently": "^9.2.1",
 		"hastscript": "^9.0.1",
@@ -30,6 +31,7 @@
 		"remark-gfm": "^4.0.1",
 		"remark-parse": "^11.0.0",
 		"remark-rehype": "^11.1.2",
+		"shiki": "^4.4.3",
 		"unified": "^11.0.5",
 		"unist-util-visit": "^5.1.0"
 	},

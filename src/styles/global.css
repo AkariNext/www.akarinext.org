@@ -554,6 +554,20 @@ a {
 	box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 }
 
+/* shiki は背景色をインラインで持つため、既存のコードブロックと同じ色に揃える */
+.prose pre.shiki {
+	background: #0f172a !important;
+}
+
+/* インラインコード用の装飾がブロック内の code にも効いてしまうため打ち消す。
+   ダークテーマ側のセレクタの方が詳細度が高いので、同じ条件で上書きする */
+.prose pre code,
+[data-theme="dark"] .prose pre code {
+	background: transparent;
+	border: 0;
+	color: inherit;
+}
+
 .prose pre code {
 	background: transparent;
 	padding: 0;
