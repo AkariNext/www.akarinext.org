@@ -1,43 +1,81 @@
 ---
 import { Gamepad2, Search } from "lucide-astro";
 import Layout from "../../layouts/Layout.astro";
-import { cmsClient, getMediaUrl, type CmsGame, type CmsMember } from "../../lib/cms";
+import {
+	type CmsGame,
+	type CmsMember,
+	cmsClient,
+	getMediaUrl,
+} from "../../lib/cms";
 
 let games: CmsGame[] = [];
 
 interface PlayerData {
-  user: CmsMember;
-  skill_level?: string;
-  impression?: string;
-  recruitment?: string;
+	user: CmsMember;
+	skill_level?: string;
+	impression?: string;
+	recruitment?: string;
 }
 
 const playersByGame = new Map<string, PlayerData[]>();
 
 try {
-  games = await cmsClient.items<CmsGame>("games").readByQuery({ limit: 100, sort: ["name"] });
-  const authors = await cmsClient.items<CmsMember>("authors").readByQuery({ limit: 100 });
+	games = await cmsClient
+		.items<CmsGame>("games")
+		.readByQuery({ limit: 100, sort: ["name"] });
+	const authors = await cmsClient
+		.items<CmsMember>("authors")
+		.readByQuery({ limit: 100 });
 
-  authors.forEach((author) => {
-    if (!Array.isArray(author.playing_games)) return;
-    author.playing_games.forEach((playInfo) => {
-      const game = playInfo.game;
-      const gameId = game && typeof game === "object" ? game.id : undefined;
-      if (!gameId) return;
-      const players = playersByGame.get(gameId) || [];
-      players.push({ user: author, skill_level: playInfo.skill_level || undefined, impression: playInfo.impression || undefined, recruitment: playInfo.recruitment || undefined });
-      playersByGame.set(gameId, players);
-    });
-  });
+	authors.forEach((author) => {
+		if (!Array.isArray(author.playing_games)) return;
+		author.playing_games.forEach((playInfo) => {
+			const game = playInfo.game;
+			const gameId = game && typeof game === "object" ? game.id : undefined;
+			if (!gameId) return;
+			const players = playersByGame.get(gameId) || [];
+			players.push({
+				user: author,
+				skill_level: playInfo.skill_level || undefined,
+				impression: playInfo.impression || undefined,
+				recruitment: playInfo.recruitment || undefined,
+			});
+			playersByGame.set(gameId, players);
+		});
+	});
 } catch (error) {
-  console.error("Error fetching games data:", error);
+	console.error("Error fetching games data:", error);
 }
 
-const skillLabel = (value?: string) => ({ casual: "カジュアル", intermediate: "中級", expert: "エキスパート", better_than_you: "あなたより上手" })[value || ""] || null;
-const impressionLabel = (value?: string) => ({ obsessed: "夢中", love: "大好き", like: "わりと好き", meh: "ビミョーかも", give_up: "ギブアップ" })[value || ""] || null;
-const recruitmentLabel = (value?: string) => ({ looking_for_group: "グループ探してます", invite_anytime: "いつでも誘って", need_hints: "ヒントを教えて", can_teach: "教えられるよ", discussion_welcome: "議論大歓迎" })[value || ""] || null;
-const activeGames = games.filter((game) => (playersByGame.get(game.id) || []).length > 0);
-const libraryGames = games.filter((game) => (playersByGame.get(game.id) || []).length === 0);
+const skillLabel = (value?: string) =>
+	({
+		casual: "カジュアル",
+		intermediate: "中級",
+		expert: "エキスパート",
+		better_than_you: "あなたより上手",
+	})[value || ""] || null;
+const impressionLabel = (value?: string) =>
+	({
+		obsessed: "夢中",
+		love: "大好き",
+		like: "わりと好き",
+		meh: "ビミョーかも",
+		give_up: "ギブアップ",
+	})[value || ""] || null;
+const recruitmentLabel = (value?: string) =>
+	({
+		looking_for_group: "グループ探してます",
+		invite_anytime: "いつでも誘って",
+		need_hints: "ヒントを教えて",
+		can_teach: "教えられるよ",
+		discussion_welcome: "議論大歓迎",
+	})[value || ""] || null;
+const activeGames = games.filter(
+	(game) => (playersByGame.get(game.id) || []).length > 0,
+);
+const libraryGames = games.filter(
+	(game) => (playersByGame.get(game.id) || []).length === 0,
+);
 ---
 
 <Layout title="ゲーム" description="コミュニティーメンバーが遊んでいるゲームの一覧">
@@ -99,11 +137,16 @@ const libraryGames = games.filter((game) => (playersByGame.get(game.id) || []).l
 </Layout>
 
 <script>
+  import { onEachPage } from "../../scripts/on-page";
+
+  onEachPage(() => {
   const input = document.querySelector<HTMLInputElement>("#gameSearch");
+  if (!input || input.dataset.bound === "true") return;
+  input.dataset.bound = "true";
   const entries = Array.from(document.querySelectorAll<HTMLElement>(".game-entry"));
   const sections = Array.from(document.querySelectorAll<HTMLElement>(".game-section"));
   const empty = document.querySelector<HTMLElement>("#searchEmpty");
-  input?.addEventListener("input", () => {
+  input.addEventListener("input", () => {
     const query = input.value.trim().toLowerCase();
     let visible = 0;
     entries.forEach((entry) => {
@@ -113,6 +156,7 @@ const libraryGames = games.filter((game) => (playersByGame.get(game.id) || []).l
     });
     sections.forEach((section) => { section.hidden = !section.querySelector(".game-entry:not([hidden])"); });
     if (empty) empty.hidden = visible !== 0;
+  });
   });
 </script>
 

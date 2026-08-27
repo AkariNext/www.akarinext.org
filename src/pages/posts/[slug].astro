@@ -1,53 +1,114 @@
 ---
-import { ArrowLeft, ArrowRight, Eye, Github, Globe, Layers, MessageSquare, Shield, Twitch, Twitter, User, Youtube } from "lucide-astro";
+import {
+	ArrowLeft,
+	ArrowRight,
+	Eye,
+	Github,
+	Globe,
+	Layers,
+	MessageSquare,
+	Shield,
+	Twitch,
+	Twitter,
+	User,
+	Youtube,
+} from "lucide-astro";
 import Layout from "../../layouts/Layout.astro";
-import { cmsClient, getMediaUrl, type CmsPost } from "../../lib/cms";
+import { type CmsPost, cmsClient, getMediaUrl } from "../../lib/cms";
 import { markdownToHtml } from "../../lib/richtext";
 export const prerender = false;
 const { slug } = Astro.params;
 let post: CmsPost | null = null;
 try {
-  const value = (slug || "").trim();
-  let found = value ? await cmsClient.items<CmsPost>("posts").readByQuery({ limit: 1, where: { slug: { equals: value } } }) : [];
-  if (!found.length && value) found = await cmsClient.items<CmsPost>("posts").readByQuery({ limit: 1, where: { id: { equals: value } } });
-  post = found[0] || null;
-} catch (error) { console.error("Error fetching post", error); }
+	const value = (slug || "").trim();
+	let found = value
+		? await cmsClient
+				.items<CmsPost>("posts")
+				.readByQuery({ limit: 1, where: { slug: { equals: value } } })
+		: [];
+	if (!found.length && value)
+		found = await cmsClient
+			.items<CmsPost>("posts")
+			.readByQuery({ limit: 1, where: { id: { equals: value } } });
+	post = found[0] || null;
+} catch (error) {
+	console.error("Error fetching post", error);
+}
 if (!post) {
-  Astro.response.status = 404;
-  return new Response("記事が見つかりませんでした", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+	Astro.response.status = 404;
+	return new Response("記事が見つかりませんでした", {
+		status: 404,
+		headers: { "Content-Type": "text/plain; charset=utf-8" },
+	});
 }
 const content = await markdownToHtml(post.content);
 const image = getMediaUrl(post.image);
 const published = post.published_date || post.createdAt;
-const formatted = new Date(published).toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" });
-const author = typeof post.author === "object" && post.author ? post.author : null;
+const formatted = new Date(published).toLocaleDateString("ja-JP", {
+	year: "numeric",
+	month: "long",
+	day: "numeric",
+});
+const author =
+	typeof post.author === "object" && post.author ? post.author : null;
 const authorName = author?.name || author?.username || "AkariNext";
 const authorImage = getMediaUrl(author?.avatar);
 const readMinutes = Math.max(1, Math.ceil((post.content?.length || 0) / 500));
 // 同じシリーズの記事を番号順に引いて、この記事の位置と前後を求める
 let seriesPosts: CmsPost[] = [];
 if (post.series) {
-  try {
-    seriesPosts = await cmsClient.items<CmsPost>("posts").readByQuery({ limit: 200, sort: ["series_order", "published_date"], where: { series: { equals: post.series.id } } });
-  } catch (error) { console.error("Error fetching series posts", error); }
+	try {
+		seriesPosts = await cmsClient.items<CmsPost>("posts").readByQuery({
+			limit: 200,
+			sort: ["series_order", "published_date"],
+			where: { series: { equals: post.series.id } },
+		});
+	} catch (error) {
+		console.error("Error fetching series posts", error);
+	}
 }
 const seriesAt = seriesPosts.findIndex((item) => item.id === post.id);
 const seriesNo = post.series_order ?? (seriesAt >= 0 ? seriesAt + 1 : null);
 const seriesPrev = seriesAt > 0 ? seriesPosts[seriesAt - 1] : null;
-const seriesNext = seriesAt >= 0 && seriesAt < seriesPosts.length - 1 ? seriesPosts[seriesAt + 1] : null;
-const seriesPath = post.series ? `/series/${post.series.slug || post.series.id}` : null;
-const socialIcon = (platform?: string) => ({ twitter: Twitter, x: Twitter, github: Github, twitch: Twitch, youtube: Youtube, discord: MessageSquare }[platform?.toLowerCase() || ""] || Globe);
+const seriesNext =
+	seriesAt >= 0 && seriesAt < seriesPosts.length - 1
+		? seriesPosts[seriesAt + 1]
+		: null;
+const seriesPath = post.series
+	? `/series/${post.series.slug || post.series.id}`
+	: null;
+const socialIcon = (platform?: string) =>
+	({
+		twitter: Twitter,
+		x: Twitter,
+		github: Github,
+		twitch: Twitch,
+		youtube: Youtube,
+		discord: MessageSquare,
+	})[platform?.toLowerCase() || ""] || Globe;
 const canonicalPath = `/posts/${post.slug || post.id}`;
 const structuredData = {
-  "@context": "https://schema.org",
-  "@type": "Article",
-  headline: post.title,
-  datePublished: new Date(published).toISOString(),
-  dateModified: new Date(post.updatedAt).toISOString(),
-  mainEntityOfPage: new URL(canonicalPath, "https://www.akarinext.org").href,
-  author: { "@type": "Person", name: authorName, ...(author ? { url: new URL(`/users/${author.id}`, "https://www.akarinext.org").href } : {}) },
-  publisher: { "@type": "Organization", name: "AkariNext", url: "https://www.akarinext.org/" },
-  ...(image ? { image: [image] } : {}),
+	"@context": "https://schema.org",
+	"@type": "Article",
+	headline: post.title,
+	datePublished: new Date(published).toISOString(),
+	dateModified: new Date(post.updatedAt).toISOString(),
+	mainEntityOfPage: new URL(canonicalPath, "https://www.akarinext.org").href,
+	author: {
+		"@type": "Person",
+		name: authorName,
+		...(author
+			? {
+					url: new URL(`/users/${author.id}`, "https://www.akarinext.org").href,
+				}
+			: {}),
+	},
+	publisher: {
+		"@type": "Organization",
+		name: "AkariNext",
+		url: "https://www.akarinext.org/",
+	},
+	...(image ? { image: [image] } : {}),
 };
 ---
 <Layout title={post.title} description={post.is_spoiler ? post.spoiler_warning || "この記事にはネタバレが含まれています。" : post.content?.replace(/<[^>]*>/g, "").slice(0, 160)} image={image || undefined} canonical={canonicalPath} ogType="article" structuredData={structuredData}>
@@ -87,10 +148,17 @@ const structuredData = {
     </div>
   </article>
   <script>
-    const button = document.querySelector<HTMLButtonElement>("#btn-reveal-spoiler");
-    const wrapper = document.querySelector("#post-content-wrapper");
-    const notice = document.querySelector("#spoiler-overlay");
-    button?.addEventListener("click", () => { wrapper?.classList.remove("is-concealed"); notice?.remove(); });
+    import { onEachPage } from "../../scripts/on-page";
+
+    onEachPage(() => {
+      const button = document.querySelector<HTMLButtonElement>("#btn-reveal-spoiler");
+      if (!button || button.dataset.bound === "true") return;
+      button.dataset.bound = "true";
+      button.addEventListener("click", () => {
+        document.querySelector("#post-content-wrapper")?.classList.remove("is-concealed");
+        document.querySelector("#spoiler-overlay")?.remove();
+      });
+    });
   </script>
 </Layout>
 

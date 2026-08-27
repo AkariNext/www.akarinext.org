@@ -188,14 +188,18 @@ function localDateTime(value?: string | null): string {
 </main>
 
 <script>
+  import { onEachPage } from "../../scripts/on-page";
+
   // 本文のライブプレビュー。
   // 変換はサーバー側の markdownToHtml に任せる（公開ページと同じ結果にするため）。
+  onEachPage(() => {
   const panes = document.querySelector<HTMLElement>(".editor__panes");
   const textarea = document.querySelector<HTMLTextAreaElement>("#editor-content");
   const previewBody = document.querySelector<HTMLElement>("[data-preview-body]");
   const previewState = document.querySelector<HTMLElement>("[data-preview-state]");
 
-  if (panes && textarea && previewBody && previewState) {
+  if (panes && textarea && previewBody && previewState && textarea.dataset.bound !== "true") {
+    textarea.dataset.bound = "true";
     let timer: ReturnType<typeof setTimeout> | undefined;
     let lastRendered: string | null = null;
     let inFlight = false;
@@ -255,6 +259,7 @@ function localDateTime(value?: string | null): string {
     // 編集画面を開いた時点の内容を一度描画しておく
     void render();
   }
+  });
 </script>
 
 <style>
