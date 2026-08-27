@@ -197,6 +197,15 @@ async function pbFetchList(
 	return Array.isArray(data.items) ? data.items : [];
 }
 
+/** コレクション・レコード ID・ファイル名から公開 URL を組み立てる */
+export function buildMediaUrl(
+	collection: string,
+	recordId: string,
+	filename: string,
+): string {
+	return `${MEDIA_BASE}/${collection}/${recordId}/${filename}`;
+}
+
 /** file フィールド（ファイル名）を表示用のメディアオブジェクトに変換 */
 function toMedia(record: PbRecord, field: string): CmsMedia | null {
 	const filename = record[field];

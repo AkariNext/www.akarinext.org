@@ -145,7 +145,7 @@ export async function listOwnGameEntries(
 
 export async function createRecord(
 	token: string,
-	collection: "posts" | "user_games",
+	collection: "posts" | "user_games" | "media",
 	body: FormData,
 ): Promise<PbRecord> {
 	return (await requestPocketBase(token, collection, {

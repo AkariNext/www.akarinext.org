@@ -189,6 +189,10 @@ function localDateTime(value?: string | null): string {
 
 <script>
   import { onEachPage } from "../../scripts/on-page";
+  import {
+    enhanceMarkdownEditor,
+    syncScroll,
+  } from "../../scripts/markdown-editor";
 
   // 本文のライブプレビュー。
   // 変換はサーバー側の markdownToHtml に任せる（公開ページと同じ結果にするため）。
@@ -255,6 +259,37 @@ function localDateTime(value?: string | null): string {
       // 打鍵のたびに叩かない。リンクカードは外部取得を伴うため間隔を広めに取る
       timer = setTimeout(() => void render(), 500);
     });
+
+    // 書き心地の補助: リスト継続、装飾ショートカット、画像の貼り付け
+    enhanceMarkdownEditor(textarea, {
+      onChange: () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => void render(), 500);
+      },
+      uploadImage: async (file) => {
+        const form = new FormData();
+        form.set("file", file);
+        try {
+          const res = await fetch("/api/dashboard/media", {
+            method: "POST",
+            body: form,
+          });
+          const data = (await res.json()) as { url?: string; error?: string };
+          if (!res.ok || !data.url) {
+            previewState.textContent = data.error || "画像を保存できませんでした";
+            return null;
+          }
+          return data.url;
+        } catch {
+          previewState.textContent = "画像を保存できませんでした";
+          return null;
+        }
+      },
+    });
+
+    // 書いている位置にプレビューを追従させる
+    const previewScroller = previewBody.closest<HTMLElement>(".editor__preview-body");
+    if (previewScroller) syncScroll(textarea, previewScroller);
 
     // 編集画面を開いた時点の内容を一度描画しておく
     void render();
