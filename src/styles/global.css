@@ -772,6 +772,43 @@ button {
 	}
 }
 
+.edge-account {
+	display: grid;
+	width: 2.75rem;
+	height: 2.75rem;
+	place-items: center;
+	overflow: hidden;
+	border: var(--rule-hair) solid var(--color-rule-strong);
+	border-radius: 50%;
+	background: var(--color-paper);
+	color: var(--color-ink);
+	transition:
+		background-color var(--dur-micro) var(--ease-out),
+		border-color var(--dur-micro) var(--ease-out);
+}
+
+.edge-account img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.edge-account svg {
+	width: 1.1rem;
+	height: 1.1rem;
+}
+
+/* 未ログイン時はテキストなので、円ではなく横長にする */
+.edge-account--signin {
+	width: auto;
+	height: 2.75rem;
+	padding-inline: var(--space-md);
+	border-radius: var(--radius-sm);
+	color: var(--color-accent);
+	font-size: var(--text-sm);
+	white-space: nowrap;
+}
+
 .theme-toggle {
 	display: grid;
 	width: 2.75rem;
@@ -859,7 +896,8 @@ button {
 }
 
 @media (hover: hover) and (pointer: fine) {
-	.theme-toggle:hover {
+	.theme-toggle:hover,
+	.edge-account:hover {
 		background: var(--color-paper-2);
 	}
 
@@ -874,7 +912,8 @@ button {
 	transform: translateY(1px);
 }
 
-.theme-toggle:active {
+.theme-toggle:active,
+.edge-account:active {
 	background: var(--color-paper-3);
 }
 

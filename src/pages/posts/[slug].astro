@@ -1,5 +1,5 @@
 ---
-import { ArrowLeft, Eye, Github, Globe, MessageSquare, Shield, Twitch, Twitter, User, Youtube } from "lucide-astro";
+import { ArrowLeft, ArrowRight, Eye, Github, Globe, Layers, MessageSquare, Shield, Twitch, Twitter, User, Youtube } from "lucide-astro";
 import Layout from "../../layouts/Layout.astro";
 import { cmsClient, getMediaUrl, type CmsPost } from "../../lib/cms";
 import { markdownToHtml } from "../../lib/richtext";
@@ -24,6 +24,18 @@ const author = typeof post.author === "object" && post.author ? post.author : nu
 const authorName = author?.name || author?.username || "AkariNext";
 const authorImage = getMediaUrl(author?.avatar);
 const readMinutes = Math.max(1, Math.ceil((post.content?.length || 0) / 500));
+// 同じシリーズの記事を番号順に引いて、この記事の位置と前後を求める
+let seriesPosts: CmsPost[] = [];
+if (post.series) {
+  try {
+    seriesPosts = await cmsClient.items<CmsPost>("posts").readByQuery({ limit: 200, sort: ["series_order", "published_date"], where: { series: { equals: post.series.id } } });
+  } catch (error) { console.error("Error fetching series posts", error); }
+}
+const seriesAt = seriesPosts.findIndex((item) => item.id === post.id);
+const seriesNo = post.series_order ?? (seriesAt >= 0 ? seriesAt + 1 : null);
+const seriesPrev = seriesAt > 0 ? seriesPosts[seriesAt - 1] : null;
+const seriesNext = seriesAt >= 0 && seriesAt < seriesPosts.length - 1 ? seriesPosts[seriesAt + 1] : null;
+const seriesPath = post.series ? `/series/${post.series.slug || post.series.id}` : null;
 const socialIcon = (platform?: string) => ({ twitter: Twitter, x: Twitter, github: Github, twitch: Twitch, youtube: Youtube, discord: MessageSquare }[platform?.toLowerCase() || ""] || Globe);
 const canonicalPath = `/posts/${post.slug || post.id}`;
 const structuredData = {
@@ -43,6 +55,7 @@ const structuredData = {
     <header class="reading-head container">
       <a href="/posts" class="back-link"><ArrowLeft aria-hidden="true" />記事一覧</a>
       <div class="reading-meta"><time datetime={published}>{formatted}</time><span>{readMinutes}分で読めます</span>{post.category && <span>{post.category}</span>}</div>
+      {post.series && seriesPath && <a href={seriesPath} class="series-badge"><Layers aria-hidden="true" /><span>{post.series.title}</span>{seriesNo !== null && <small>第{seriesNo}回</small>}</a>}
       <h1>{post.title}</h1>
       {author && <a href={`/users/${author.id}`} class="byline">
         {authorImage ? <img src={authorImage} alt="" /> : <span class="byline-placeholder"><User aria-hidden="true" /></span>}
@@ -57,6 +70,14 @@ const structuredData = {
       {post.is_spoiler && <aside class="spoiler-notice" id="spoiler-overlay"><Shield aria-hidden="true" /><h2>ネタバレを含みます</h2><p>{post.spoiler_warning || "この記事にはネタバレが含まれています。"}</p><button type="button" id="btn-reveal-spoiler"><Eye aria-hidden="true" />内容を表示</button></aside>}
 
       {post.tags && post.tags.length > 0 && <nav class="article-tags" aria-label="記事タグ">{post.tags.map((tag) => <a href={`/tags/${tag.slug}`}>#{tag.name}</a>)}</nav>}
+
+      {post.series && seriesPath && (seriesPrev || seriesNext) && <nav class="series-nav" aria-label="シリーズ内の記事">
+        <p class="series-nav__head"><Layers aria-hidden="true" /><a href={seriesPath}>{post.series.title}</a><span>全 {seriesPosts.length} 本</span></p>
+        <div class="series-nav__links">
+          {seriesPrev ? <a href={`/posts/${seriesPrev.slug || seriesPrev.id}`} rel="prev" class="series-nav__item"><small><ArrowLeft aria-hidden="true" />前の記事</small><strong>{seriesPrev.title}</strong></a> : <span></span>}
+          {seriesNext ? <a href={`/posts/${seriesNext.slug || seriesNext.id}`} rel="next" class="series-nav__item series-nav__item--next"><small>次の記事<ArrowRight aria-hidden="true" /></small><strong>{seriesNext.title}</strong></a> : <span></span>}
+        </div>
+      </nav>}
 
       {author && <aside class="author-note">
         <div class="author-note__identity">{authorImage ? <img src={authorImage} alt="" /> : <span class="byline-placeholder"><User aria-hidden="true" /></span>}<div><h2>{authorName}</h2>{author.staff_title && <p>{author.staff_title}</p>}</div></div>
@@ -97,6 +118,21 @@ const structuredData = {
   .spoiler-notice button svg { width: 1em; }
   .article-tags { display: flex; flex-wrap: wrap; gap: var(--space-md); max-width: 46rem; margin-inline: auto; padding-block: var(--space-2xl); border-block-end: var(--rule-hair) solid var(--color-rule); }
   .article-tags a { color: var(--color-accent); white-space: nowrap; }
+  .series-badge { display: inline-flex; align-items: center; justify-self: start; gap: var(--space-xs); min-height: 2.75rem; color: var(--color-accent); }
+  .series-badge svg { width: 1em; height: 1em; }
+  .series-badge small { color: var(--color-muted); font-variant-numeric: tabular-nums; }
+  .series-nav { display: grid; gap: var(--space-lg); max-width: 46rem; margin-inline: auto; padding-block: var(--space-2xl); border-block-end: var(--rule-hair) solid var(--color-rule); }
+  .series-nav__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-md); color: var(--color-muted); font-size: var(--text-sm); }
+  .series-nav__head svg { width: 1em; height: 1em; color: var(--color-accent); }
+  .series-nav__head a { color: var(--color-accent); font-weight: 700; }
+  .series-nav__head span { font-variant-numeric: tabular-nums; }
+  .series-nav__links { display: grid; gap: var(--space-md); }
+  .series-nav__item { display: grid; gap: var(--space-2xs, var(--space-xs)); padding: var(--space-md); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-sm); min-width: 0; }
+  .series-nav__item small { display: inline-flex; align-items: center; gap: var(--space-xs); color: var(--color-muted); }
+  .series-nav__item svg { width: 1em; height: 1em; }
+  .series-nav__item strong { overflow-wrap: anywhere; line-height: 1.4; }
+  .series-nav__item--next { text-align: end; }
+  .series-nav__item--next small { justify-content: end; }
   .author-note { display: grid; gap: var(--space-lg); max-width: 46rem; margin-inline: auto; padding-block-start: var(--space-2xl); }
   .author-note__identity { display: flex; align-items: center; gap: var(--space-md); }
   .author-note__identity img { width: 4rem; height: 4rem; border-radius: 50%; object-fit: cover; }
@@ -104,8 +140,9 @@ const structuredData = {
   .author-note__links { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-lg); }
   .author-note__links a { display: inline-flex; align-items: center; min-height: 2.75rem; color: var(--color-accent); white-space: nowrap; }
   .author-note__links svg { width: 1.1rem; }
-  @media (hover: hover) and (pointer: fine) { .back-link:hover, .byline:hover, .article-tags a:hover, .author-note__links a:hover { color: var(--color-accent); } .spoiler-notice button:hover { background: var(--color-paper-2); } }
+  @media (hover: hover) and (pointer: fine) { .back-link:hover, .byline:hover, .article-tags a:hover, .author-note__links a:hover, .series-badge:hover { color: var(--color-accent); } .series-nav__item:hover { border-color: var(--color-ink); } .spoiler-notice button:hover { background: var(--color-paper-2); } }
   .spoiler-notice button:active, .back-link:active { transform: translateY(1px); }
   .spoiler-notice button:disabled { cursor: not-allowed; opacity: 0.5; }
+  @media (min-width: 40rem) { .series-nav__links { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 39.99rem) { .reading-page { padding-block-start: var(--space-xl); } .article-body { padding-block-start: var(--space-2xl); } .spoiler-notice { inset-block-start: var(--space-2xl); } }
 </style>

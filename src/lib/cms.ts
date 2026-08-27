@@ -24,6 +24,7 @@ import type {
 	CmsMedia,
 	CmsMember,
 	CmsPost,
+	CmsSeries,
 	CmsSettings,
 	CmsTag,
 } from "./cms-types";
@@ -45,7 +46,7 @@ function readEnv(key: string): string | undefined {
 }
 
 /** API の接続先。サーバー側でのみ使う */
-const POCKETBASE_URL = trimSlash(
+export const POCKETBASE_URL = trimSlash(
 	readEnv("POCKETBASE_URL") ??
 		readEnv("PUBLIC_POCKETBASE_URL") ??
 		"http://localhost:8090",
@@ -64,7 +65,7 @@ const MEDIA_BASE = trimSlash(
 // ---------------------------------------------------------------------------
 
 /** PocketBase の生レコード */
-interface PbRecord {
+export interface PbRecord {
 	id: string;
 	collectionName?: string;
 	created?: string;
@@ -241,7 +242,18 @@ function shapeTag(record: PbRecord): CmsTag {
 	};
 }
 
-function shapeMember(record: PbRecord): CmsMember {
+function shapeSeries(record: PbRecord): CmsSeries {
+	return {
+		id: record.id,
+		title: String(record.title ?? ""),
+		slug: String(record.slug ?? ""),
+		description: (record.description as string) || null,
+		cover_image: toMedia(record, "cover_image"),
+		...timestamps(record),
+	};
+}
+
+export function shapeMember(record: PbRecord): CmsMember {
 	return {
 		id: record.id,
 		username: String(record.username ?? record.name ?? ""),
@@ -262,6 +274,7 @@ function shapeMember(record: PbRecord): CmsMember {
 function shapePost(record: PbRecord): CmsPost {
 	const author = record.expand?.author as PbRecord | undefined;
 	const tags = record.expand?.tags as PbRecord[] | undefined;
+	const series = record.expand?.series as PbRecord | undefined;
 	return {
 		id: record.id,
 		title: String(record.title ?? ""),
@@ -271,6 +284,9 @@ function shapePost(record: PbRecord): CmsPost {
 		published_date: (record.published_date as string) || null,
 		category: String(record.category ?? "misc"),
 		tags: Array.isArray(tags) ? tags.map(shapeTag) : [],
+		series: series ? shapeSeries(series) : null,
+		series_order:
+			typeof record.series_order === "number" ? record.series_order : null,
 		image: toMedia(record, "image"),
 		is_spoiler: Boolean(record.is_spoiler),
 		spoiler_warning: (record.spoiler_warning as string) || null,
@@ -349,10 +365,11 @@ const collectionConfig: Record<
 	string,
 	{ collection: string; expand?: string; shape: Shaper }
 > = {
-	posts: { collection: "posts", expand: "author,tags", shape: shapePost },
+	posts: { collection: "posts", expand: "author,tags,series", shape: shapePost },
 	announcements: { collection: "announcements", shape: shapeAnnouncement },
 	games: { collection: "games", shape: shapeGame },
 	tags: { collection: "tags", shape: shapeTag },
+	series: { collection: "series", shape: shapeSeries },
 	"game-servers": { collection: "game_servers", shape: shapeGameServer },
 };
 
@@ -430,6 +447,7 @@ export type {
 	CmsMember,
 	CmsTag,
 	CmsPost,
+	CmsSeries,
 	CmsAnnouncement,
 	CmsGameServer,
 };

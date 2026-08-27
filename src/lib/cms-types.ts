@@ -60,6 +60,17 @@ export interface CmsTag {
 	updatedAt: string;
 }
 
+/** 連載（複数の記事をひとまとまりにしたもの） */
+export interface CmsSeries {
+	id: string;
+	title: string;
+	slug: string;
+	description?: string | null;
+	cover_image?: CmsMedia | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
 export interface CmsPost {
 	id: string;
 	title: string;
@@ -70,6 +81,10 @@ export interface CmsPost {
 	published_date?: string | null;
 	category: string;
 	tags?: CmsTag[] | null;
+	/** 所属する連載。未所属なら null */
+	series?: CmsSeries | null;
+	/** 連載内での並び順 */
+	series_order?: number | null;
 	image?: CmsMedia | null;
 	is_spoiler?: boolean;
 	spoiler_warning?: string | null;

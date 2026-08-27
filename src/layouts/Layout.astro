@@ -1,6 +1,6 @@
 ---
 import "../styles/global.css";
-import { Moon, Sun } from "lucide-astro";
+import { Moon, Sun, UserRound } from "lucide-astro";
 import { ClientRouter } from "astro:transitions";
 import { cmsClient, getMediaUrl, type CmsSettings } from "../lib/cms";
 
@@ -27,6 +27,8 @@ try {
 	console.error("Failed to load global settings", error);
 }
 const { title, description: propDesc, image = "/og-image.png", canonical, noindex = false, ogType = "website", structuredData } = Astro.props;
+const currentUser = Astro.locals.user;
+const currentUserAvatar = getMediaUrl(currentUser?.avatar);
 const siteTitle =
 	title && title !== globalSettings.site_title
 		? `${title} | ${globalSettings.site_title}`
@@ -40,6 +42,7 @@ const imageUrl = new URL(image, siteOrigin);
 const currentPath = Astro.url.pathname;
 const navItems = [
 	{ label: "記事", path: "/posts" },
+	{ label: "シリーズ", path: "/series" },
 	{ label: "ゲーム", path: "/games" },
 	{ label: "お知らせ", path: "/announcements" },
 ];
@@ -93,6 +96,13 @@ const isActive = (path: string) =>
             </a>
           ))}
           </nav>
+          {currentUser ? (
+            <a href="/dashboard" class="edge-account" aria-label={`${currentUser.name || currentUser.username} のマイページ`}>
+              {currentUserAvatar ? <img src={currentUserAvatar} alt="" width="28" height="28" /> : <UserRound aria-hidden="true" />}
+            </a>
+          ) : (
+            <a href="/auth/login" class="edge-account edge-account--signin">ログイン</a>
+          )}
           <button id="theme-toggle" class="theme-toggle" type="button" aria-label="配色を切り替える" transition:persist="theme-toggle">
             <Sun class="sun-icon" aria-hidden="true" /><Moon class="moon-icon" aria-hidden="true" />
           </button>

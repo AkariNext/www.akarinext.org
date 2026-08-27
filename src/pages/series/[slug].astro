@@ -1,0 +1,157 @@
+---
+import { ArrowLeft, ArrowRight } from "lucide-astro";
+import Layout from "../../layouts/Layout.astro";
+import {
+	type CmsPost,
+	type CmsSeries,
+	cmsClient,
+	getMediaUrl,
+} from "../../lib/cms";
+
+export const prerender = false;
+
+const slug = (Astro.params.slug || "").trim();
+let series: CmsSeries | null = null;
+let posts: CmsPost[] = [];
+
+try {
+	const found = slug
+		? await cmsClient
+				.items<CmsSeries>("series")
+				.readByQuery({ limit: 1, where: { slug: { equals: slug } } })
+		: [];
+	series = found[0] || null;
+	if (series)
+		posts = await cmsClient.items<CmsPost>("posts").readByQuery({
+			limit: 200,
+			// 連載は番号順に読ませる。番号未設定の記事は公開日で後ろに並ぶ
+			sort: ["series_order", "published_date"],
+			where: { series: { equals: series.id } },
+		});
+} catch (error) {
+	console.error("[Series] Error fetching data", error);
+}
+
+const notFound = !series;
+if (notFound) {
+	Astro.response.status = 404;
+	Astro.response.statusText = "Not Found";
+}
+
+const cover = getMediaUrl(series?.cover_image);
+const title = notFound ? "シリーズが見つかりません" : (series?.title ?? "");
+const description = notFound
+	? "指定されたシリーズは見つかりませんでした。"
+	: series?.description ||
+		`「${title}」の記事を${posts.length}本掲載しています。`;
+const canonical = `/series/${series?.slug || slug}`;
+const formatDate = (value: string) =>
+	new Date(value).toLocaleDateString("ja-JP", {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+	});
+const excerpt = (post: CmsPost) =>
+	post.is_spoiler
+		? "この記事にはネタバレが含まれています。"
+		: post.content
+				?.replace(/[#*_`>!|[\]]/g, " ")
+				.replace(/\s+/g, " ")
+				.trim()
+				.slice(0, 120) || "本文を読む";
+
+const structuredData = notFound
+	? undefined
+	: {
+			"@context": "https://schema.org",
+			"@type": "ItemList",
+			name: title,
+			numberOfItems: posts.length,
+			itemListElement: posts.map((post, index) => ({
+				"@type": "ListItem",
+				position: index + 1,
+				name: post.title,
+				url: new URL(
+					`/posts/${post.slug || post.id}`,
+					"https://www.akarinext.org",
+				).href,
+			})),
+		};
+---
+
+<Layout title={title} description={description} image={cover || undefined} canonical={canonical} noindex={notFound} structuredData={structuredData}>
+  <div class="series-detail container">
+    <header class="series-detail__head">
+      <a href="/series" class="back-link"><ArrowLeft aria-hidden="true" />シリーズ一覧</a>
+      <p>Series</p>
+      <h1>{title}</h1>
+      <div class="series-detail__summary">
+        <p>{notFound ? "指定されたシリーズは存在しないか、まだ公開されていません。" : series?.description || "この連載の記事を順番に並べています。"}</p>
+        {!notFound && posts.length > 0 && <span>全 {posts.length} 本</span>}
+      </div>
+    </header>
+
+    {cover && !notFound && (
+      <figure class="series-detail__cover"><img src={cover} alt="" fetchpriority="high" decoding="async" /></figure>
+    )}
+
+    {!notFound && posts.length > 0 ? (
+      <ol class="series-posts">
+        {posts.map((post, index) => {
+          const href = `/posts/${post.slug || post.id}`;
+          const date = post.published_date || post.createdAt;
+          return (
+            <li class="series-post">
+              <span class="series-post__no" aria-hidden="true">{String(post.series_order ?? index + 1).padStart(2, "0")}</span>
+              <div class="series-post__body">
+                <h2><a href={href}>{post.title}</a></h2>
+                <p>{excerpt(post)}</p>
+                <div class="series-post__meta">
+                  <time datetime={date}>{formatDate(date)}</time>
+                  <a href={href} class="series-post__link">読む <ArrowRight aria-hidden="true" /></a>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    ) : (
+      !notFound && (
+        <div class="series-empty">
+          <h2>このシリーズにはまだ記事がありません</h2>
+          <a href="/posts">すべての記事を見る</a>
+        </div>
+      )
+    )}
+  </div>
+</Layout>
+
+<style>
+  /* Hallmark · genre: editorial · macrostructure: Index · design-system: design.md */
+  .series-detail { padding-block: var(--space-2xl) var(--space-4xl); }
+  .series-detail__head { display: grid; gap: var(--space-lg); padding-block-end: var(--space-2xl); border-block-end: var(--rule-medium) solid var(--color-ink); }
+  .back-link { display: inline-flex; align-items: center; justify-self: start; gap: var(--space-xs); min-height: 2.75rem; color: var(--color-accent); white-space: nowrap; }
+  .back-link svg { width: 1em; height: 1em; }
+  .series-detail__head > p { color: var(--color-accent); font-weight: 700; }
+  .series-detail__head h1 { max-width: 18ch; font-size: var(--text-display); line-height: 1.08; letter-spacing: -0.04em; overflow-wrap: anywhere; }
+  .series-detail__summary { display: grid; gap: var(--space-md); align-items: end; }
+  .series-detail__summary p { max-width: 58ch; color: var(--color-ink-2); font-size: var(--text-md); line-height: 1.8; }
+  .series-detail__summary span { color: var(--color-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .series-detail__cover { margin-block-start: var(--space-2xl); }
+  .series-detail__cover img { width: 100%; max-height: 32rem; object-fit: cover; }
+  .series-posts { display: grid; gap: 0; margin-block-start: var(--space-xl); list-style: none; }
+  .series-post { display: grid; gap: var(--space-md) var(--space-lg); padding-block: var(--space-xl); border-block-end: var(--rule-hair) solid var(--color-rule); }
+  .series-post:last-child { border-block-end: 0; }
+  .series-post__no { color: var(--color-muted); font-size: var(--text-xl); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .series-post__body { display: grid; align-content: start; gap: var(--space-sm); min-width: 0; }
+  .series-post__body h2 { max-width: 28ch; font-size: var(--text-lg); line-height: 1.35; overflow-wrap: anywhere; }
+  .series-post__body > p { max-width: 62ch; color: var(--color-ink-2); line-height: 1.8; }
+  .series-post__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-md) var(--space-lg); color: var(--color-muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+  .series-post__link { display: inline-flex; align-items: center; gap: var(--space-xs); min-height: 2.75rem; color: var(--color-accent); white-space: nowrap; }
+  .series-post__link svg { width: 1em; height: 1em; }
+  .series-empty { display: grid; justify-items: start; gap: var(--space-md); padding-block: var(--space-3xl); }
+  .series-empty a { min-height: 2.75rem; padding-block: var(--space-sm); border-block-end: var(--rule-hair) solid var(--color-accent); color: var(--color-accent); }
+  @media (hover: hover) and (pointer: fine) { .series-post__body h2 a:hover, .series-post__link:hover, .back-link:hover { color: var(--color-accent); } }
+  @media (min-width: 40rem) { .series-post { grid-template-columns: 4rem minmax(0, 1fr); } .series-detail__summary { grid-template-columns: minmax(0, 1fr) auto; } }
+  @media (max-width: 39.99rem) { .series-detail { padding-block-start: var(--space-xl); } }
+</style>

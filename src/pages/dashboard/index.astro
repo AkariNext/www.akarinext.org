@@ -1,0 +1,109 @@
+---
+import { Gamepad2, LogOut, PenLine, User } from "lucide-astro";
+import Layout from "../../layouts/Layout.astro";
+import {
+	type CmsGameEntry,
+	type CmsMember,
+	cmsClient,
+	getMediaUrl,
+} from "../../lib/cms";
+
+export const prerender = false;
+
+// 未ログインなら middleware が /auth/login へ送るので、ここでは必ず user がいる
+const user = Astro.locals.user;
+if (!user) return Astro.redirect("/auth/login?next=/dashboard", 302);
+
+// 自分のゲーム棚を出すため、メンバー一覧から自分の分を引く
+let me: CmsMember | null = null;
+try {
+	const members = await cmsClient
+		.items<CmsMember>("users")
+		.readByQuery({ limit: 200 });
+	me = members.find((m) => m.id === user.id) || null;
+} catch (error) {
+	console.error("[Dashboard] Error fetching member", error);
+}
+
+const playing: CmsGameEntry[] = me?.playing_games ?? [];
+const finished: CmsGameEntry[] = me?.finished_games ?? [];
+const avatar = getMediaUrl(user.avatar);
+const displayName = user.name || user.username || "メンバー";
+---
+
+<Layout title="マイページ" noindex={true}>
+  <div class="dashboard container">
+    <header class="dashboard__head">
+      <p>Dashboard</p>
+      <div class="dashboard__identity">
+        {avatar ? <img src={avatar} alt="" /> : <span class="dashboard__avatar"><User aria-hidden="true" /></span>}
+        <div>
+          <h1>{displayName}</h1>
+          <p>{user.staff_title || (user.is_staff ? "スタッフ" : "メンバー")}</p>
+        </div>
+      </div>
+      <div class="dashboard__actions">
+        <a href={`/users/${user.id}`}>公開プロフィールを見る</a>
+        <form method="POST" action="/auth/logout">
+          <button type="submit"><LogOut aria-hidden="true" />ログアウト</button>
+        </form>
+      </div>
+    </header>
+
+    <section class="dashboard__section">
+      <h2><Gamepad2 aria-hidden="true" />やっているゲーム</h2>
+      {playing.length > 0 ? (
+        <ul class="dashboard__games">
+          {playing.map((entry) => <li>{entry.game.name}{entry.recruitment && <small>{entry.recruitment}</small>}</li>)}
+        </ul>
+      ) : (
+        <p class="dashboard__empty">まだ登録がありません。</p>
+      )}
+      {finished.length > 0 && (
+        <>
+          <h3>遊び終えたゲーム</h3>
+          <ul class="dashboard__games">
+            {finished.map((entry) => <li>{entry.game.name}</li>)}
+          </ul>
+        </>
+      )}
+      <p class="dashboard__note">
+        いまの登録内容の確認のみできます。ここから自分で追加・編集できるようにする作業はこれからです。
+      </p>
+    </section>
+
+    <section class="dashboard__section">
+      <h2><PenLine aria-hidden="true" />記事</h2>
+      <p class="dashboard__note">
+        記事とシリーズの作成もこの画面から行えるようにする予定です。いまは管理画面から投稿してください。
+      </p>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  /* Hallmark · genre: editorial · macrostructure: Dashboard · design-system: design.md */
+  .dashboard { padding-block: var(--space-2xl) var(--space-4xl); }
+  .dashboard__head { display: grid; gap: var(--space-lg); padding-block-end: var(--space-2xl); border-block-end: var(--rule-medium) solid var(--color-ink); }
+  .dashboard__head > p { color: var(--color-accent); font-weight: 700; }
+  .dashboard__identity { display: flex; align-items: center; gap: var(--space-md); }
+  .dashboard__identity img, .dashboard__avatar { display: grid; width: 4rem; height: 4rem; flex: 0 0 4rem; place-items: center; overflow: hidden; border-radius: 50%; object-fit: cover; background: var(--color-paper-2); color: var(--color-muted); }
+  .dashboard__avatar svg { width: 1.5rem; height: 1.5rem; }
+  .dashboard__identity h1 { font-size: var(--text-2xl); line-height: 1.15; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+  .dashboard__identity div > p { color: var(--color-muted); font-size: var(--text-sm); }
+  .dashboard__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-lg); }
+  .dashboard__actions a { min-height: 2.75rem; padding-block: var(--space-sm); border-block-end: var(--rule-hair) solid var(--color-accent); color: var(--color-accent); white-space: nowrap; }
+  .dashboard__actions button { display: inline-flex; align-items: center; gap: var(--space-xs); min-height: 2.75rem; padding-inline: var(--space-md); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-ink-2); cursor: pointer; }
+  .dashboard__actions button svg { width: 1em; height: 1em; }
+  .dashboard__section { display: grid; gap: var(--space-md); padding-block: var(--space-2xl); border-block-end: var(--rule-hair) solid var(--color-rule); }
+  .dashboard__section:last-child { border-block-end: 0; }
+  .dashboard__section h2 { display: flex; align-items: center; gap: var(--space-xs); font-size: var(--text-lg); }
+  .dashboard__section h2 svg { width: 1em; height: 1em; color: var(--color-accent); }
+  .dashboard__section h3 { color: var(--color-muted); font-size: var(--text-sm); font-weight: 700; }
+  .dashboard__games { display: flex; flex-wrap: wrap; gap: var(--space-sm) var(--space-md); list-style: none; }
+  .dashboard__games li { display: inline-flex; align-items: center; gap: var(--space-xs); padding: var(--space-xs) var(--space-md); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-sm); }
+  .dashboard__games small { color: var(--color-muted); }
+  .dashboard__empty, .dashboard__note { max-width: 60ch; color: var(--color-muted); font-size: var(--text-sm); line-height: 1.8; }
+  @media (hover: hover) and (pointer: fine) { .dashboard__actions button:hover { border-color: var(--color-ink); color: var(--color-ink); } }
+  @media (max-width: 39.99rem) { .dashboard { padding-block-start: var(--space-xl); } }
+</style>
