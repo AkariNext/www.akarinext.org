@@ -6,6 +6,8 @@ services:
   pocketbase:
     build: ./backend
     restart: always
+    # ローカル開発用のポート公開。本番ではドメインを割り当てず、
+    # 内部ネットワークからのみ到達できるようにする（docs/MEDIA_PROXY.md 参照）
     ports:
       - "8090:8090"
     environment:

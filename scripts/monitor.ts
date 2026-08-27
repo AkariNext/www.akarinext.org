@@ -11,7 +11,9 @@ const INFLUX_TOKEN = process.env.INFLUX_TOKEN;
 const INFLUX_ORG = process.env.INFLUX_ORG || "akarinext";
 const INFLUX_BUCKET = process.env.INFLUX_BUCKET || "server_metrics";
 const POCKETBASE_URL = (
-	process.env.PUBLIC_POCKETBASE_URL || "http://localhost:8090"
+	process.env.POCKETBASE_URL ||
+	process.env.PUBLIC_POCKETBASE_URL ||
+	"http://localhost:8090"
 ).replace(/\/$/, "");
 
 let writeApi: any;

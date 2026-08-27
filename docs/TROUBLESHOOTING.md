@@ -4,8 +4,9 @@
 
 ### 原因 1: PocketBase に接続できていない
 
-- フロントの環境変数 `PUBLIC_POCKETBASE_URL` が正しいか確認
-- `curl <PUBLIC_POCKETBASE_URL>/api/health` が `200` を返すか確認
+- フロントの環境変数 `POCKETBASE_URL` が正しいか確認
+- `curl <POCKETBASE_URL>/api/health` が `200` を返すか確認
+- 画像だけ表示されない場合は `PUBLIC_MEDIA_BASE` と `/api/files` の Domain 設定を確認（[MEDIA_PROXY.md](MEDIA_PROXY.md)）
 
 ### 原因 2: 投稿・お知らせが draft のまま
 

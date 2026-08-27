@@ -36,18 +36,38 @@ pocketbase superuser upsert admin@example.com <password> --dir ./pb_data
 
 ## Docker / Dokploy でのデプロイ
 
-このディレクトリの `Dockerfile` をそのまま使える。
+このディレクトリの `Dockerfile` をそのまま使う。PocketBase のバージョンは `ARG PB_VERSION` で固定されており、
+`pb_migrations/` と `pb_hooks/` はイメージに焼き込まれるため、デプロイすればスキーマと Discord 通知が反映される。
 
 1. Dokploy でこのリポジトリを接続し、Build Path を `backend/` に設定
-2. `/pb/pb_data` にボリュームをマウント（これを忘れるとデプロイのたびにデータが消える）
-3. 必要に応じて環境変数を設定:
+2. **`/pb/pb_data` にボリュームをマウント**（これを忘れるとデプロイのたびにデータが消える）
+3. ネットワークは `dokploy-network`（フロントエンドと同じ overlay）に置く。
+   これでフロントエンドから `http://<Swarm サービス名>:8090` で到達でき、PocketBase を外部公開しなくて済む
+4. 環境変数:
    - `DISCORD_WEBHOOK_POSTS` … 投稿公開時の通知先
    - `DISCORD_WEBHOOK_ANNOUNCEMENTS` … お知らせ公開時の通知先
    - `PUBLIC_SITE_URL` … 通知に載せる記事リンクのベース URL（例: `https://www.akarinext.org`）
-4. デプロイ後、コンテナ内で一度だけスーパーユーザーを作成:
-   ```bash
-   /pb/pocketbase superuser upsert admin@example.com <password> --dir /pb/pb_data
-   ```
+5. 画像配信の設定は [../docs/MEDIA_PROXY.md](../docs/MEDIA_PROXY.md) を参照
+
+スーパーユーザーは `pb_data` に既にあるものを引き継ぐ。新規に作る場合のみ:
+
+```bash
+docker exec <container> /pb/pocketbase superuser upsert admin@example.com <password> --dir /pb/pb_data
+```
+
+### バックアップと復元
+
+停止せずにバックアップを取れる。管理画面の Backups からでも、API からでも作れる。
+
+```bash
+# 作成（コンテナ内の pb_data/backups に zip が置かれる）
+curl -X POST -H "Authorization: <superuser token>" \
+  -H "Content-Type: application/json" -d '{"name":"manual.zip"}' \
+  http://localhost:8090/api/backups
+```
+
+zip はルートに `data.db` / `auxiliary.db` / `storage/` を含み、そのまま `pb_data` として展開できる。
+別ボリュームへ移すときはこの zip を展開すればよい（ファイルを直接コピーするより安全）。
 
 ## Strapi からのデータ移行
 

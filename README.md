@@ -40,11 +40,22 @@ docker compose exec pocketbase /pb/pocketbase superuser upsert admin@example.com
 
 ### 3. 環境変数
 
-`.env.example` を `.env` にコピーし、`PUBLIC_POCKETBASE_URL` を設定:
+`.env.example` を `.env` にコピーする:
+
+| 変数 | 用途 | 読まれる場所 |
+| --- | --- | --- |
+| `POCKETBASE_URL` | PocketBase API の接続先 | サーバーのみ（SSR / monitor） |
+| `PUBLIC_MEDIA_BASE` | ブラウザが画像を取りに行くベース URL | クライアント（ビルド時に埋め込み） |
+
+ローカルではプロキシを立てないので、両方 PocketBase を直接指す:
 
 ```
-PUBLIC_POCKETBASE_URL=http://localhost:8090
+POCKETBASE_URL=http://localhost:8090
+PUBLIC_MEDIA_BASE=http://localhost:8090/api/files
 ```
+
+本番では PocketBase を外部公開せず、画像だけリバースプロキシで配信する
+（[docs/MEDIA_PROXY.md](docs/MEDIA_PROXY.md) 参照）。
 
 ### 4. 開発サーバー起動
 
@@ -57,14 +68,18 @@ pnpm dev
 ### フロントエンド
 
 1. リポジトリを Dokploy に接続し、Build Type で **Dockerfile**（または Nixpacks）を選択
-2. 環境変数 `PUBLIC_POCKETBASE_URL` を設定
-3. デプロイ
+2. Build Args に `PUBLIC_MEDIA_BASE=/api/files` を設定（クライアントに埋め込まれるためビルド時に必要）
+3. ランタイム環境変数に `POCKETBASE_URL=http://<pocketbase のサービス名>:8090` を設定
+4. `www.akarinext.org/api/files` を PocketBase に向ける Domain を追加（[docs/MEDIA_PROXY.md](docs/MEDIA_PROXY.md)）
+5. デプロイ
 
 ### CMS（PocketBase）
 
 1. 同じリポジトリを Build Path `backend/` の Dockerfile でデプロイ
 2. `/pb/pb_data` にボリュームをマウント
-3. 詳細は [backend/README.md](backend/README.md) を参照
+3. ドメインを割り当てず、内部ネットワークからのみ到達できるようにする
+   （管理画面 `/_/` を外部に晒さないため。管理は SSH ポートフォワード経由で行う）
+4. 詳細は [backend/README.md](backend/README.md) を参照
 
 ## Discord Webhook
 

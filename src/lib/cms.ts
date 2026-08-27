@@ -1,6 +1,15 @@
 /**
  * PocketBase REST API クライアント
- * 環境変数: PUBLIC_POCKETBASE_URL (例: http://localhost:8090)
+ *
+ * 環境変数:
+ * - POCKETBASE_URL   … API の接続先。サーバー側でしか読まないので、
+ *                       コンテナ内部のホスト名（例: http://pocketbase:8090）を指定でき、
+ *                       PocketBase を外部公開しないまま運用できる。
+ * - PUBLIC_MEDIA_BASE … ブラウザが画像を取りに行くベース URL。
+ *                       リバースプロキシで `/api/files/*` を PocketBase に転送する構成では
+ *                       `/api/files` を指定する（パスを揃えているので書き換えは不要）。
+ *
+ * どちらも未設定なら、旧来の PUBLIC_POCKETBASE_URL にフォールバックする。
  *
  * PocketBase の生レコード（file フィールドはファイル名、リレーションは expand 内）を
  * ページ側が扱いやすい形（CmsPost / CmsMember など）に整形して返す。
@@ -19,9 +28,36 @@ import type {
 	CmsTag,
 } from "./cms-types";
 
-const POCKETBASE_URL = (
-	import.meta.env.PUBLIC_POCKETBASE_URL || "http://localhost:8090"
-).replace(/\/$/, "");
+/** 末尾のスラッシュを落とす */
+function trimSlash(url: string): string {
+	return url.replace(/\/$/, "");
+}
+
+/**
+ * 環境変数を読む。ランタイム（process.env）を優先し、
+ * ビルド時に埋め込まれた import.meta.env にフォールバックする。
+ */
+function readEnv(key: string): string | undefined {
+	const runtime = globalThis.process?.env?.[key];
+	if (runtime) return runtime;
+	const build = (import.meta.env as Record<string, string | undefined>)[key];
+	return build || undefined;
+}
+
+/** API の接続先。サーバー側でのみ使う */
+const POCKETBASE_URL = trimSlash(
+	readEnv("POCKETBASE_URL") ??
+		readEnv("PUBLIC_POCKETBASE_URL") ??
+		"http://localhost:8090",
+);
+
+/**
+ * ブラウザ向けの画像ベース URL。
+ * PUBLIC_MEDIA_BASE 未設定なら、PocketBase を直接指す従来の絶対 URL になる。
+ */
+const MEDIA_BASE = trimSlash(
+	import.meta.env.PUBLIC_MEDIA_BASE ?? `${POCKETBASE_URL}/api/files`,
+);
 
 // ---------------------------------------------------------------------------
 // 低レベルヘルパー
@@ -166,7 +202,7 @@ function toMedia(record: PbRecord, field: string): CmsMedia | null {
 	if (typeof filename !== "string" || filename === "") return null;
 	const collection = record.collectionName || "";
 	return {
-		url: `${POCKETBASE_URL}/api/files/${collection}/${record.id}/${filename}`,
+		url: `${MEDIA_BASE}/${collection}/${record.id}/${filename}`,
 		name: filename,
 	};
 }
@@ -366,9 +402,10 @@ export function getMediaUrl(
 	media: CmsMedia | { url?: string } | null | undefined,
 ): string | undefined {
 	if (!media || !media.url) return undefined;
-	return media.url.startsWith("http")
-		? media.url
-		: `${POCKETBASE_URL}${media.url}`;
+	// toMedia() が組み立てた絶対 URL / ルート相対パスはそのまま使う
+	if (media.url.startsWith("http") || media.url.startsWith("/"))
+		return media.url;
+	return `${MEDIA_BASE}/${media.url}`;
 }
 
 /**

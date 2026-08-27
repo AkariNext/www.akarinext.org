@@ -16,8 +16,9 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Build-time env (override with Dokploy env vars)
-ARG PUBLIC_POCKETBASE_URL
-ENV PUBLIC_POCKETBASE_URL=${PUBLIC_POCKETBASE_URL}
+# PUBLIC_ 付きの値はクライアントバンドルに埋め込まれるため、ビルド時に渡す必要がある
+ARG PUBLIC_MEDIA_BASE
+ENV PUBLIC_MEDIA_BASE=${PUBLIC_MEDIA_BASE}
 
 RUN pnpm run build
 RUN pnpm run build:monitor
@@ -42,10 +43,9 @@ RUN mkdir -p /app/.cache
 VOLUME ["/app/.cache"]
 
 # Expose Astro's default port (or Dokploy's PORT env)
-ARG PUBLIC_POCKETBASE_URL
+# POCKETBASE_URL はランタイム env で渡す（サーバー側でしか読まないため埋め込み不要）
 ENV HOST=0.0.0.0
 ENV PORT=4321
-ENV PUBLIC_POCKETBASE_URL=${PUBLIC_POCKETBASE_URL}
 EXPOSE 4321
 
 # Start SSR server and monitor concurrently
