@@ -137,34 +137,6 @@ a {
 	transition: color 0.2s ease;
 }
 
-/* Glass Cards */
-.glass-card,
-.clean-card,
-.game-card {
-	background: var(--bg-surface);
-	backdrop-filter: blur(12px);
-	-webkit-backdrop-filter: blur(12px);
-	border: 1px solid var(--border-subtle);
-	border-top: 1px solid var(--border-glass);
-	border-radius: var(--radius-md);
-	padding: 2.5rem;
-	/* Increased padding for more breathing room */
-	box-shadow: var(--shadow-glass);
-	transition:
-		transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
-		box-shadow 0.3s ease,
-		border-color 0.3s ease;
-}
-
-.glass-card:hover,
-.clean-card:hover,
-.game-card:hover {
-	transform: translateY(-4px);
-	box-shadow: var(--shadow-hover);
-	background: var(--bg-surface-hover);
-	border-color: var(--accent-soft);
-}
-
 /* Buttons */
 .btn {
 	display: inline-flex;

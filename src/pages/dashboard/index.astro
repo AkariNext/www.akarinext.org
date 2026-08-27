@@ -3,7 +3,6 @@ import {
 	Edit3,
 	Gamepad2,
 	LogOut,
-	PenLine,
 	Plus,
 	Save,
 	Trash2,
@@ -30,26 +29,27 @@ if (Astro.request.method === "POST") {
 		return new Response("Forbidden", { status: 403 });
 	try {
 		const token = getDashboardToken(Astro.cookies);
-		const notice = await mutateGameEntry(
+		const resultKey = await mutateGameEntry(
 			token,
 			user.id,
 			await Astro.request.formData(),
 		);
-		void notice;
+		// astro check はテンプレートリテラル内の参照を追えず未使用と誤検知する
+		void resultKey;
 		return new Response(null, {
 			status: 303,
-			headers: { Location: `/dashboard?notice=${notice}#games` },
+			headers: { Location: `/dashboard?notice=${resultKey}#games` },
 		});
 	} catch (cause) {
-		const message =
+		const failure =
 			cause instanceof DashboardError
 				? cause.message
 				: "ゲームを保存できませんでした。";
-		void message;
+		void failure;
 		return new Response(null, {
 			status: 303,
 			headers: {
-				Location: `/dashboard?error=${encodeURIComponent(message)}#games`,
+				Location: `/dashboard?error=${encodeURIComponent(failure)}#games`,
 			},
 		});
 	}
@@ -76,6 +76,17 @@ const avatar = getMediaUrl(user.avatar);
 const displayName = user.name || user.username || "メンバー";
 const registeredGames = new Set(entries.map((entry) => entry.game.id));
 const availableGames = games.filter((game) => !registeredGames.has(game.id));
+
+const publishedCount = posts.filter(
+	(post) => post.status === "published",
+).length;
+const draftCount = posts.length - publishedCount;
+const stats = [
+	{ label: "公開", value: publishedCount },
+	{ label: "下書き", value: draftCount },
+	{ label: "ゲーム", value: entries.length },
+];
+
 const notices: Record<string, string> = {
 	"post-deleted": "記事を削除しました。",
 	"game-added": "ゲームを追加しました。",
@@ -84,6 +95,7 @@ const notices: Record<string, string> = {
 };
 const notice = notices[Astro.url.searchParams.get("notice") ?? ""];
 const error = Astro.url.searchParams.get("error") || loadError;
+
 const skillOptions = [
 	["", "未設定"],
 	["casual", "気軽に"],
@@ -107,6 +119,22 @@ const recruitmentOptions = [
 	["can_teach", "教えられます"],
 	["discussion_welcome", "話したい"],
 ] as const;
+
+const labelOf = (
+	options: readonly (readonly [string, string])[],
+	value?: string,
+) => options.find(([option]) => option === (value ?? ""))?.[1] ?? "";
+
+/** カードの下に出す一言。設定済みのものだけ拾う */
+function summarize(entry: CmsGameEntry): string {
+	return [
+		labelOf(skillOptions, entry.skill_level),
+		labelOf(recruitmentOptions, entry.recruitment),
+	]
+		.filter((text) => text && text !== "未設定" && text !== "募集なし")
+		.join(" · ");
+}
+
 const date = new Intl.DateTimeFormat("ja-JP", {
 	year: "numeric",
 	month: "short",
@@ -117,109 +145,372 @@ const date = new Intl.DateTimeFormat("ja-JP", {
 <Layout title="ダッシュボード" noindex={true}>
   <main class="dashboard container">
     <header class="dashboard__head">
-      <p>Dashboard</p>
-      <div class="dashboard__identity">
-        {avatar ? <img src={avatar} alt="" width="64" height="64" /> : <span class="dashboard__avatar"><User aria-hidden="true" /></span>}
-        <div><h1>{displayName}</h1><p>{user.staff_title || (user.is_staff ? "運営メンバー" : "メンバー")}</p></div>
+      <div class="dashboard__head-top">
+        <div class="dashboard__identity">
+          {avatar
+            ? <img src={avatar} alt="" width="80" height="80" />
+            : <span class="dashboard__avatar"><User aria-hidden="true" /></span>}
+          <div>
+            <p class="dashboard__eyebrow">Dashboard</p>
+            <h1>{displayName}</h1>
+            <div class="dashboard__role">
+              <span>{user.staff_title || (user.is_staff ? "運営メンバー" : "メンバー")}</span>
+            </div>
+          </div>
+        </div>
+
+        <nav class="dashboard__actions" aria-label="アカウント操作">
+          <a class="button" href={`/users/${user.id}`}>公開プロフィール</a>
+          <form method="POST" action="/auth/logout" data-astro-reload>
+            <button class="button button--bare" type="submit"><LogOut aria-hidden="true" />ログアウト</button>
+          </form>
+        </nav>
       </div>
-      <nav class="dashboard__actions" aria-label="アカウント操作">
-        <a href={`/users/${user.id}`}>公開プロフィール</a>
-        <form method="POST" action="/auth/logout" data-astro-reload><button type="submit"><LogOut aria-hidden="true" />ログアウト</button></form>
-      </nav>
+
+      <dl class="dashboard__stats">
+        {stats.map((stat) => (
+          <div><dt>{stat.label}</dt><dd>{stat.value}</dd></div>
+        ))}
+      </dl>
     </header>
 
-    {(notice || error) && <p class:list={["dashboard__message", { "dashboard__message--error": error }]} role={error ? "alert" : "status"}>{error || notice}</p>}
+    {(notice || error) && (
+      <p class:list={["dashboard__message", { "dashboard__message--error": error }]} role={error ? "alert" : "status"}>
+        {error || notice}
+      </p>
+    )}
 
-    <section class="dashboard__section" aria-labelledby="posts-heading">
-      <header class="dashboard__section-head">
-        <div><p>Writing</p><h2 id="posts-heading"><PenLine aria-hidden="true" />記事</h2></div>
-        <a class="primary" href="/dashboard/posts/new"><Plus aria-hidden="true" />新しい記事</a>
+    <section class="section" aria-labelledby="posts-heading">
+      <header class="section__head">
+        <div class="section__title">
+          <h2 id="posts-heading">記事</h2>
+          {posts.length > 0 && (
+            <div class="tabs" role="tablist" aria-label="記事の絞り込み">
+              <button type="button" role="tab" aria-selected="true" data-filter="all">すべて {posts.length}</button>
+              <button type="button" role="tab" aria-selected="false" data-filter="published">公開 {publishedCount}</button>
+              <button type="button" role="tab" aria-selected="false" data-filter="draft">下書き {draftCount}</button>
+            </div>
+          )}
+        </div>
+        <div class="section__tools">
+          <a class="button button--primary" href="/dashboard/posts/new"><Plus aria-hidden="true" />新しい記事</a>
+        </div>
       </header>
-      {posts.length ? <ol class="post-index">{posts.map((post) => <li>
-        <div class="post-index__meta"><span class:list={["status", { "status--live": post.status === "published" }]}>{post.status === "published" ? "公開" : "下書き"}</span><time datetime={post.updatedAt}>{date.format(new Date(post.updatedAt))} 更新</time></div>
-        <h3>{post.title}</h3><a href={`/dashboard/posts/${post.id}`}><Edit3 aria-hidden="true" />編集</a>
-      </li>)}</ol> : <div class="empty"><p>まだ記事はありません。下書きから始められます。</p><a href="/dashboard/posts/new">最初の記事を書く</a></div>}
+
+      {posts.length ? (
+        <ol class="posts" data-posts>
+          {posts.map((post) => (
+            <li data-status={post.status}>
+              <div class="posts__meta">
+                <span class="posts__badge-row">
+                  <span class:list={["status", { "status--live": post.status === "published" }]}>
+                    {post.status === "published" ? "公開" : "下書き"}
+                  </span>
+                  <time datetime={post.updatedAt}>{date.format(new Date(post.updatedAt))} 更新</time>
+                </span>
+              </div>
+              <div class="posts__body">
+                <h3>{post.title}</h3>
+                <a href={`/dashboard/posts/${post.id}`}><Edit3 aria-hidden="true" />編集</a>
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <div class="empty">
+          <h3>まだ記事はありません</h3>
+          <p>下書きは自分にだけ見えます。書きかけのまま置いておいて大丈夫です。</p>
+          <div class="empty__actions">
+            <a class="button button--primary" href="/dashboard/posts/new"><Plus aria-hidden="true" />最初の記事を書く</a>
+            <a class="link" href="/posts">公開されている記事を見る</a>
+          </div>
+        </div>
+      )}
     </section>
 
-    <section class="dashboard__section" id="games" aria-labelledby="games-heading">
-      <header class="dashboard__section-head"><div><p>Game shelf</p><h2 id="games-heading"><Gamepad2 aria-hidden="true" />ゲーム</h2></div><span>{entries.length} タイトル</span></header>
-      {entries.length ? <div class="game-index">{entries.map((entry) => <form method="POST" action="/dashboard" class="game-row" data-astro-reload>
-        <input type="hidden" name="id" value={entry.id} />
-        <div class="game-row__identity">{entry.game.cover_image ? <img src={entry.game.cover_image.url} alt="" width="72" height="96" loading="lazy" /> : <span aria-hidden="true"><Gamepad2 /></span>}<h3>{entry.game.name}</h3></div>
-        <label><span>状態</span><select name="list"><option value="playing" selected={entry.list === "playing"}>プレイ中</option><option value="finished" selected={entry.list === "finished"}>プレイ終了</option></select></label>
-        <label><span>遊び方</span><select name="skill_level">{skillOptions.map(([value, label]) => <option value={value} selected={entry.skill_level === value}>{label}</option>)}</select></label>
-        <label><span>感想</span><select name="impression">{impressionOptions.map(([value, label]) => <option value={value} selected={entry.impression === value}>{label}</option>)}</select></label>
-        <label><span>募集</span><select name="recruitment">{recruitmentOptions.map(([value, label]) => <option value={value} selected={entry.recruitment === value}>{label}</option>)}</select></label>
-        <div class="game-row__actions"><button type="submit" name="_action" value="update"><Save aria-hidden="true" />保存</button><button class="delete" type="submit" name="_action" value="delete"><Trash2 aria-hidden="true" />削除</button></div>
-      </form>)}</div> : <p class="empty">まだゲームは登録されていません。</p>}
+    <section class="section section--shelf" id="games" aria-labelledby="games-heading">
+      <div class="shelf">
+        <header class="section__head">
+          <div class="section__title"><h2 id="games-heading">ゲーム棚</h2></div>
+          <div class="section__tools"><span class="count">{entries.length} タイトル</span></div>
+        </header>
 
-      <details class="game-add"><summary><Plus aria-hidden="true" />ゲームを追加</summary>
-        <form method="POST" action="/dashboard" data-astro-reload>
-          <label><span>ゲーム</span><select name="game" required><option value="">選択してください</option>{availableGames.map((game) => <option value={game.id}>{game.name}</option>)}</select></label>
-          <label><span>状態</span><select name="list"><option value="playing">プレイ中</option><option value="finished">プレイ終了</option></select></label>
-          <label><span>遊び方</span><select name="skill_level">{skillOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select></label>
-          <label><span>感想</span><select name="impression">{impressionOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select></label>
-          <label><span>募集</span><select name="recruitment">{recruitmentOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select></label>
-          <button type="submit" disabled={availableGames.length === 0}><Plus aria-hidden="true" />追加</button>
-        </form>{availableGames.length === 0 && <p>追加できるゲームはありません。</p>}
-      </details>
+        <div class="shelf__grid">
+          {entries.map((entry) => {
+            const cover = entry.game.cover_image?.url;
+            const summary = summarize(entry);
+            return (
+              <article class="game-card">
+                <button type="button" data-select-game={entry.id} aria-controls="game-panel">
+                  <span class="game-card__cover">
+                    {cover
+                      ? <img src={cover} alt="" width="120" height="160" loading="lazy" />
+                      : <Gamepad2 aria-hidden="true" />}
+                    <span class:list={["game-card__chip", { "game-card__chip--finished": entry.list === "finished" }]}>
+                      {entry.list === "finished" ? "終了" : "プレイ中"}
+                    </span>
+                  </span>
+                  <span class="game-card__name">{entry.game.name}</span>
+                  {summary && <span class="game-card__summary">{summary}</span>}
+                </button>
+              </article>
+            );
+          })}
+
+          <button class="game-add" type="button" data-select-game="new" aria-controls="game-panel">
+            <Plus aria-hidden="true" />
+            <span>追加</span>
+          </button>
+        </div>
+      </div>
+
+      <aside class="panel" id="game-panel" aria-label="ゲームの設定">
+        {entries.map((entry) => (
+          <form class="panel__form" method="POST" action="/dashboard" data-astro-reload data-game-form={entry.id} hidden>
+            <input type="hidden" name="id" value={entry.id} />
+            <header class="panel__head">
+              <span class="panel__thumb">
+                {entry.game.cover_image?.url
+                  ? <img src={entry.game.cover_image.url} alt="" width="36" height="48" loading="lazy" />
+                  : <Gamepad2 aria-hidden="true" />}
+              </span>
+              <div>
+                <h3>{entry.game.name}</h3>
+                <p>{date.format(new Date(entry.game.updatedAt))} 更新</p>
+              </div>
+            </header>
+
+            <div class="panel__body">
+              <label class="field"><span class="field__label">状態</span>
+                <select name="list">
+                  <option value="playing" selected={entry.list === "playing"}>プレイ中</option>
+                  <option value="finished" selected={entry.list === "finished"}>プレイ終了</option>
+                </select>
+              </label>
+              <label class="field"><span class="field__label">遊び方</span>
+                <select name="skill_level">{skillOptions.map(([value, label]) => <option value={value} selected={entry.skill_level === value}>{label}</option>)}</select>
+              </label>
+              <label class="field"><span class="field__label">感想</span>
+                <select name="impression">{impressionOptions.map(([value, label]) => <option value={value} selected={entry.impression === value}>{label}</option>)}</select>
+              </label>
+              <label class="field"><span class="field__label">募集</span>
+                <select name="recruitment">{recruitmentOptions.map(([value, label]) => <option value={value} selected={entry.recruitment === value}>{label}</option>)}</select>
+              </label>
+
+              <button class="button button--primary" type="submit" name="_action" value="update"><Save aria-hidden="true" />保存する</button>
+
+              <div class="panel__foot">
+                <button class="button button--danger" type="submit" name="_action" value="delete"><Trash2 aria-hidden="true" />棚から外す</button>
+              </div>
+            </div>
+          </form>
+        ))}
+
+        <form class="panel__form" method="POST" action="/dashboard" data-astro-reload data-game-form="new" hidden>
+          <header class="panel__head">
+            <span class="panel__thumb"><Plus aria-hidden="true" /></span>
+            <div><h3>ゲームを追加</h3><p>棚に並べるタイトルを選びます</p></div>
+          </header>
+          <div class="panel__body">
+            {availableGames.length === 0 && (
+              <p class="panel__note">棚に入れられるゲームがありません。マスタに登録されたタイトルがすべて棚にある状態です。</p>
+            )}
+            <label class="field"><span class="field__label">ゲーム</span>
+              <select name="game" required disabled={availableGames.length === 0}>
+                <option value="">選択してください</option>
+                {availableGames.map((game) => <option value={game.id}>{game.name}</option>)}
+              </select>
+            </label>
+            <label class="field"><span class="field__label">状態</span>
+              <select name="list"><option value="playing">プレイ中</option><option value="finished">プレイ終了</option></select>
+            </label>
+            <label class="field"><span class="field__label">遊び方</span>
+              <select name="skill_level">{skillOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select>
+            </label>
+            <label class="field"><span class="field__label">感想</span>
+              <select name="impression">{impressionOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select>
+            </label>
+            <label class="field"><span class="field__label">募集</span>
+              <select name="recruitment">{recruitmentOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select>
+            </label>
+            <button class="button button--primary" type="submit" disabled={availableGames.length === 0}><Plus aria-hidden="true" />棚に追加する</button>
+          </div>
+        </form>
+
+        <p class="panel__placeholder" data-game-placeholder>
+          {entries.length ? "棚のタイトルを選ぶと、ここで設定を変えられます。" : "まだ棚は空です。「追加」から始められます。"}
+        </p>
+      </aside>
     </section>
   </main>
 </Layout>
 
+<script>
+  import { onEachPage } from "../../scripts/on-page";
+
+  onEachPage(() => {
+    // --- 記事の絞り込み ---
+    const list = document.querySelector<HTMLElement>("[data-posts]");
+    const tabs = [...document.querySelectorAll<HTMLButtonElement>("[data-filter]")];
+    if (list && tabs.length && list.dataset.bound !== "true") {
+      list.dataset.bound = "true";
+      for (const tab of tabs) {
+        tab.addEventListener("click", () => {
+          const filter = tab.dataset.filter ?? "all";
+          for (const other of tabs)
+            other.setAttribute("aria-selected", String(other === tab));
+          for (const item of list.querySelectorAll<HTMLElement>("li")) {
+            item.hidden = filter !== "all" && item.dataset.status !== filter;
+          }
+        });
+      }
+    }
+
+    // --- ゲーム棚：カードを選ぶと右のパネルにその設定を出す ---
+    const panel = document.querySelector<HTMLElement>("#game-panel");
+    const cards = [...document.querySelectorAll<HTMLButtonElement>("[data-select-game]")];
+    if (!panel || !cards.length || panel.dataset.bound === "true") return;
+    panel.dataset.bound = "true";
+
+    const forms = [...panel.querySelectorAll<HTMLFormElement>("[data-game-form]")];
+    const placeholder = panel.querySelector<HTMLElement>("[data-game-placeholder]");
+
+    const show = (id: string) => {
+      for (const form of forms) form.hidden = form.dataset.gameForm !== id;
+      if (placeholder) placeholder.hidden = true;
+      for (const card of cards) {
+        card.setAttribute("aria-pressed", String(card.dataset.selectGame === id));
+      }
+    };
+
+    for (const card of cards) {
+      card.setAttribute("aria-pressed", "false");
+      card.addEventListener("click", () => show(card.dataset.selectGame ?? ""));
+    }
+
+    // 開いた直後から設定を触れるよう、最初のタイトルを出しておく
+    const first = forms.find((form) => form.dataset.gameForm !== "new");
+    if (first?.dataset.gameForm) show(first.dataset.gameForm);
+  });
+</script>
+
 <style>
-  /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V4 · genre: editorial · macrostructure: Index-First · tone: practical cool blue · contrast: pass (40–41) */
-  .dashboard { padding-block: var(--space-xl) var(--space-4xl); }
-  .dashboard__head { display: grid; gap: var(--space-lg); padding-block-end: var(--space-xl); border-block-end: var(--rule-medium) solid var(--color-ink); }
-  .dashboard__head > p, .dashboard__section-head div > p { color: var(--color-accent); font-size: var(--text-sm); font-weight: 700; }
-  .dashboard__identity { display: flex; align-items: center; gap: var(--space-md); }
-  .dashboard__identity img, .dashboard__avatar { display: grid; width: 4rem; height: 4rem; flex: 0 0 4rem; place-items: center; overflow: hidden; border-radius: 50%; object-fit: cover; background: var(--color-paper-2); color: var(--color-muted); }
-  .dashboard__avatar svg { width: 1.5rem; height: 1.5rem; }
+  /* Hallmark · genre: editorial · macrostructure: Index-First · design-system: design.md
+   * 上に本人と実績、下に「記事」と「ゲーム棚」。棚は一覧と設定パネルを左右に置く。
+   */
+  .dashboard { padding-block: var(--space-xl) var(--space-3xl); }
+
+  /* --- 本人 --- */
+  .dashboard__head { display: grid; gap: var(--space-md); padding-block-end: var(--space-lg); border-block-end: var(--rule-medium) solid var(--color-ink); }
+  .dashboard__head-top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: var(--space-lg); }
+  .dashboard__identity { display: flex; align-items: center; gap: var(--space-lg); }
+  .dashboard__identity img, .dashboard__avatar { display: grid; width: 5rem; height: 5rem; flex: 0 0 5rem; place-items: center; overflow: hidden; border-radius: 50%; object-fit: cover; background: var(--color-paper-2); color: var(--color-muted); }
+  .dashboard__avatar svg { width: 1.75rem; height: 1.75rem; }
+  .dashboard__eyebrow { color: var(--color-accent); font-size: var(--text-sm); font-weight: 700; }
   .dashboard__identity h1 { font-size: var(--text-2xl); line-height: 1.1; letter-spacing: -.02em; overflow-wrap: anywhere; }
-  .dashboard__identity div > p { color: var(--color-muted); font-size: var(--text-sm); }
-  .dashboard__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-lg); }
-  .dashboard__actions a { display: inline-flex; min-height: 2.75rem; align-items: center; border-block-end: var(--rule-hair) solid var(--color-accent); color: var(--color-accent); white-space: nowrap; }
-  button, .primary { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; gap: var(--space-xs); padding-inline: var(--space-md); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-ink); cursor: pointer; white-space: nowrap; }
-  button svg, .primary svg { width: 1em; height: 1em; }
-  button:disabled { cursor: not-allowed; opacity: .55; }
-  .primary, .game-add button { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); }
+  .dashboard__role { display: flex; align-items: center; gap: var(--space-sm); color: var(--color-muted); font-size: var(--text-sm); }
+  .dashboard__actions { display: flex; align-items: center; gap: var(--space-md); }
+  .dashboard__stats { display: flex; flex-wrap: wrap; gap: var(--space-xl); font-size: var(--text-sm); }
+  .dashboard__stats > div { display: flex; align-items: baseline; gap: var(--space-xs); }
+  .dashboard__stats dt { color: var(--color-muted); }
+  .dashboard__stats dd { font-family: var(--font-mono); font-size: var(--text-md); font-variant-numeric: tabular-nums; }
+
   .dashboard__message { margin-block-start: var(--space-lg); padding: var(--space-sm) var(--space-md); border: var(--rule-hair) solid var(--color-success); }
   .dashboard__message--error { border-color: var(--color-error); }
-  .dashboard__section { display: grid; gap: var(--space-lg); padding-block: var(--space-2xl); border-block-end: var(--rule-hair) solid var(--color-rule); }
-  .dashboard__section:last-child { border-block-end: 0; }
-  .dashboard__section-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: var(--space-md); }
-  .dashboard__section-head h2 { display: flex; align-items: center; gap: var(--space-xs); margin-block-start: var(--space-xs); font-size: var(--text-xl); line-height: 1.15; }
-  .dashboard__section-head h2 svg { width: 1em; height: 1em; color: var(--color-accent); }
-  .dashboard__section-head > span { color: var(--color-muted); font-variant-numeric: tabular-nums; }
-  .post-index { list-style: none; border-block-start: var(--rule-hair) solid var(--color-rule); }
-  .post-index li { display: grid; gap: var(--space-sm); padding-block: var(--space-lg); border-block-end: var(--rule-hair) solid var(--color-rule); }
-  .post-index__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); color: var(--color-muted); font-size: var(--text-xs); }
-  .status { padding: var(--space-3xs) var(--space-xs); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); }
+
+  /* --- ボタン --- */
+  .button { display: inline-flex; min-height: 2.5rem; align-items: center; justify-content: center; gap: var(--space-xs); padding-inline: var(--space-md); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-ink); font: inherit; font-size: var(--text-sm); cursor: pointer; white-space: nowrap; }
+  .button svg { width: 1em; height: 1em; }
+  .button--primary { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); }
+  .button--bare { border: 0; background: transparent; color: var(--color-muted); }
+  .button--danger { border: 0; background: transparent; color: var(--color-error); }
+  .button:disabled { cursor: not-allowed; opacity: .55; }
+  .link { display: inline-flex; min-height: 2.5rem; align-items: center; border-block-end: var(--rule-hair) solid var(--color-accent); color: var(--color-accent); }
+
+  /* --- セクション --- */
+  .section { padding-block: var(--space-xl); }
+  .section__head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: var(--space-lg); padding-block-end: var(--space-md); border-block-end: var(--rule-hair) solid var(--color-rule-strong); }
+  .section__title { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-lg); }
+  .section__title h2 { font-size: var(--text-xl); line-height: 1.15; }
+  .section__tools { display: flex; align-items: center; gap: var(--space-sm); }
+  .count { color: var(--color-muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+  .tabs { display: flex; gap: var(--space-lg); font-size: var(--text-sm); }
+  .tabs button { padding: 0 0 var(--space-2xs); border: 0; background: transparent; color: var(--color-ink-2); font: inherit; font-size: var(--text-sm); cursor: pointer; }
+  .tabs button[aria-selected="true"] { box-shadow: inset 0 -2px 0 var(--color-accent); color: var(--color-ink); font-weight: 700; }
+
+  /* --- 記事 --- */
+  .posts { display: grid; list-style: none; }
+  .posts li { display: grid; gap: var(--space-xs); padding-block: var(--space-md); border-block-end: var(--rule-hair) solid var(--color-rule); }
+  .posts__meta { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); color: var(--color-muted); font-size: var(--text-xs); }
+  .posts__badge-row { display: inline-flex; align-items: center; gap: var(--space-xs); }
+  .status { padding: var(--space-3xs) var(--space-xs); border: var(--rule-hair) solid var(--color-rule-strong); color: var(--color-muted); }
   .status--live { border-color: var(--color-success); color: var(--color-success); }
-  .post-index h3 { min-width: 0; font-size: var(--text-md); line-height: 1.35; overflow-wrap: anywhere; }
-  .post-index li > a { display: inline-flex; width: fit-content; min-height: 2.75rem; align-items: center; gap: var(--space-xs); color: var(--color-accent); white-space: nowrap; }
-  .post-index li > a svg { width: 1em; height: 1em; }
-  .empty { display: grid; max-width: 65ch; gap: var(--space-sm); color: var(--color-muted); }
-  .empty a { width: fit-content; color: var(--color-accent); border-block-end: var(--rule-hair) solid currentColor; }
-  .game-index { border-block-start: var(--rule-hair) solid var(--color-rule); }
-  .game-row { display: grid; gap: var(--space-md); padding-block: var(--space-lg); border-block-end: var(--rule-hair) solid var(--color-rule); }
-  .game-row__identity { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); align-items: center; gap: var(--space-md); }
-  .game-row__identity img, .game-row__identity > span { display: grid; width: 4.5rem; aspect-ratio: 3 / 4; place-items: center; object-fit: cover; background: var(--color-paper-2); color: var(--color-muted); }
-  .game-row__identity > span svg { width: 1.5rem; height: 1.5rem; }
-  .game-row h3 { font-size: var(--text-md); line-height: 1.3; overflow-wrap: anywhere; }
-  .game-row label, .game-add label { display: grid; gap: var(--space-xs); }
-  .game-row label > span, .game-add label > span { color: var(--color-muted); font-size: var(--text-xs); font-weight: 700; }
+  .posts__body { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); }
+  .posts__body h3 { min-width: 0; font-size: var(--text-md); line-height: 1.35; overflow-wrap: anywhere; }
+  .posts__body a { display: inline-flex; align-items: center; gap: var(--space-xs); color: var(--color-accent); font-size: var(--text-sm); white-space: nowrap; }
+  .posts__body a svg { width: 1em; height: 1em; }
+
+  .empty { display: grid; justify-items: start; gap: var(--space-md); padding-block: var(--space-xl); }
+  .empty h3 { font-size: var(--text-lg); }
+  .empty p { max-width: 52ch; color: var(--color-ink-2); }
+  .empty__actions { display: flex; flex-wrap: wrap; gap: var(--space-md); padding-block-start: var(--space-xs); }
+
+  /* --- ゲーム棚 --- */
+  .section--shelf { display: grid; gap: var(--space-xl); align-items: start; padding-block-end: 0; border-block-start: var(--rule-hair) solid var(--color-rule); }
+  .shelf__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); gap: var(--space-lg) var(--space-md); padding-block-start: var(--space-lg); }
+  .game-card button { display: grid; width: 100%; gap: var(--space-xs); padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+  .game-card button[aria-pressed="true"] { outline: var(--rule-medium) solid var(--color-accent); outline-offset: var(--space-2xs); }
+  .game-card__cover { position: relative; display: grid; width: 100%; aspect-ratio: 3 / 4; place-items: center; overflow: hidden; background: var(--color-paper-2); color: var(--color-muted); }
+  .game-card__cover img { width: 100%; height: 100%; object-fit: cover; }
+  .game-card__cover > svg { width: 1.5rem; height: 1.5rem; }
+  .game-card__chip { position: absolute; inset-block-start: 0; inset-inline-start: 0; padding: var(--space-3xs) var(--space-xs); background: var(--color-accent); color: var(--color-accent-ink); font-size: var(--text-xs); }
+  .game-card__chip--finished { background: var(--color-paper-3); color: var(--color-ink-2); }
+  .game-card__name { font-size: var(--text-sm); line-height: 1.4; overflow-wrap: anywhere; }
+  .game-card__summary { color: var(--color-muted); font-size: var(--text-xs); line-height: 1.4; }
+  .game-add { display: grid; aspect-ratio: 3 / 4; align-content: center; justify-items: center; gap: var(--space-xs); border: var(--rule-hair) dashed var(--color-rule-strong); background: transparent; color: var(--color-accent); font: inherit; font-size: var(--text-xs); cursor: pointer; }
+  .game-add svg { width: 1.25rem; height: 1.25rem; }
+  .game-add:disabled { cursor: not-allowed; opacity: .55; }
+
+  /* --- 設定パネル --- */
+  .panel { border: var(--rule-hair) solid var(--color-rule-strong); background: var(--color-paper); }
+  .panel__head { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-md) var(--space-lg); border-block-end: var(--rule-hair) solid var(--color-rule); }
+  .panel__thumb { display: grid; width: 2.25rem; flex: 0 0 2.25rem; aspect-ratio: 3 / 4; place-items: center; overflow: hidden; background: var(--color-paper-2); color: var(--color-muted); }
+  .panel__thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .panel__thumb svg { width: 1rem; height: 1rem; }
+  .panel__head h3 { font-size: var(--text-md); line-height: 1.2; overflow-wrap: anywhere; }
+  .panel__head p { color: var(--color-muted); font-size: var(--text-xs); }
+  .panel__body { display: grid; gap: var(--space-md); padding: var(--space-lg); }
+  .panel__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding-block-start: var(--space-xs); border-block-start: var(--rule-hair) solid var(--color-rule); }
+  .panel__placeholder { padding: var(--space-lg); color: var(--color-muted); font-size: var(--text-sm); }
+  .panel__note { color: var(--color-muted); font-size: var(--text-sm); }
+  .field { display: grid; gap: var(--space-xs); }
+  .field__label { color: var(--color-muted); font-size: var(--text-xs); font-weight: 700; }
   select { width: 100%; min-height: 2.75rem; padding: var(--space-sm) var(--space-md); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); outline: var(--rule-medium) solid transparent; outline-offset: var(--space-3xs); background: var(--color-paper); color: var(--color-ink); font: inherit; }
-  select:focus { outline-color: var(--color-focus); } select:disabled { cursor: not-allowed; opacity: .55; }
-  .game-row__actions { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-sm); }
-  .delete { color: var(--color-error); }
-  .game-add { padding-block-start: var(--space-md); }
-  .game-add summary { display: inline-flex; min-height: 2.75rem; align-items: center; gap: var(--space-xs); color: var(--color-accent); cursor: pointer; white-space: nowrap; }
-  .game-add summary svg { width: 1em; height: 1em; }
-  .game-add form { display: grid; gap: var(--space-md); margin-block-start: var(--space-lg); padding-block: var(--space-lg); border-block: var(--rule-hair) solid var(--color-rule); }
-  .game-add > p { margin-block-start: var(--space-sm); color: var(--color-muted); }
-  @media (hover: hover) and (pointer: fine) { button:hover { border-color: var(--color-ink); background: var(--color-paper-2); } .primary:hover, .game-add button:hover { border-color: var(--color-ink); background: var(--color-ink); } select:hover { background: var(--color-paper-2); } }
-  button:active { background: var(--color-paper-3); } .primary:active, .game-add button:active { background: var(--color-ink); }
-  @media (min-width: 40rem) { .post-index li { grid-template-columns: 10rem minmax(0, 1fr) auto; align-items: center; column-gap: var(--space-lg); } .post-index__meta { display: grid; } .game-add form { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; } }
-  @media (min-width: 60rem) { .dashboard__head { grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; } .dashboard__identity { padding-inline-start: var(--space-lg); } .game-row { grid-template-columns: minmax(12rem, 1.35fr) repeat(4, minmax(8rem, 1fr)) auto; align-items: end; } .game-row__actions { flex-wrap: nowrap; } .game-add form { grid-template-columns: 1.4fr repeat(4, minmax(0, 1fr)) auto; } }
+  select:focus { outline-color: var(--color-focus); }
+  select:disabled { cursor: not-allowed; opacity: .55; }
+
+  @media (hover: hover) and (pointer: fine) {
+    .button:hover { border-color: var(--color-ink); background: var(--color-paper-2); }
+    .button--primary:hover { border-color: var(--color-ink); background: var(--color-ink); }
+    .button--bare:hover, .button--danger:hover { background: var(--color-paper-2); }
+    .link:hover, .posts__body a:hover { color: var(--color-accent); }
+    .game-card button:hover .game-card__cover { outline: var(--rule-hair) solid var(--color-rule-strong); }
+    .game-add:hover { border-color: var(--color-accent); background: var(--color-paper-2); }
+    select:hover { background: var(--color-paper-2); }
+  }
+
+  @media (min-width: 48rem) {
+    .posts { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--space-xl); }
+  }
+
+  @media (min-width: 64rem) {
+    .section--shelf { grid-template-columns: minmax(0, 1fr) 22rem; }
+    .panel { position: sticky; inset-block-start: var(--space-lg); }
+  }
+
+  @media (max-width: 47.99rem) {
+    .dashboard__head-top { align-items: start; }
+    .dashboard__identity { gap: var(--space-md); }
+    .dashboard__identity img, .dashboard__avatar { width: 4rem; height: 4rem; flex-basis: 4rem; }
+  }
 </style>
