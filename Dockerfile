@@ -1,5 +1,5 @@
 # Build stage
-FROM node:26-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ RUN pnpm run build
 RUN pnpm run build:monitor
 
 # Production stage
-FROM node:22-alpine AS runner
+FROM node:24-alpine AS runner
 
 WORKDIR /app
 

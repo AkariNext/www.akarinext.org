@@ -2,6 +2,9 @@
 	"name": "www.akarinext.org",
 	"type": "module",
 	"version": "0.0.1",
+	"engines": {
+		"node": ">=22.12.0"
+	},
 	"scripts": {
 		"dev": "astro dev",
 		"build": "astro build",
@@ -17,10 +20,10 @@
 		"start:all": "concurrently \"node ./dist/server/entry.mjs\" \"node ./dist/monitor.cjs\""
 	},
 	"dependencies": {
-		"@astrojs/node": "^9.5.3",
+		"@astrojs/node": "^11.1.4",
 		"@influxdata/influxdb-client": "^1.35.0",
 		"@shikijs/rehype": "^4.4.3",
-		"astro": "^5.17.1",
+		"astro": "^7.2.7",
 		"concurrently": "^9.2.1",
 		"hastscript": "^9.0.1",
 		"lucide-astro": "^0.556.0",
@@ -36,7 +39,7 @@
 		"unist-util-visit": "^5.1.0"
 	},
 	"devDependencies": {
-		"@astrojs/check": "^0.9.6",
+		"@astrojs/check": "^0.9.10",
 		"@biomejs/biome": "^2.3.15",
 		"@types/dotenv": "^8.2.3",
 		"@types/hast": "^3.0.4",
