@@ -124,7 +124,7 @@ const date = new Intl.DateTimeFormat("ja-JP", {
       </div>
       <nav class="dashboard__actions" aria-label="アカウント操作">
         <a href={`/users/${user.id}`}>公開プロフィール</a>
-        <form method="POST" action="/auth/logout"><button type="submit"><LogOut aria-hidden="true" />ログアウト</button></form>
+        <form method="POST" action="/auth/logout" data-astro-reload><button type="submit"><LogOut aria-hidden="true" />ログアウト</button></form>
       </nav>
     </header>
 
@@ -143,7 +143,7 @@ const date = new Intl.DateTimeFormat("ja-JP", {
 
     <section class="dashboard__section" id="games" aria-labelledby="games-heading">
       <header class="dashboard__section-head"><div><p>Game shelf</p><h2 id="games-heading"><Gamepad2 aria-hidden="true" />ゲーム</h2></div><span>{entries.length} タイトル</span></header>
-      {entries.length ? <div class="game-index">{entries.map((entry) => <form method="POST" action="/dashboard" class="game-row">
+      {entries.length ? <div class="game-index">{entries.map((entry) => <form method="POST" action="/dashboard" class="game-row" data-astro-reload>
         <input type="hidden" name="id" value={entry.id} />
         <div class="game-row__identity">{entry.game.cover_image ? <img src={entry.game.cover_image.url} alt="" width="72" height="96" loading="lazy" /> : <span aria-hidden="true"><Gamepad2 /></span>}<h3>{entry.game.name}</h3></div>
         <label><span>状態</span><select name="list"><option value="playing" selected={entry.list === "playing"}>プレイ中</option><option value="finished" selected={entry.list === "finished"}>プレイ終了</option></select></label>
@@ -154,7 +154,7 @@ const date = new Intl.DateTimeFormat("ja-JP", {
       </form>)}</div> : <p class="empty">まだゲームは登録されていません。</p>}
 
       <details class="game-add"><summary><Plus aria-hidden="true" />ゲームを追加</summary>
-        <form method="POST" action="/dashboard">
+        <form method="POST" action="/dashboard" data-astro-reload>
           <label><span>ゲーム</span><select name="game" required><option value="">選択してください</option>{availableGames.map((game) => <option value={game.id}>{game.name}</option>)}</select></label>
           <label><span>状態</span><select name="list"><option value="playing">プレイ中</option><option value="finished">プレイ終了</option></select></label>
           <label><span>遊び方</span><select name="skill_level">{skillOptions.map(([value, label]) => <option value={value}>{label}</option>)}</select></label>

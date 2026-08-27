@@ -69,7 +69,7 @@ const settingsOpen = Boolean(error);
     {notice && <p class="editor__message" role="status">保存しました。</p>}
   </div>
 
-  <form id="post-form" class="editor__form" method="POST" action={action} enctype="multipart/form-data">
+  <form id="post-form" class="editor__form" method="POST" action={action} enctype="multipart/form-data" data-astro-reload>
     <label class="editor__title">
       <span class="visually-hidden">タイトル</span>
       <input name="title" value={post?.title ?? ""} maxlength="160" required aria-required="true" placeholder="タイトルを入力" />
@@ -182,7 +182,7 @@ const settingsOpen = Boolean(error);
       <summary><Trash2 aria-hidden="true" /><span>記事を削除</span></summary>
       <div class="editor__danger-body">
         <p>削除後は元に戻せません。確認のため記事タイトルを入力してください。</p>
-        <form method="POST" action={action}>
+        <form method="POST" action={action} data-astro-reload>
           <input type="hidden" name="_action" value="delete" />
           <label class="field">
             <span>記事タイトル</span>
