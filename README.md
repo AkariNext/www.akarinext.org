@@ -102,6 +102,29 @@ InfluxDB が未設定でも HTTP 監視と通知は動きます（記録が残�
 > **注意**: monitor はこのサーバー自身で動いているため、サーバーごと停止した場合は
 > 検知できません。外部の監視サービスと併用してください。
 
+### Traefik の自動復旧
+
+`scripts/traefik-watchdog.sh` は、停止している Traefik を起動し直すスクリプトです。
+
+Traefik は Dokploy 管理下ですが **Swarm service ではなく単独コンテナ**で動いており、
+Swarm の自己修復が効きません。さらに `restart: always` には
+「明示的に `docker stop` された場合は再起動しない」という Docker の仕様があるため、
+Dokploy の更新処理などで止められるとそのまま放置されます。
+Traefik はサーバー上の全サイトの唯一の入口なので、止まったままだと全ドメインが 502 を返し続けます。
+
+サーバー側に配置し、docker グループに属するユーザーの crontab で毎分実行します。
+
+```bash
+scp scripts/traefik-watchdog.sh <server>:~/bin/traefik-watchdog.sh
+ssh <server> chmod +x ~/bin/traefik-watchdog.sh
+crontab -e
+# * * * * * /home/yupix/bin/traefik-watchdog.sh
+```
+
+正常なときは何も出力しません（毎分動くのでログを膨らませないため）。
+復旧したときと失敗したときだけ `~/traefik-watchdog.log` に記録し、
+`DISCORD_WEBHOOK_ALERTS` が設定されていれば Discord にも通知します。
+
 ## Discord Webhook
 
 投稿・お知らせを Discord に通知する設定は [docs/DISCORD_WEBHOOK.md](docs/DISCORD_WEBHOOK.md) を参照してください。
