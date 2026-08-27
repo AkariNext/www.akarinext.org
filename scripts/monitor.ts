@@ -133,13 +133,137 @@ async function monitorServers() {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// HTTP 外形監視
+//
+// Traefik が落ちるとサーバー上の全サイトが 502 になるが、TCP 接続自体は
+// Cloudflare が受けるため成功してしまう。TCP ping では検知できないので、
+// ステータスコードまで確認する。
+// ---------------------------------------------------------------------------
+
+/** 監視対象 URL（カンマ区切り） */
+const HTTP_TARGETS = (process.env.MONITOR_HTTP_TARGETS || "")
+	.split(",")
+	.map((value) => value.trim())
+	.filter(Boolean);
+const HTTP_INTERVAL_MS = Number(process.env.MONITOR_HTTP_INTERVAL_MS || 60000);
+/** 何回連続で失敗したら通知するか。1 回の瞬断で鳴らさないための猶予 */
+const ALERT_AFTER = Number(process.env.MONITOR_ALERT_AFTER || 2);
+const ALERT_WEBHOOK = process.env.DISCORD_WEBHOOK_ALERTS || "";
+
+/** URL ごとの連続失敗回数と、通知済みかどうか */
+const httpState = new Map<string, { fails: number; alerted: boolean }>();
+
+async function sendAlert(content: string) {
+	console.log(`[ALERT] ${content}`);
+	if (!ALERT_WEBHOOK) return;
+	try {
+		await fetch(ALERT_WEBHOOK, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ content }),
+		});
+	} catch (e) {
+		console.error("Failed to send alert:", e);
+	}
+}
+
+async function probeHttp(
+	url: string,
+): Promise<{ ok: boolean; status: number; ms: number }> {
+	const started = Date.now();
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), 10000);
+	try {
+		const res = await fetch(url, {
+			// リダイレクトは追わない。3xx がそのまま返れば入口は生きている
+			redirect: "manual",
+			signal: controller.signal,
+			headers: { "User-Agent": "akarinext-monitor/1" },
+			cache: "no-store",
+		});
+		return {
+			ok: res.status < 400,
+			status: res.status,
+			ms: Date.now() - started,
+		};
+	} catch {
+		// タイムアウトや接続失敗は status 0 として扱う
+		return { ok: false, status: 0, ms: Date.now() - started };
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
+async function checkOne(url: string) {
+	const result = await probeHttp(url);
+	const state = httpState.get(url) || { fails: 0, alerted: false };
+
+	if (result.ok) {
+		if (state.alerted) await sendAlert(`✅ 復旧: ${url} (${result.status})`);
+		httpState.set(url, { fails: 0, alerted: false });
+	} else {
+		state.fails += 1;
+		if (state.fails >= ALERT_AFTER && !state.alerted) {
+			const reason = result.status ? `HTTP ${result.status}` : "接続できません";
+			await sendAlert(`🚨 ${url} — ${reason}（${state.fails} 回連続）`);
+			state.alerted = true;
+		}
+		httpState.set(url, state);
+	}
+
+	console.log(
+		`  > ${url} : ${result.ok ? "OK" : "FAIL"} (${result.status || "-"}, ${result.ms}ms)`,
+	);
+
+	if (writeApi) {
+		writeApi.writePoint(
+			new Point("http_check")
+				.tag("url", url)
+				.intField("status_code", result.status)
+				.floatField("response_ms", result.ms)
+				.booleanField("ok", result.ok),
+		);
+	}
+}
+
+async function monitorHttp() {
+	console.log(
+		`[${new Date().toISOString()}] Checking ${HTTP_TARGETS.length} URLs...`,
+	);
+	// 応答の遅い対象が他の監視を止めないよう並列で叩く
+	await Promise.all(HTTP_TARGETS.map((url) => checkOne(url)));
+	if (writeApi) {
+		try {
+			await writeApi.flush();
+		} catch (e) {
+			console.error("Failed to flush HTTP metrics:", e);
+		}
+	}
+}
+
 // Start only if configured
 console.log("Starting server monitor agent...", INFLUX_URL, POCKETBASE_URL);
 if (writeApi) {
 	monitorServers();
 	setInterval(monitorServers, 10000);
 } else {
-	console.log("Monitoring disabled due to missing configuration.");
-	// Keep process alive but idle (for container health check/concurrently stability)
+	console.log("Ping monitoring disabled (INFLUX_TOKEN is not set).");
+}
+
+// HTTP 監視は InfluxDB に依存させない。記録先が落ちていても通知は出したい
+if (HTTP_TARGETS.length > 0) {
+	console.log(
+		`HTTP monitoring: ${HTTP_TARGETS.length} target(s) every ${HTTP_INTERVAL_MS / 1000}s`,
+		ALERT_WEBHOOK ? "(alerts enabled)" : "(alerts to log only)",
+	);
+	monitorHttp();
+	setInterval(monitorHttp, HTTP_INTERVAL_MS);
+} else {
+	console.log("HTTP monitoring disabled (MONITOR_HTTP_TARGETS is not set).");
+}
+
+if (!writeApi && HTTP_TARGETS.length === 0) {
+	// 何も監視しない場合でもプロセスは生かしておく（concurrently の安定のため）
 	setInterval(() => {}, 60000);
 }

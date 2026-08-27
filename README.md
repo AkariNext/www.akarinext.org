@@ -81,6 +81,27 @@ pnpm dev
    （管理画面 `/_/` を外部に晒さないため。管理は SSH ポートフォワード経由で行う）
 4. 詳細は [backend/README.md](backend/README.md) を参照
 
+## サーバー監視
+
+`scripts/monitor.ts` が 2 種類の監視を行います。フロントエンドと同じコンテナで
+`concurrently` により起動します（`pnpm start:all`）。
+
+| 監視 | 対象 | 間隔 | 必要な設定 |
+| --- | --- | --- | --- |
+| ping / TCP | `game_servers` コレクションの各サーバー | 10 秒 | `INFLUX_TOKEN` |
+| HTTP 外形 | `MONITOR_HTTP_TARGETS` の各 URL | 60 秒 | なし（任意で `DISCORD_WEBHOOK_ALERTS`） |
+
+HTTP 外形監視は**リバースプロキシ（Traefik）の障害を検知するため**にあります。
+Traefik が落ちるとサーバー上の全サイトが 502 になりますが、TCP 接続自体は
+Cloudflare が受けるため ping や TCP 監視では気づけません。ステータスコードまで
+確認して、`MONITOR_ALERT_AFTER` 回連続で失敗したら Discord に通知します。
+復旧したときも一度だけ通知します。
+
+InfluxDB が未設定でも HTTP 監視と通知は動きます（記録が残らないだけ）。
+
+> **注意**: monitor はこのサーバー自身で動いているため、サーバーごと停止した場合は
+> 検知できません。外部の監視サービスと併用してください。
+
 ## Discord Webhook
 
 投稿・お知らせを Discord に通知する設定は [docs/DISCORD_WEBHOOK.md](docs/DISCORD_WEBHOOK.md) を参照してください。
