@@ -11,6 +11,10 @@ import {
 
 export const prerender = false;
 
+/** 保存用URLを直接開いた場合は、編集画面へ戻す。 */
+export const GET: APIRoute = ({ redirect }) =>
+	redirect("/dashboard#games", 302);
+
 const LISTS = new Set(["playing", "finished"]);
 const SKILLS = new Set([
 	"",
