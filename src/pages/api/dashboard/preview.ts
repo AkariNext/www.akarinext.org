@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { isSameOriginRequest } from "../../../lib/dashboard.server";
 import { markdownToHtml } from "../../../lib/richtext";
 
 export const prerender = false;
@@ -13,10 +14,17 @@ const MAX_LENGTH = 200_000;
  * ブラウザ側で別の Markdown 実装を使うと、リンクカードや YouTube 埋め込みの
  * 扱いがズレて「実際の見え方」を確認できなくなるため。
  */
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request, locals, site }) => {
 	if (!locals.user) {
 		return new Response(JSON.stringify({ error: "unauthorized" }), {
 			status: 401,
+			headers: { "Content-Type": "application/json" },
+		});
+	}
+	// 変換はリンクカードのために外部へ取りに行く。他サイトから叩かせない
+	if (!isSameOriginRequest(request, site)) {
+		return new Response(JSON.stringify({ error: "forbidden" }), {
+			status: 403,
 			headers: { "Content-Type": "application/json" },
 		});
 	}
