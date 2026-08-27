@@ -1,203 +1,222 @@
 /**
- * textarea を Markdown 向けに補助する。
+ * 記事本文の編集欄（CodeMirror 6）。
  *
- * WYSIWYG には置き換えず、あくまで素の textarea のまま。
- * フォーム送信も IME も既存の挙動をそのまま使えるのが利点で、
- * 代わりに書いている最中の手間だけを減らす。
+ * 元の textarea は消さずに hidden で残し、内容を書き戻す。
+ * name="content" のまま普通にフォーム送信でき、JS が落ちても入力が失われない。
  */
 
-/** 挿入は execCommand 経由にする。setRangeText だと undo 履歴が壊れるため */
-function insert(textarea: HTMLTextAreaElement, text: string): void {
-	textarea.focus();
-	const ok = document.execCommand?.("insertText", false, text);
-	if (ok) return;
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { markdown, markdownKeymap } from "@codemirror/lang-markdown";
+import {
+	HighlightStyle,
+	indentUnit,
+	syntaxHighlighting,
+} from "@codemirror/language";
+import {
+	EditorSelection,
+	EditorState,
+	type Extension,
+} from "@codemirror/state";
+import { EditorView, keymap, placeholder } from "@codemirror/view";
+import { tags } from "@lezer/highlight";
 
-	// execCommand が使えない環境向けのフォールバック（undo は効かなくなる）
-	const { selectionStart, selectionEnd } = textarea;
-	textarea.setRangeText(text, selectionStart, selectionEnd, "end");
-	textarea.dispatchEvent(new Event("input", { bubbles: true }));
-}
+/** サイトのトークンに合わせた配色。CSS 変数なので明暗の切り替えに追従する */
+const highlight = HighlightStyle.define([
+	{ tag: tags.heading, color: "var(--color-ink)", fontWeight: "700" },
+	{ tag: tags.strong, color: "var(--color-ink)", fontWeight: "700" },
+	{ tag: tags.emphasis, color: "var(--color-ink)", fontStyle: "italic" },
+	{ tag: tags.link, color: "var(--color-accent)" },
+	{ tag: tags.url, color: "var(--color-accent)" },
+	{ tag: tags.monospace, color: "var(--color-accent)" },
+	{ tag: tags.quote, color: "var(--color-ink-2)", fontStyle: "italic" },
+	{ tag: tags.list, color: "var(--color-accent)" },
+	{ tag: tags.strikethrough, textDecoration: "line-through" },
+	// 記号（#, *, ` など）は本文より薄く落として、文章を読みやすくする
+	{ tag: tags.processingInstruction, color: "var(--color-muted)" },
+	{ tag: tags.meta, color: "var(--color-muted)" },
+]);
 
-/** カーソル行の範囲を返す */
-function currentLine(textarea: HTMLTextAreaElement): {
-	start: number;
-	end: number;
-	text: string;
-} {
-	const value = textarea.value;
-	const start = value.lastIndexOf("\n", textarea.selectionStart - 1) + 1;
-	const lineEnd = value.indexOf("\n", textarea.selectionStart);
-	const end = lineEnd === -1 ? value.length : lineEnd;
-	return { start, end, text: value.slice(start, end) };
-}
+const theme = EditorView.theme({
+	"&": {
+		height: "100%",
+		color: "var(--color-ink)",
+		backgroundColor: "var(--color-paper)",
+		border: "var(--rule-hair) solid var(--color-rule-strong)",
+		borderRadius: "var(--radius-sm)",
+		fontSize: "1rem",
+	},
+	"&.cm-focused": {
+		outline: "var(--rule-medium) solid var(--color-focus)",
+		outlineOffset: "var(--space-3xs)",
+	},
+	".cm-scroller": {
+		fontFamily: "inherit",
+		lineHeight: "1.8",
+		padding: "var(--space-md) var(--space-lg)",
+	},
+	".cm-content": { caretColor: "var(--color-ink)" },
+	".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--color-ink)" },
+	"&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection":
+		{
+			backgroundColor: "var(--color-paper-3)",
+		},
+	".cm-placeholder": { color: "var(--color-muted)" },
+	".cm-line": { padding: "0" },
+});
 
-/** 箇条書き・番号付き・引用・チェックボックスの行頭マーカー */
-const MARKER = /^(\s*)(?:([-*+])\s+(\[[ xX]\]\s+)?|(\d+)([.)])\s+|(>)\s?)/;
-
-/** Enter でリストや引用を続ける。空の項目なら解除する */
-function continueList(
-	textarea: HTMLTextAreaElement,
-	event: KeyboardEvent,
-): void {
-	if (event.shiftKey || event.isComposing) return;
-	if (textarea.selectionStart !== textarea.selectionEnd) return;
-
-	const line = currentLine(textarea);
-	const match = line.text.match(MARKER);
-	if (!match) return;
-
-	const [marker, indent, bullet, checkbox, number, delimiter, quote] = match;
-
-	// マーカーだけで中身が空なら、続けずに解除する
-	if (line.text.trim() === marker.trim()) {
-		event.preventDefault();
-		textarea.setSelectionRange(line.start, line.end);
-		insert(textarea, indent);
-		return;
-	}
-
-	event.preventDefault();
-	let next: string;
-	if (number) {
-		next = `${indent}${Number(number) + 1}${delimiter} `;
-	} else if (bullet) {
-		// チェックボックスは未チェックの状態で引き継ぐ
-		next = `${indent}${bullet} ${checkbox ? "[ ] " : ""}`;
-	} else {
-		next = `${indent}${quote} `;
-	}
-	insert(textarea, `\n${next}`);
-}
-
-/** 選択範囲を before/after で囲む。選択がなければ間にカーソルを置く */
+/** 選択範囲を before/after で囲む。既に囲まれていれば外す（トグル） */
 function wrap(
-	textarea: HTMLTextAreaElement,
+	view: EditorView,
 	before: string,
 	after: string,
-	placeholder = "",
-): void {
-	const { selectionStart, selectionEnd, value } = textarea;
-	const selected = value.slice(selectionStart, selectionEnd);
+	hint: string,
+): boolean {
+	const { state } = view;
+	view.dispatch(
+		state.changeByRange((range) => {
+			const selected = state.sliceDoc(range.from, range.to);
+			const outerFrom = range.from - before.length;
+			const outerTo = range.to + after.length;
+			const wrapped =
+				outerFrom >= 0 &&
+				outerTo <= state.doc.length &&
+				state.sliceDoc(outerFrom, range.from) === before &&
+				state.sliceDoc(range.to, outerTo) === after;
 
-	// 既に囲まれていれば外す（トグル）
-	const outerStart = selectionStart - before.length;
-	if (
-		outerStart >= 0 &&
-		value.slice(outerStart, selectionStart) === before &&
-		value.slice(selectionEnd, selectionEnd + after.length) === after
-	) {
-		textarea.setSelectionRange(outerStart, selectionEnd + after.length);
-		insert(textarea, selected);
-		textarea.setSelectionRange(outerStart, outerStart + selected.length);
-		return;
-	}
+			if (wrapped) {
+				return {
+					changes: [
+						{ from: outerFrom, to: range.from },
+						{ from: range.to, to: outerTo },
+					],
+					range: EditorSelection.range(outerFrom, outerFrom + selected.length),
+				};
+			}
 
-	const body = selected || placeholder;
-	insert(textarea, `${before}${body}${after}`);
-	if (selected) {
-		const end = selectionStart + before.length + body.length;
-		textarea.setSelectionRange(selectionStart + before.length, end);
-	} else {
-		// 中身が空なら、書き始められる位置にカーソルを置く
-		const caret = selectionStart + before.length;
-		textarea.setSelectionRange(caret, caret + placeholder.length);
-	}
+			const body = selected || hint;
+			const start = range.from + before.length;
+			return {
+				changes: {
+					from: range.from,
+					to: range.to,
+					insert: before + body + after,
+				},
+				range: EditorSelection.range(start, start + body.length),
+			};
+		}),
+		{ scrollIntoView: true },
+	);
+	view.focus();
+	return true;
 }
 
-interface EnhanceOptions {
-	/** 画像をアップロードして URL を返す。失敗時は null */
-	uploadImage?: (file: File) => Promise<string | null>;
+interface EditorOptions {
+	/** 値を保持する textarea。hidden にして残し、フォーム送信に使う */
+	textarea: HTMLTextAreaElement;
+	/** CodeMirror を差し込む親要素 */
+	parent: HTMLElement;
 	/** 内容が変わったときに呼ばれる（プレビュー更新用） */
 	onChange?: () => void;
+	/** 画像をアップロードして URL を返す。失敗時は null */
+	uploadImage?: (file: File) => Promise<string | null>;
 }
 
-export function enhanceMarkdownEditor(
-	textarea: HTMLTextAreaElement,
-	options: EnhanceOptions = {},
-): void {
-	textarea.addEventListener("keydown", (event) => {
-		const modifier = event.metaKey || event.ctrlKey;
+export function createMarkdownEditor(options: EditorOptions): EditorView {
+	const { textarea, parent, onChange, uploadImage: upload } = options;
 
-		if (event.key === "Enter" && !modifier) {
-			continueList(textarea, event);
-			return;
-		}
-		if (!modifier || event.altKey) return;
-
-		switch (event.key.toLowerCase()) {
-			case "b":
-				event.preventDefault();
-				wrap(textarea, "**", "**", "太字");
-				break;
-			case "i":
-				event.preventDefault();
-				wrap(textarea, "*", "*", "斜体");
-				break;
-			case "k":
-				event.preventDefault();
-				wrap(textarea, "[", "](url)", "リンク");
-				break;
-			default:
-				return;
-		}
-		options.onChange?.();
-	});
-
-	const upload = options.uploadImage;
-	if (!upload) return;
-
-	/** アップロード中は仮のテキストを置き、終わったら差し替える */
-	const insertImage = async (file: File): Promise<void> => {
+	/** 貼り付けた画像を仮の文字列に置き換え、アップロード後に差し替える */
+	const insertImage = async (view: EditorView, file: File) => {
 		const token = `![アップロード中… ${Date.now()}]()`;
-		insert(textarea, token);
-		options.onChange?.();
+		view.dispatch(view.state.replaceSelection(token));
+		onChange?.();
 
-		const url = await upload(file);
-		const replacement = url
-			? `![${file.name.replace(/\.[^.]+$/, "")}](${url})`
-			: "";
-		const at = textarea.value.indexOf(token);
+		const url = upload ? await upload(file) : null;
+		const at = view.state.doc.toString().indexOf(token);
 		if (at === -1) return; // 書き換えられていたら諦める
-		textarea.setSelectionRange(at, at + token.length);
-		insert(textarea, replacement);
-		options.onChange?.();
+		view.dispatch({
+			changes: {
+				from: at,
+				to: at + token.length,
+				insert: url ? `![${file.name.replace(/\.[^.]+$/, "")}](${url})` : "",
+			},
+		});
+		onChange?.();
 	};
 
 	const imagesFrom = (list: FileList | null | undefined): File[] =>
-		Array.from(list ?? []).filter((f) => f.type.startsWith("image/"));
+		Array.from(list ?? []).filter((file) => file.type.startsWith("image/"));
 
-	textarea.addEventListener("paste", (event) => {
-		const files = imagesFrom(event.clipboardData?.files);
-		if (files.length === 0) return;
-		event.preventDefault();
-		for (const file of files) void insertImage(file);
+	const extensions: Extension[] = [
+		history(),
+		markdown(),
+		syntaxHighlighting(highlight),
+		theme,
+		EditorView.lineWrapping,
+		indentUnit.of("  "),
+		placeholder(textarea.placeholder),
+		keymap.of([
+			// リストや引用の継続、マーカーの削除はここが持っている
+			...markdownKeymap,
+			...historyKeymap,
+			...defaultKeymap,
+			{ key: "Mod-b", run: (view) => wrap(view, "**", "**", "太字") },
+			{ key: "Mod-i", run: (view) => wrap(view, "*", "*", "斜体") },
+			{ key: "Mod-k", run: (view) => wrap(view, "[", "](url)", "リンク") },
+		]),
+		EditorView.updateListener.of((update) => {
+			if (!update.docChanged) return;
+			// 送信されるのは常に textarea の値
+			textarea.value = update.state.doc.toString();
+			onChange?.();
+		}),
+		EditorView.domEventHandlers({
+			paste(event, view) {
+				const files = imagesFrom(event.clipboardData?.files);
+				if (!upload || files.length === 0) return false;
+				event.preventDefault();
+				for (const file of files) void insertImage(view, file);
+				return true;
+			},
+			dragover(event) {
+				if (imagesFrom(event.dataTransfer?.files).length > 0) {
+					event.preventDefault();
+					return true;
+				}
+				return false;
+			},
+			drop(event, view) {
+				const files = imagesFrom(event.dataTransfer?.files);
+				if (!upload || files.length === 0) return false;
+				event.preventDefault();
+				for (const file of files) void insertImage(view, file);
+				return true;
+			},
+		}),
+	];
+
+	const view = new EditorView({
+		state: EditorState.create({ doc: textarea.value, extensions }),
+		parent,
 	});
 
-	textarea.addEventListener("dragover", (event) => {
-		if (imagesFrom(event.dataTransfer?.files).length > 0)
-			event.preventDefault();
-	});
+	// textarea は値の入れ物として残す。表示は CodeMirror が受け持つ
+	textarea.hidden = true;
+	textarea.setAttribute("aria-hidden", "true");
+	textarea.tabIndex = -1;
 
-	textarea.addEventListener("drop", (event) => {
-		const files = imagesFrom(event.dataTransfer?.files);
-		if (files.length === 0) return;
-		event.preventDefault();
-		for (const file of files) void insertImage(file);
-	});
+	return view;
 }
 
 /**
  * 書いている位置に合わせてプレビューをスクロールさせる。
- * 双方向にすると互いを動かし合うので、textarea 側だけを起点にする。
+ * 双方向にすると互いを動かし合うので、エディタ側だけを起点にする。
  */
-export function syncScroll(
-	textarea: HTMLTextAreaElement,
-	preview: HTMLElement,
-): void {
-	textarea.addEventListener("scroll", () => {
-		const scrollable = textarea.scrollHeight - textarea.clientHeight;
+export function syncScroll(view: EditorView, preview: HTMLElement): void {
+	view.scrollDOM.addEventListener("scroll", () => {
+		const scrollable =
+			view.scrollDOM.scrollHeight - view.scrollDOM.clientHeight;
 		if (scrollable <= 0) return;
-		const ratio = textarea.scrollTop / scrollable;
+		const ratio = view.scrollDOM.scrollTop / scrollable;
 		preview.scrollTop = ratio * (preview.scrollHeight - preview.clientHeight);
 	});
 }

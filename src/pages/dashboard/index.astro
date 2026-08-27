@@ -210,8 +210,12 @@ const date = new Intl.DateTimeFormat("ja-JP", {
                 </span>
               </div>
               <div class="posts__body">
-                <h3>{post.title}</h3>
-                <a href={`/dashboard/posts/${post.id}`}><Edit3 aria-hidden="true" />編集</a>
+                <h3>
+                  <a href={post.status === "published" ? `/posts/${post.slug || post.id}` : `/dashboard/posts/${post.id}`}>
+                    {post.title}
+                  </a>
+                </h3>
+                <a class="posts__edit" href={`/dashboard/posts/${post.id}`}><Edit3 aria-hidden="true" />編集</a>
               </div>
             </li>
           ))}
@@ -441,12 +445,15 @@ const date = new Intl.DateTimeFormat("ja-JP", {
   /* --- 記事 --- */
   .posts { display: grid; list-style: none; }
   .posts li { display: grid; gap: var(--space-xs); padding-block: var(--space-md); border-block-end: var(--rule-hair) solid var(--color-rule); }
+  /* display を明示しているので、hidden 属性を効かせるには打ち消しが要る */
+  .posts li[hidden] { display: none; }
   .posts__meta { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); color: var(--color-muted); font-size: var(--text-xs); }
   .posts__badge-row { display: inline-flex; align-items: center; gap: var(--space-xs); }
   .status { padding: var(--space-3xs) var(--space-xs); border: var(--rule-hair) solid var(--color-rule-strong); color: var(--color-muted); }
   .status--live { border-color: var(--color-success); color: var(--color-success); }
   .posts__body { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); }
   .posts__body h3 { min-width: 0; font-size: var(--text-md); line-height: 1.35; overflow-wrap: anywhere; }
+  .posts__body h3 a { color: inherit; }
   .posts__body a { display: inline-flex; align-items: center; gap: var(--space-xs); color: var(--color-accent); font-size: var(--text-sm); white-space: nowrap; }
   .posts__body a svg { width: 1em; height: 1em; }
 
@@ -493,7 +500,7 @@ const date = new Intl.DateTimeFormat("ja-JP", {
     .button:hover { border-color: var(--color-ink); background: var(--color-paper-2); }
     .button--primary:hover { border-color: var(--color-ink); background: var(--color-ink); }
     .button--bare:hover, .button--danger:hover { background: var(--color-paper-2); }
-    .link:hover, .posts__body a:hover { color: var(--color-accent); }
+    .link:hover, .posts__body a:hover, .posts__body h3 a:hover { color: var(--color-accent); }
     .game-card button:hover .game-card__cover { outline: var(--rule-hair) solid var(--color-rule-strong); }
     .game-add:hover { border-color: var(--color-accent); background: var(--color-paper-2); }
     select:hover { background: var(--color-paper-2); }
