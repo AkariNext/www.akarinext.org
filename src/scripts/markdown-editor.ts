@@ -118,6 +118,61 @@ function wrap(
 	return true;
 }
 
+/**
+ * 選択したまま記号を打つと、その記号で囲む。
+ *
+ * 文字を打ち直すのではなく囲みたい、という場面はほとんどなので、
+ * 選択が空のときは何もせず普通の入力に任せる。
+ * 囲んだあとも中身を選んだままにしてあるので、* を続けて押せば
+ * 斜体から太字へ重ねられる。
+ */
+const SURROUND: Record<string, string> = {
+	"*": "*",
+	_: "_",
+	"`": "`",
+	"~": "~",
+	"(": ")",
+	"[": "]",
+	"{": "}",
+	'"': '"',
+	"'": "'",
+	// 日本語の括弧。IME から入る分もここで拾える
+	"（": "）",
+	"「": "」",
+	"『": "』",
+	"【": "】",
+	"〈": "〉",
+	"《": "》",
+	"“": "”",
+	"‘": "’",
+};
+
+const surroundSelection = EditorView.inputHandler.of(
+	(view, _from, _to, text) => {
+		const close = SURROUND[text];
+		if (!close) return false;
+		// 何も選んでいなければ、ただの記号入力として扱う
+		if (view.state.selection.ranges.every((range) => range.empty)) return false;
+
+		view.dispatch(
+			view.state.changeByRange((range) => {
+				if (range.empty) return { range };
+				// 変更後の座標。開き記号のぶんだけ後ろへずれる
+				const from = range.from + text.length;
+				return {
+					changes: [
+						{ from: range.from, insert: text },
+						{ from: range.to, insert: close },
+					],
+					range: EditorSelection.range(from, from + (range.to - range.from)),
+				};
+			}),
+			{ userEvent: "input.type" },
+		);
+		return true;
+	},
+);
+
 /** 選択している行の先頭に marker を付ける。既に付いていれば外す */
 function toggleLinePrefix(view: EditorView, marker: string): boolean {
 	const { state } = view;
@@ -219,6 +274,7 @@ export function createMarkdownEditor(options: EditorOptions): EditorView {
 		syntaxHighlighting(highlight),
 		theme,
 		EditorView.lineWrapping,
+		surroundSelection,
 		indentUnit.of("  "),
 		placeholder(textarea.placeholder),
 		// 先に書いたものが優先される。既定のキーを上書きする分は前に置く
@@ -226,6 +282,12 @@ export function createMarkdownEditor(options: EditorOptions): EditorView {
 			{ key: "Mod-b", run: (view) => wrap(view, "**", "**", "太字") },
 			{ key: "Mod-i", run: (view) => wrap(view, "*", "*", "斜体") },
 			{ key: "Mod-k", run: (view) => wrap(view, "[", "](url)", "リンク") },
+			{ key: "Mod-e", run: (view) => wrap(view, "`", "`", "コード") },
+			{ key: "Mod-Shift-x", run: (view) => wrap(view, "~~", "~~", "打ち消し") },
+			{ key: "Mod-Shift-h", run: (view) => toggleLinePrefix(view, "## ") },
+			{ key: "Mod-Shift-l", run: (view) => toggleLinePrefix(view, "- ") },
+			{ key: "Mod-Shift-q", run: (view) => toggleLinePrefix(view, "> ") },
+			{ key: "Mod-Shift-c", run: fence },
 			// Tab をエディタが受け取ると、キーボードだけでは抜け出せなくなる。
 			// Escape をその出口にする（既定の選択範囲の単純化より優先する）
 			{
