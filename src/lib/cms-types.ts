@@ -47,7 +47,7 @@ export interface CmsMember {
 	is_staff?: boolean;
 	staff_title?: string | null;
 	bio?: string | null;
-	social_links?: { platform?: string; url?: string }[];
+	social_links?: { platform?: string; id?: string; url?: string }[];
 	playing_games?: CmsGameEntry[];
 	finished_games?: CmsGameEntry[];
 	createdAt: string;

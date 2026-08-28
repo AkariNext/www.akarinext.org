@@ -1,0 +1,12 @@
+/home/yupix/www.akarinext.org/AGENTS.md
+/home/yupix/www.akarinext.org/README.md
+/home/yupix/www.akarinext.org/backend/README.md
+/home/yupix/www.akarinext.org/design.md
+/home/yupix/www.akarinext.org/docker-compose.yml
+/home/yupix/www.akarinext.org/docs/DASHBOARD.md
+/home/yupix/www.akarinext.org/docs/DISCORD_WEBHOOK.md
+/home/yupix/www.akarinext.org/docs/MEDIA_PROXY.md
+/home/yupix/www.akarinext.org/docs/TROUBLESHOOTING.md
+/home/yupix/www.akarinext.org/pnpm-workspace.yaml
+/home/yupix/www.akarinext.org/public/robots.txt
+/home/yupix/www.akarinext.org/public/favicon.png

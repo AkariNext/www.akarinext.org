@@ -1,6 +1,6 @@
 ---
 import "../styles/global.css";
-import { Moon, Sun, UserRound } from "lucide-astro";
+import { LogOut, UserRound } from "lucide-astro";
 import { ClientRouter } from "astro:transitions";
 import { cmsClient, getMediaUrl, type CmsSettings } from "../lib/cms";
 
@@ -96,16 +96,33 @@ const isActive = (path: string) =>
             </a>
           ))}
           </nav>
-          {currentUser ? (
-            <a href="/dashboard" class="edge-account" aria-label={`${currentUser.name || currentUser.username} のマイページ`}>
+          <div class="account" data-account>
+            <button type="button" class="edge-account account__trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="account-menu" aria-label={currentUser ? `${currentUser.name || currentUser.username} のメニュー` : "アカウントメニュー"}>
               {currentUserAvatar ? <img src={currentUserAvatar} alt="" width="28" height="28" /> : <UserRound aria-hidden="true" />}
-            </a>
-          ) : (
-            <a href="/auth/login" class="edge-account edge-account--signin">ログイン</a>
-          )}
-          <button id="theme-toggle" class="theme-toggle" type="button" aria-label="配色を切り替える" transition:persist="theme-toggle">
-            <Sun class="sun-icon" aria-hidden="true" /><Moon class="moon-icon" aria-hidden="true" />
-          </button>
+            </button>
+            <div class="account__menu" id="account-menu" role="menu" hidden>
+              {currentUser ? (
+                <>
+                  <a class="account__item" role="menuitem" href="/dashboard">マイページ</a>
+                  <a class="account__item" role="menuitem" href={`/users/${currentUser.id}`}>公開プロフィール</a>
+                </>
+              ) : (
+                <a class="account__item" role="menuitem" href="/auth/login">ログイン</a>
+              )}
+              <div class="account__row">
+                <span id="theme-label">配色</span>
+                <div class="account__segment" role="group" aria-labelledby="theme-label">
+                  <button type="button" data-theme-choice="light" aria-pressed="false">ライト</button>
+                  <button type="button" data-theme-choice="dark" aria-pressed="false">ダーク</button>
+                </div>
+              </div>
+              {currentUser && (
+                <form method="POST" action="/auth/logout" data-astro-reload>
+                  <button type="submit" class="account__item account__item--button account__item--danger" role="menuitem"><LogOut aria-hidden="true" />ログアウト</button>
+                </form>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </header>
@@ -118,35 +135,62 @@ const isActive = (path: string) =>
       </div>
     </footer>
     <script is:inline>
-      const syncThemeToggle = () => {
-        const toggle = document.querySelector("#theme-toggle");
-        if (!toggle) return;
+      const syncThemeChoices = () => {
         const isDark = document.documentElement.dataset.theme === "dark";
-        toggle.setAttribute("aria-pressed", String(isDark));
-        toggle.setAttribute("aria-label", isDark ? "ライトモードに切り替える" : "ダークモードに切り替える");
+        for (const button of document.querySelectorAll("[data-theme-choice]")) {
+          const chosen = button.dataset.themeChoice === (isDark ? "dark" : "light");
+          button.setAttribute("aria-pressed", String(chosen));
+        }
       };
 
-      const bindThemeToggle = () => {
-        const toggle = document.querySelector("#theme-toggle");
-        if (!toggle || toggle.dataset.bound === "true") return;
-        toggle.dataset.bound = "true";
-        toggle.addEventListener("click", () => {
-          const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-          document.documentElement.dataset.theme = next;
-          localStorage.setItem("theme", next);
-          syncThemeToggle();
+      const bindAccountMenu = () => {
+        const account = document.querySelector("[data-account]");
+        if (!account || account.dataset.bound === "true") return;
+        account.dataset.bound = "true";
+
+        const trigger = account.querySelector(".account__trigger");
+        const menu = account.querySelector(".account__menu");
+
+        const setOpen = (open) => {
+          menu.hidden = !open;
+          trigger.setAttribute("aria-expanded", String(open));
+        };
+
+        trigger.addEventListener("click", () => setOpen(menu.hidden));
+
+        // メニューの外を触ったら閉じる。キーボードだけの人のために Escape でも閉じる
+        document.addEventListener("pointerdown", (event) => {
+          if (!menu.hidden && !account.contains(event.target)) setOpen(false);
         });
-        syncThemeToggle();
+        document.addEventListener("keydown", (event) => {
+          if (event.key !== "Escape" || menu.hidden) return;
+          setOpen(false);
+          trigger.focus();
+        });
+        // 中のリンクで移動したら、戻ってきたときに開いたままにしない
+        menu.addEventListener("click", (event) => {
+          if (event.target.closest("a")) setOpen(false);
+        });
+
+        for (const button of account.querySelectorAll("[data-theme-choice]")) {
+          button.addEventListener("click", () => {
+            const next = button.dataset.themeChoice;
+            document.documentElement.dataset.theme = next;
+            localStorage.setItem("theme", next);
+            syncThemeChoices();
+          });
+        }
+        syncThemeChoices();
       };
 
-      bindThemeToggle();
+      bindAccountMenu();
       if (!window.__akariThemeLifecycleBound) {
         window.__akariThemeLifecycleBound = true;
         document.addEventListener("astro:before-swap", (event) => {
           const currentTheme = document.documentElement.dataset.theme;
           event.newDocument.documentElement.dataset.theme = currentTheme === "dark" ? "dark" : "light";
         });
-        document.addEventListener("astro:page-load", bindThemeToggle);
+        document.addEventListener("astro:page-load", bindAccountMenu);
       }
     </script>
   </body>

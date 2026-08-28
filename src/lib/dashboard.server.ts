@@ -8,6 +8,13 @@ import {
 	shapeSeries,
 } from "./cms";
 import type { CmsGameEntry, CmsPost, CmsSeries } from "./cms-types";
+import {
+	normalizeSocialId,
+	SOCIAL_PROFILES,
+	type SocialLink,
+	socialPlatformOf,
+	socialUrl,
+} from "./social-links";
 
 interface PbListResult {
 	items?: PbRecord[];
@@ -171,7 +178,7 @@ export async function createRecord(
 
 export async function updateRecord(
 	token: string,
-	collection: "posts" | "user_games" | "series",
+	collection: "posts" | "user_games" | "series" | "users",
 	id: string,
 	body: FormData,
 ): Promise<PbRecord> {
@@ -180,6 +187,46 @@ export async function updateRecord(
 		method: "PATCH",
 		body,
 	})) as PbRecord;
+}
+
+/** SNSはOAuth連携せず、本人が入力した公開IDだけをプロフィールへ保存する。 */
+export async function updateOwnSocialLinks(
+	token: string,
+	userId: string,
+	input: FormData,
+	existing: SocialLink[] = [],
+): Promise<"socials-saved"> {
+	const preserved = existing.filter(
+		(link) => socialPlatformOf(link.platform) === null,
+	);
+	const links: SocialLink[] = [...preserved];
+
+	for (const profile of SOCIAL_PROFILES) {
+		const raw = formText(input, profile.key);
+		let id = "";
+		try {
+			id = normalizeSocialId(profile.key, raw);
+		} catch (cause) {
+			throw new DashboardError(
+				cause instanceof Error
+					? cause.message
+					: `${profile.label}のIDが正しくありません。`,
+				400,
+			);
+		}
+		if (id) {
+			links.push({
+				platform: profile.key,
+				id,
+				url: socialUrl(profile.key, id),
+			});
+		}
+	}
+
+	const body = new FormData();
+	body.set("social_links", JSON.stringify(links));
+	await updateRecord(token, "users", userId, body);
+	return "socials-saved";
 }
 
 export async function deleteRecord(

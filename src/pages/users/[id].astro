@@ -1,17 +1,37 @@
 ---
-import { ArrowRight, Gamepad2, Github, Globe, MessageSquare, Twitch, Twitter, Youtube } from "lucide-astro";
+import {
+	ArrowRight,
+	Gamepad2,
+	Github,
+	Globe,
+	MessageSquare,
+	Twitch,
+	Twitter,
+	Youtube,
+} from "lucide-astro";
 import Layout from "../../layouts/Layout.astro";
-import { cmsClient, getMediaUrl, type CmsGame, type CmsMember, type CmsPost } from "../../lib/cms";
+import {
+	cmsClient,
+	getMediaUrl,
+	type CmsGame,
+	type CmsMember,
+	type CmsPost,
+} from "../../lib/cms";
+import {
+	safeSocialUrl,
+	socialDisplayId,
+	socialPlatformOf,
+} from "../../lib/social-links";
 
 const { id } = Astro.params;
 if (!id) return Astro.redirect("/404");
 
 interface GamePlayer {
-  game: CmsGame;
-  status: "playing" | "finished";
-  skill_level?: string;
-  impression?: string;
-  recruitment?: string;
+	game: CmsGame;
+	status: "playing" | "finished";
+	skill_level?: string;
+	impression?: string;
+	recruitment?: string;
 }
 
 let user: CmsMember | null = null;
@@ -19,24 +39,41 @@ let games: GamePlayer[] = [];
 let posts: CmsPost[] = [];
 
 try {
-  const users = await cmsClient.items<CmsMember>("authors").readByQuery({ where: { id: { equals: id } }, limit: 1 });
-  user = users[0] || null;
+	const users = await cmsClient
+		.items<CmsMember>("authors")
+		.readByQuery({ where: { id: { equals: id } }, limit: 1 });
+	user = users[0] || null;
 
-  if (user) {
-    const appendGames = (entries: CmsMember["playing_games"] | CmsMember["finished_games"], status: GamePlayer["status"]) => {
-      if (!Array.isArray(entries)) return;
-      entries.forEach((entry) => {
-        if (entry.game && typeof entry.game === "object") games.push({ game: entry.game, status, skill_level: entry.skill_level, impression: entry.impression, recruitment: entry.recruitment });
-      });
-    };
-    appendGames(user.playing_games, "playing");
-    appendGames(user.finished_games, "finished");
+	if (user) {
+		const appendGames = (
+			entries: CmsMember["playing_games"] | CmsMember["finished_games"],
+			status: GamePlayer["status"],
+		) => {
+			if (!Array.isArray(entries)) return;
+			entries.forEach((entry) => {
+				if (entry.game && typeof entry.game === "object")
+					games.push({
+						game: entry.game,
+						status,
+						skill_level: entry.skill_level,
+						impression: entry.impression,
+						recruitment: entry.recruitment,
+					});
+			});
+		};
+		appendGames(user.playing_games, "playing");
+		appendGames(user.finished_games, "finished");
 
-    const allPosts = await cmsClient.items<CmsPost>("posts").readByQuery({ sort: ["-published_date", "-createdAt"], limit: 100 });
-    posts = allPosts.filter((post) => post.author && typeof post.author === "object" && post.author.id === id);
-  }
+		const allPosts = await cmsClient
+			.items<CmsPost>("posts")
+			.readByQuery({ sort: ["-published_date", "-createdAt"], limit: 100 });
+		posts = allPosts.filter(
+			(post) =>
+				post.author && typeof post.author === "object" && post.author.id === id,
+		);
+	}
 } catch (error) {
-  console.error("Error fetching user profile:", error);
+	console.error("Error fetching user profile:", error);
 }
 
 if (!user) return Astro.redirect("/404");
@@ -44,23 +81,65 @@ if (!user) return Astro.redirect("/404");
 const name = user.name || user.username;
 const avatar = getMediaUrl(user.avatar);
 const postUrl = (post: CmsPost) => `/posts/${post.slug || post.id}`;
-const postDate = (post: CmsPost) => new Date(post.published_date || post.createdAt).toLocaleDateString("ja-JP", { year: "numeric", month: "short", day: "numeric" });
-const excerpt = (post: CmsPost) => post.is_spoiler ? "この記事にはネタバレが含まれています。" : post.content?.replace(/[#*_`>\[\]!|]/g, " ").replace(/\s+/g, " ").trim().slice(0, 120) || "本文を読む";
+const postDate = (post: CmsPost) =>
+	new Date(post.published_date || post.createdAt).toLocaleDateString("ja-JP", {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+	});
+const excerpt = (post: CmsPost) =>
+	post.is_spoiler
+		? "この記事にはネタバレが含まれています。"
+		: post.content
+				?.replace(/[#*_`>[\]!|]/g, " ")
+				.replace(/\s+/g, " ")
+				.trim()
+				.slice(0, 120) || "本文を読む";
 
-const socialIcon = (platform: string) => {
-  switch (platform?.toLowerCase()) {
-    case "twitter": case "x": case "x (twitter)": return Twitter;
-    case "github": return Github;
-    case "twitch": return Twitch;
-    case "youtube": return Youtube;
-    case "discord": return MessageSquare;
-    default: return Globe;
-  }
+const socialIcon = (platform?: string) => {
+	switch (platform?.toLowerCase()) {
+		case "twitter":
+		case "x":
+		case "x (twitter)":
+			return Twitter;
+		case "github":
+			return Github;
+		case "twitch":
+			return Twitch;
+		case "youtube":
+			return Youtube;
+		case "discord":
+			return MessageSquare;
+		case "steam":
+			return Gamepad2;
+		default:
+			return Globe;
+	}
 };
 
-const skillLabel = (value?: string) => ({ casual: "カジュアル", intermediate: "中級", expert: "エキスパート", better_than_you: "あなたより上手" })[value || ""] || null;
-const impressionLabel = (value?: string) => ({ obsessed: "夢中", love: "大好き", like: "わりと好き", meh: "ビミョーかも", give_up: "ギブアップ" })[value || ""] || null;
-const recruitmentLabel = (value?: string) => ({ looking_for_group: "グループ募集中", invite_anytime: "いつでも誘って", need_hints: "ヒント歓迎", can_teach: "教えられます", discussion_welcome: "議論歓迎" })[value || ""] || null;
+const skillLabel = (value?: string) =>
+	({
+		casual: "カジュアル",
+		intermediate: "中級",
+		expert: "エキスパート",
+		better_than_you: "あなたより上手",
+	})[value || ""] || null;
+const impressionLabel = (value?: string) =>
+	({
+		obsessed: "夢中",
+		love: "大好き",
+		like: "わりと好き",
+		meh: "ビミョーかも",
+		give_up: "ギブアップ",
+	})[value || ""] || null;
+const recruitmentLabel = (value?: string) =>
+	({
+		looking_for_group: "グループ募集中",
+		invite_anytime: "いつでも誘って",
+		need_hints: "ヒント歓迎",
+		can_teach: "教えられます",
+		discussion_welcome: "議論歓迎",
+	})[value || ""] || null;
 ---
 
 <Layout title={name} description={`${name}のプロフィール、記事、ゲームコレクション`}>
@@ -76,9 +155,13 @@ const recruitmentLabel = (value?: string) => ({ looking_for_group: "グループ
         </div>
         {user.bio && <p class="member-bio">{user.bio}</p>}
         {user.social_links && user.social_links.length > 0 && <nav class="member-socials" aria-label={`${name}の外部リンク`}>
-          {user.social_links.map((link: any) => {
+          {user.social_links.map((link) => {
             const Icon = socialIcon(link.platform);
-            return <a href={link.url} target="_blank" rel="noopener noreferrer"><Icon aria-hidden="true" /><span>{link.platform}</span></a>;
+            const platform = socialPlatformOf(link.platform);
+            const service = platform === "x" ? "X" : platform === "github" ? "GitHub" : platform === "discord" ? "Discord" : platform === "steam" ? "Steam" : link.platform;
+            const id = socialDisplayId(link);
+            const href = safeSocialUrl(link);
+            return href && <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`${service}${id ? ` ${id}` : ""}`}><Icon aria-hidden="true" /><span><strong>{service}</strong>{id && <small>{id}</small>}</span></a>;
           })}
         </nav>}
       </div>
@@ -143,8 +226,11 @@ const recruitmentLabel = (value?: string) => ({ looking_for_group: "グループ
   .member-title h1 { min-width: 0; font-size: clamp(2.4rem, 7vw, 4.75rem); line-height: 1; letter-spacing: -0.04em; overflow-wrap: anywhere; }
   .member-bio { max-width: 52ch; color: var(--color-ink-2); font-size: var(--text-md); line-height: 1.8; }
   .member-socials { display: flex; flex-wrap: wrap; gap: var(--space-sm) var(--space-lg); }
-  .member-socials a { display: inline-flex; align-items: center; gap: var(--space-xs); color: var(--color-muted); font-size: var(--text-sm); border-block-end: var(--rule-hair) solid var(--color-rule); }
+  .member-socials a { display: inline-flex; align-items: center; gap: var(--space-xs); padding-block-end: var(--space-3xs); color: var(--color-muted); font-size: var(--text-sm); border-block-end: var(--rule-hair) solid var(--color-rule); }
   .member-socials svg { width: 1rem; height: 1rem; }
+  .member-socials a > span { display: inline-flex; align-items: baseline; gap: var(--space-xs); }
+  .member-socials strong { color: var(--color-ink-2); font-weight: 600; }
+  .member-socials small { color: var(--color-muted); font-size: var(--text-xs); }
   .member-counts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-block-start: var(--rule-hair) solid var(--color-rule); }
   .member-counts div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-lg) 0; }
   .member-counts div + div { padding-inline-start: var(--space-lg); border-inline-start: var(--rule-hair) solid var(--color-rule); }

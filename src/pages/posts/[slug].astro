@@ -16,6 +16,7 @@ import {
 import Layout from "../../layouts/Layout.astro";
 import { type CmsPost, cmsClient, getMediaUrl } from "../../lib/cms";
 import { markdownToHtml } from "../../lib/richtext";
+import { safeSocialUrl } from "../../lib/social-links";
 export const prerender = false;
 const { slug } = Astro.params;
 let post: CmsPost | null = null;
@@ -143,7 +144,7 @@ const structuredData = {
       {author && <aside class="author-note">
         <div class="author-note__identity">{authorImage ? <img src={authorImage} alt="" /> : <span class="byline-placeholder"><User aria-hidden="true" /></span>}<div><h2>{authorName}</h2>{author.staff_title && <p>{author.staff_title}</p>}</div></div>
         <p>{author.bio || "この著者のプロフィールはまだ登録されていません。"}</p>
-        <div class="author-note__links"><a href={`/users/${author.id}`}>すべての記事</a>{author.social_links?.map((link) => { const Icon = socialIcon(link.platform); return link.url && <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label={link.platform || "外部プロフィール"}><Icon aria-hidden="true" /></a>; })}</div>
+        <div class="author-note__links"><a href={`/users/${author.id}`}>すべての記事</a>{author.social_links?.map((link) => { const Icon = socialIcon(link.platform); const href = safeSocialUrl(link); return href && <a href={href} target="_blank" rel="noopener noreferrer" aria-label={link.platform || "外部プロフィール"}><Icon aria-hidden="true" /></a>; })}</div>
       </aside>}
     </div>
   </article>
