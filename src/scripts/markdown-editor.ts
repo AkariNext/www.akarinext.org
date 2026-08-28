@@ -5,7 +5,12 @@
  * name="content" のまま普通にフォーム送信でき、JS が落ちても入力が失われない。
  */
 
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import {
+	defaultKeymap,
+	history,
+	historyKeymap,
+	indentWithTab,
+} from "@codemirror/commands";
 import { markdown, markdownKeymap } from "@codemirror/lang-markdown";
 import {
 	HighlightStyle,
@@ -216,14 +221,27 @@ export function createMarkdownEditor(options: EditorOptions): EditorView {
 		EditorView.lineWrapping,
 		indentUnit.of("  "),
 		placeholder(textarea.placeholder),
+		// 先に書いたものが優先される。既定のキーを上書きする分は前に置く
 		keymap.of([
+			{ key: "Mod-b", run: (view) => wrap(view, "**", "**", "太字") },
+			{ key: "Mod-i", run: (view) => wrap(view, "*", "*", "斜体") },
+			{ key: "Mod-k", run: (view) => wrap(view, "[", "](url)", "リンク") },
+			// Tab をエディタが受け取ると、キーボードだけでは抜け出せなくなる。
+			// Escape をその出口にする（既定の選択範囲の単純化より優先する）
+			{
+				key: "Escape",
+				run: (view) => {
+					view.contentDOM.blur();
+					return true;
+				},
+			},
+			// Tab は既定ではブラウザに渡され、フォーカスが次の要素へ飛ぶ。
+			// 書いている途中で入力欄から追い出されるので、インデントに使う
+			indentWithTab,
 			// リストや引用の継続、マーカーの削除はここが持っている
 			...markdownKeymap,
 			...historyKeymap,
 			...defaultKeymap,
-			{ key: "Mod-b", run: (view) => wrap(view, "**", "**", "太字") },
-			{ key: "Mod-i", run: (view) => wrap(view, "*", "*", "斜体") },
-			{ key: "Mod-k", run: (view) => wrap(view, "[", "](url)", "リンク") },
 		]),
 		EditorView.updateListener.of((update) => {
 			if (!update.docChanged) return;
