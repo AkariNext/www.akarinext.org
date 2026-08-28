@@ -11,6 +11,26 @@ import { visit } from "unist-util-visit";
 import { fetchOgp } from "./ogp";
 import { getYouTubeEmbedUrl } from "./youtube";
 
+/**
+ * 日本語のあいだに紛れこんだ半角スペース・改行を詰める。
+ *
+ * 「ました。 もちろん」のように原稿へ半角スペースが入っていたり、
+ * 段落の途中で改行していると、ブラウザはそれを空白として描画する。
+ * 日本語では文字と文字のあいだが不自然に空いて見えるので、
+ * 前後が全角文字のときだけ取り除く。英数字が絡む空白は語の区切りなので残す。
+ */
+const CJK =
+	"\\u3001-\\u303F\\u3041-\\u309F\\u30A0-\\u30FF\\u3400-\\u4DBF\\u4E00-\\u9FFF\\uFF01-\\uFF60\\uFF61-\\uFF9F";
+const BETWEEN_CJK = new RegExp(`([${CJK}])[ \\t\\n]+(?=[${CJK}])`, "g");
+
+function remarkTightenJapaneseSpacing() {
+	return (tree: any): void => {
+		visit(tree, "text", (node: any) => {
+			node.value = node.value.replace(BETWEEN_CJK, "$1");
+		});
+	};
+}
+
 function rehypeOgpLinkCards() {
 	return async (tree: any): Promise<void> => {
 		const nodesToProcess: Array<{ node: any; parent: any; href: string }> = [];
@@ -111,6 +131,7 @@ export async function markdownToHtml(
 	const file = await unified()
 		.use(remarkParse)
 		.use(remarkGfm)
+		.use(remarkTightenJapaneseSpacing)
 		.use(remarkRehype, { allowDangerousHtml: true })
 		.use(rehypeRaw)
 		.use(rehypeOgpLinkCards)

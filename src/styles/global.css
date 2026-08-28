@@ -246,8 +246,6 @@ a {
 .prose p {
 	color: var(--text-main);
 	opacity: 0.95;
-	text-align: justify;
-	/* Crisp aesthetic */
 	text-wrap: pretty;
 }
 
@@ -957,7 +955,7 @@ button {
 	margin-inline: auto;
 	color: var(--color-ink);
 	font-size: var(--text-base);
-	line-height: 1.95;
+	line-height: 1.8;
 	letter-spacing: 0;
 }
 
@@ -979,10 +977,12 @@ button {
 .prose h4 { font-size: var(--text-lg); }
 
 .prose p {
-	margin-block-end: var(--space-lg);
+	margin-block-end: var(--space-xl);
 	opacity: 1;
 	text-align: start;
 	text-wrap: pretty;
+	/* 括弧や句読点の左右に空く余白を日本語の組版どおりに詰める */
+	text-spacing-trim: trim-start;
 }
 
 .prose a {
