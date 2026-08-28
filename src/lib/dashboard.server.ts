@@ -58,8 +58,17 @@ async function requestPocketBase(
 	if (!response.ok) {
 		let message = "保存できませんでした。入力内容を確認してください。";
 		try {
-			const detail = (await response.json()) as { message?: string };
-			if (detail.message) message = detail.message;
+			const detail = (await response.json()) as {
+				message?: string;
+				data?: Record<string, { message?: string } | undefined>;
+			};
+			// PocketBase は原因を data に項目ごとに入れる。
+			// message だけだと「Failed to create record.」しか出ず、何が悪いのか分からない
+			const fields = Object.entries(detail.data ?? {})
+				.map(([name, error]) => `${name}: ${error?.message ?? "不正な値です"}`)
+				.join(" / ");
+			if (fields) message = fields;
+			else if (detail.message) message = detail.message;
 		} catch {
 			// PocketBase が JSON を返さない場合は一般的な文言を使う。
 		}
@@ -370,8 +379,10 @@ function seriesRecordBody(
 					value !== "" &&
 					value !== options.ownerId,
 			);
-		// 全部外した場合も反映したいので、空でも JSON で送る
-		body.set("editors", JSON.stringify(editors));
+		// multipart では複数値を同じ名前で繰り返す。
+		// 全部外した場合も反映したいので、空のときは空文字をひとつ送る
+		if (editors.length === 0) body.append("editors", "");
+		else for (const editor of editors) body.append("editors", editor);
 	}
 
 	const cover = input.get("cover_image");
@@ -419,13 +430,18 @@ export async function mutateSeries(
 		return { notice: "series-saved", id: record.id };
 	}
 
-	const record = await createRecord(
-		token,
-		"series",
-		seriesRecordBody(input, { ownerId: userId, canManageEditors: true }),
-	);
-	// slug が空なら ID を割り当てて URL を安定させる
-	if (!formText(input, "slug")) {
+	const body = seriesRecordBody(input, {
+		ownerId: userId,
+		canManageEditors: true,
+	});
+	// slug は必須なので、未入力でも何か入れないと作成そのものが弾かれる。
+	// レコードの ID は作ってみるまで分からないため、いったん仮の値で作る
+	const useIdAsSlug = !formText(input, "slug");
+	if (useIdAsSlug) body.set("slug", `series-${crypto.randomUUID()}`);
+
+	const record = await createRecord(token, "series", body);
+	// 仮の値のままだと URL が読めないので、ID に置き換える
+	if (useIdAsSlug) {
 		const patch = new FormData();
 		patch.set("slug", record.id);
 		await updateRecord(token, "series", record.id, patch);
