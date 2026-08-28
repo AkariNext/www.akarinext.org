@@ -252,8 +252,16 @@ a {
 .prose ul,
 .prose ol {
 	margin-left: 1.2rem;
-	margin-bottom: 2rem;
+	/* リストの後の余白は段落と揃える */
+	margin-bottom: var(--space-xl);
 	color: var(--text-main);
+}
+
+/* 入れ子のリストは項目の続きなので、リスト全体の下余白は付けない。
+   付けると入れ子の直後の項目だけが遠くに離れて見える */
+.prose li > ul,
+.prose li > ol {
+	margin-bottom: 0;
 }
 
 .prose li {
