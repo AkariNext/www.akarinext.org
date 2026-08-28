@@ -274,6 +274,9 @@ export function shapeMember(record: PbRecord): CmsMember {
 		is_staff: Boolean(record.is_staff),
 		staff_title: (record.staff_title as string) || null,
 		bio: (record.bio as string) || null,
+		location: (record.location as string) || null,
+		location_public: Boolean(record.location_public),
+		games_public: Boolean(record.games_public),
 		social_links: Array.isArray(record.social_links)
 			? (record.social_links as {
 					platform?: string;

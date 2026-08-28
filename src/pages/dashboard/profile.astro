@@ -1,0 +1,15 @@
+---
+import ProfileEditor from "../../components/dashboard/ProfileEditor.astro";
+import Layout from "../../layouts/Layout.astro";
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect("/auth/login?next=/dashboard/profile", 302);
+---
+
+<Layout title="プロフィールを編集" noindex={true}>
+  <div class="container">
+    <ProfileEditor user={user} error={Astro.url.searchParams.get("error")} notice={Astro.url.searchParams.get("notice")} />
+  </div>
+</Layout>

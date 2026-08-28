@@ -5,9 +5,16 @@
 // username は必須かつ UNIQUE なので、そのままでは
 // 「Failed to create record. {username: cannot be blank}」で作成に失敗する。
 // 空のときだけ、表示名かメールアドレスから重複しない username を組み立てる。
+// あわせて、公開設定の初期値もここで入れる。
 
 onRecordCreate((e) => {
 	const record = e.record;
+
+	// 公開・非公開の初期値。bool は既定が false なので、
+	// 何も選んでいない新しいアカウントだけ公開側に倒しておく
+	if (!record.get("games_public")) record.set("games_public", true);
+	if (!record.get("location_public")) record.set("location_public", true);
+
 	if (record.getString("username").trim() !== "") {
 		e.next();
 		return;

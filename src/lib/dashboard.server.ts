@@ -189,6 +189,114 @@ export async function updateRecord(
 	})) as PbRecord;
 }
 
+/** プロフィールの入力を PocketBase の項目へ写す。SNS はここでまとめて扱う */
+function profileRecordBody(input: FormData, existing: SocialLink[]): FormData {
+	const name = formText(input, "name");
+	if (!name) throw new DashboardError("表示名を入力してください。", 400);
+	if (name.length > 60) {
+		throw new DashboardError("表示名は60文字までです。", 400);
+	}
+
+	const username = formText(input, "username");
+	if (!/^[a-z0-9](?:[a-z0-9_-]{0,22}[a-z0-9])?$/i.test(username)) {
+		throw new DashboardError(
+			"ユーザー名は半角英数字とハイフン・アンダースコアで、2〜24文字にしてください。",
+			400,
+		);
+	}
+
+	const bio = formText(input, "bio");
+	if (bio.length > 160) {
+		throw new DashboardError("自己紹介は160文字までです。", 400);
+	}
+
+	const location = formText(input, "location");
+	if (location.length > 60) {
+		throw new DashboardError("所在地は60文字までです。", 400);
+	}
+
+	const body = new FormData();
+	body.set("name", name);
+	body.set("username", username);
+	body.set("bio", bio);
+	body.set("location", location);
+	// チェックが外れている項目はそもそも送られてこないので、有無で判断する
+	body.set("location_public", String(input.get("location_public") !== null));
+	body.set("games_public", String(input.get("games_public") !== null));
+
+	const avatar = input.get("avatar");
+	if (avatar instanceof File && avatar.size > 0) {
+		if (avatar.size > 2 * 1024 * 1024) {
+			throw new DashboardError("アイコンは2MBまでです。", 400);
+		}
+		body.set("avatar", avatar);
+	}
+	if (input.get("remove_avatar")) body.set("avatar", "");
+
+	body.set("social_links", JSON.stringify(socialLinksFrom(input, existing)));
+	return body;
+}
+
+/** 入力された ID を検証して、保存する形に整える */
+function socialLinksFrom(input: FormData, existing: SocialLink[]): SocialLink[] {
+	// 画面で扱えないサービスのぶんは、触らずそのまま残す
+	const links: SocialLink[] = existing.filter(
+		(link) => socialPlatformOf(link.platform) === null,
+	);
+
+	for (const profile of SOCIAL_PROFILES) {
+		const raw = formText(input, profile.key);
+		if (!raw) continue;
+		let id = "";
+		try {
+			id = normalizeSocialId(profile.key, raw);
+		} catch (cause) {
+			throw new DashboardError(
+				cause instanceof Error
+					? cause.message
+					: `${profile.label}のIDが正しくありません。`,
+				400,
+			);
+		}
+		if (id) {
+			links.push({
+				platform: profile.key,
+				id,
+				url: socialUrl(profile.key, id),
+			});
+		}
+	}
+	return links;
+}
+
+/** プロフィールの保存。SNS も同じフォームから来る */
+export async function updateOwnProfile(
+	token: string,
+	userId: string,
+	input: FormData,
+	existing: SocialLink[] = [],
+): Promise<"profile-saved"> {
+	await updateRecord(token, "users", userId, profileRecordBody(input, existing));
+	return "profile-saved";
+}
+
+/**
+ * アカウントの削除。
+ *
+ * 打ち間違いで消えないよう、ユーザー名を書き写してもらう。
+ * PocketBase 側では user_games が一緒に消え、記事は著者が空になって残る。
+ */
+export async function deleteOwnAccount(
+	token: string,
+	user: { id: string; username: string },
+	input: FormData,
+): Promise<void> {
+	if (formText(input, "confirm_username") !== user.username) {
+		throw new DashboardError("ユーザー名が一致しません。", 400);
+	}
+	await requestPocketBase(token, "users", { id: user.id, method: "DELETE" });
+}
+
 /** SNSはOAuth連携せず、本人が入力した公開IDだけをプロフィールへ保存する。 */
 export async function updateOwnSocialLinks(
 	token: string,

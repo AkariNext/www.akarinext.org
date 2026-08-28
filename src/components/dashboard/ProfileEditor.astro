@@ -1,0 +1,422 @@
+---
+import {
+	ArrowLeft,
+	AtSign,
+	Gamepad2,
+	Github,
+	MessageSquare,
+	Save,
+	Trash2,
+	Upload,
+	User,
+} from "lucide-astro";
+import { getMediaUrl } from "../../lib/cms";
+import type { CmsMember } from "../../lib/cms-types";
+import { SOCIAL_PROFILES, socialId } from "../../lib/social-links";
+
+interface Props {
+	user: CmsMember;
+	error?: string | null;
+	notice?: string | null;
+}
+
+const { user, error, notice } = Astro.props;
+const avatar = getMediaUrl(user.avatar);
+
+/** 保存済みの ID を、入力欄に戻せる形で引き当てる */
+const socialValue = (key: string) => {
+	const link = user.social_links?.find((item) => {
+		const platform = item.platform?.toLowerCase();
+		return key === "x"
+			? ["x", "twitter", "x (twitter)"].includes(platform ?? "")
+			: platform === key;
+	});
+	return link ? socialId(link) : "";
+};
+
+const icons = {
+	github: Github,
+	discord: MessageSquare,
+	steam: Gamepad2,
+	x: AtSign,
+} as const;
+
+const toggles = [
+	{
+		name: "games_public",
+		title: "ゲーム棚",
+		help: "遊んでいるタイトルと募集の状態を公開します。",
+		checked: user.games_public ?? false,
+	},
+	{
+		name: "location_public",
+		title: "所在地",
+		help: "プロフィールに所在地を表示します。",
+		checked: user.location_public ?? false,
+	},
+];
+---
+
+<div class="profile">
+  <header class="profile__head">
+    <a class="profile__back" href="/dashboard"><ArrowLeft aria-hidden="true" />ダッシュボードへ戻る</a>
+    <div class="profile__title">
+      <div>
+        <p class="profile__eyebrow">Profile</p>
+        <h1>プロフィールを編集</h1>
+        <p class="profile__lead">ここでの変更は公開プロフィールにそのまま反映されます。</p>
+      </div>
+      <div class="profile__actions">
+        <a class="button" href={`/users/${user.id}`}>公開プロフィール</a>
+        <button class="button button--primary" type="submit" form="profile-form"><Save aria-hidden="true" />保存する</button>
+      </div>
+    </div>
+  </header>
+
+  {(error || notice) && (
+    <p class:list={["message", { "message--error": error }]} role={error ? "alert" : "status"}>
+      {error || "保存しました。"}
+    </p>
+  )}
+
+  <div class="profile__layout">
+    <form id="profile-form" class="profile__form" method="POST" action="/api/dashboard/profile" enctype="multipart/form-data" data-astro-reload>
+      <section class="section" aria-labelledby="basics-heading">
+        <h2 id="basics-heading">基本情報</h2>
+
+        <div class="avatar">
+          {avatar
+            ? <img class="avatar__image" src={avatar} alt="" width="80" height="80" data-avatar-preview />
+            : <span class="avatar__image avatar__image--empty" data-avatar-preview><User aria-hidden="true" /></span>}
+          <div class="avatar__control">
+            <span class="field__label">アイコン</span>
+            <div class="avatar__buttons">
+              <label class="button">
+                <Upload aria-hidden="true" />画像を選ぶ
+                <input class="visually-hidden" type="file" name="avatar" accept="image/png,image/jpeg,image/webp" data-avatar-input />
+              </label>
+              <label class="avatar__remove">
+                <input type="checkbox" name="remove_avatar" value="1" />削除する
+              </label>
+              <span class="field__help">PNG / JPEG · 2MB まで</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <label class="field">
+            <span class="field__label">表示名</span>
+            <input name="name" value={user.name ?? ""} maxlength="60" required aria-required="true" data-preview-name />
+          </label>
+          <label class="field">
+            <span class="field__label">ユーザー名</span>
+            <span class="field__prefixed">
+              <span aria-hidden="true">@</span>
+              <input class="field--mono" name="username" value={user.username} maxlength="24" pattern="[A-Za-z0-9]([A-Za-z0-9_-]{0,22}[A-Za-z0-9])?" required aria-required="true" data-preview-username />
+            </span>
+            <span class="field__help">半角英数字とハイフン・アンダースコアで 2〜24 文字</span>
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field__label field__label--split">自己紹介<span class="field__count" data-bio-count>{(user.bio ?? "").length} / 160</span></span>
+          <textarea name="bio" rows="4" maxlength="160" data-preview-bio>{user.bio ?? ""}</textarea>
+        </label>
+
+        <label class="field field--narrow">
+          <span class="field__label">所在地</span>
+          <input name="location" value={user.location ?? ""} maxlength="60" placeholder="東京" data-preview-location />
+        </label>
+      </section>
+
+      <section class="section" aria-labelledby="links-heading">
+        <header class="section__head">
+          <h2 id="links-heading">リンク</h2>
+          <span class="field__help">公開プロフィールにアイコンで並びます</span>
+        </header>
+        <ol class="links">
+          {SOCIAL_PROFILES.map((profile) => {
+            const Icon = icons[profile.key];
+            return (
+              <li class="links__row">
+                <span class="links__name"><Icon aria-hidden="true" />{profile.label}</span>
+                <span class="field__prefixed">
+                  <span aria-hidden="true">{profile.key === "x" ? "@" : "ID"}</span>
+                  <input class="field--mono" name={profile.key} value={socialValue(profile.key)} placeholder={profile.placeholder} autocomplete="off" inputmode={profile.key === "discord" ? "numeric" : "text"} aria-label={`${profile.label}の${profile.help}`} />
+                </span>
+                <span class="field__help links__help">{profile.help}</span>
+              </li>
+            );
+          })}
+        </ol>
+        <p class="field__help">空欄にして保存すると、そのサービスの表示を消します。</p>
+      </section>
+
+      <section class="section" aria-labelledby="visibility-heading">
+        <h2 id="visibility-heading">公開設定</h2>
+        {toggles.map((toggle) => (
+          <div class="toggle">
+            <div>
+              <p class="toggle__title">{toggle.title}</p>
+              <p class="field__help">{toggle.help}</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" name={toggle.name} value="1" checked={toggle.checked} data-toggle={toggle.name} />
+              <span class="switch__track" aria-hidden="true"></span>
+              <span class="switch__text" data-switch-text>{toggle.checked ? "公開" : "非公開"}</span>
+            </label>
+          </div>
+        ))}
+        <div class="toggle">
+          <div>
+            <p class="toggle__title">メールアドレス</p>
+            <p class="field__help">常に非公開です。運営からの連絡にだけ使います。</p>
+          </div>
+          <span class="toggle__fixed">非公開</span>
+        </div>
+      </section>
+    </form>
+
+    <aside class="preview" aria-label="プレビュー">
+      <header class="preview__head">
+        <h2>プレビュー</h2>
+        <span class="field__help">公開ページの見え方</span>
+      </header>
+      <div class="preview__body">
+        <div class="preview__identity">
+          {avatar
+            ? <img src={avatar} alt="" width="56" height="56" data-avatar-preview />
+            : <span class="preview__avatar" data-avatar-preview><User aria-hidden="true" /></span>}
+          <div>
+            <p class="preview__name" data-preview-target="name">{user.name || user.username}</p>
+            <p class="preview__meta"><span data-preview-target="username">@{user.username}</span><span data-preview-target="location">{user.location_public && user.location ? ` · ${user.location}` : ""}</span></p>
+          </div>
+        </div>
+        <p class="preview__bio" data-preview-target="bio">{user.bio}</p>
+        <p class="preview__note" data-preview-target="note"></p>
+      </div>
+    </aside>
+  </div>
+
+  <section class="section danger" aria-labelledby="account-heading">
+    <h2 id="account-heading">アカウント</h2>
+    <p class="danger__lead">アカウントを削除すると、ゲーム棚とリンクが消え、書いた記事は著者のない状態で残ります。元に戻すことはできません。</p>
+    <details class="danger__details">
+      <summary><Trash2 aria-hidden="true" />アカウントを削除</summary>
+      <form class="danger__form" method="POST" action="/api/dashboard/profile" data-astro-reload>
+        <input type="hidden" name="_action" value="delete-account" />
+        <label class="field">
+          <span class="field__label">確認のため、ユーザー名「{user.username}」を入力してください</span>
+          <input class="field--mono" name="confirm_username" autocomplete="off" required aria-required="true" placeholder={user.username} />
+        </label>
+        <button class="button button--danger" type="submit"><Trash2 aria-hidden="true" />削除する</button>
+      </form>
+    </details>
+  </section>
+</div>
+
+<style>
+  .profile { display: grid; gap: var(--space-xl); padding-block: var(--space-xl) var(--space-2xl); }
+
+  /* --- 見出し --- */
+  .profile__head { display: grid; gap: var(--space-md); padding-block-end: var(--space-lg); border-block-end: var(--rule-medium) solid var(--color-ink); }
+  .profile__back { display: inline-flex; align-items: center; gap: var(--space-xs); justify-self: start; min-height: 2.75rem; color: var(--color-muted); font-size: var(--text-sm); }
+  .profile__back svg { width: 1em; height: 1em; }
+  .profile__title { display: flex; align-items: end; justify-content: space-between; gap: var(--space-lg); flex-wrap: wrap; }
+  .profile__eyebrow { color: var(--color-accent); font-size: var(--text-sm); font-weight: 700; }
+  .profile__title h1 { font-size: var(--text-3xl); line-height: 1.1; letter-spacing: -0.02em; }
+  .profile__lead { color: var(--color-muted); font-size: var(--text-sm); }
+  .profile__actions { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
+
+  /* --- 共通の部品 --- */
+  .button { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; gap: var(--space-xs); padding-inline: var(--space-md); border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-ink); font: inherit; font-size: var(--text-sm); cursor: pointer; white-space: nowrap; }
+  .button svg { width: 1em; height: 1em; }
+  .button--primary { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); }
+  .button--danger { border-color: var(--color-error); background: var(--color-paper); color: var(--color-error); font-weight: 700; }
+
+  .message { padding: var(--space-sm) var(--space-md); border: var(--rule-hair) solid var(--color-rule-strong); font-size: var(--text-sm); }
+  .message--error { border-color: var(--color-error); color: var(--color-error); }
+
+  .field { display: grid; gap: var(--space-xs); }
+  .field--narrow { max-width: 24rem; }
+  .field__label { color: var(--color-muted); font-size: var(--text-xs); font-weight: 700; }
+  .field__label--split { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md); }
+  .field__count { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 400; }
+  .field__help { color: var(--color-muted); font-size: var(--text-xs); }
+  .field--mono { font-family: var(--font-mono); }
+
+  input[type="text"], input:not([type]), input[type="url"], textarea {
+    min-height: 2.75rem; padding: var(--space-xs) var(--space-sm);
+    border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm);
+    background: var(--color-paper); color: var(--color-ink); font: inherit;
+  }
+  textarea { min-height: auto; line-height: 1.7; resize: vertical; }
+
+  /* 記号と入力欄をひとつの枠に見せる */
+  .field__prefixed { display: flex; align-items: center; min-height: 2.75rem; border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); }
+  .field__prefixed > span { padding-inline: var(--space-sm); color: var(--color-muted); font-family: var(--font-mono); font-size: var(--text-sm); }
+  .field__prefixed input { flex: 1; min-width: 0; border: 0; background: none; }
+
+  .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-lg); }
+
+  /* --- 各セクション --- */
+  .section { display: grid; gap: var(--space-lg); }
+  .section > h2 { padding-block-end: var(--space-sm); border-block-end: var(--rule-hair) solid var(--color-rule-strong); font-size: var(--text-2xl); line-height: 1.15; }
+  .section__head { display: flex; align-items: end; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; padding-block-end: var(--space-sm); border-block-end: var(--rule-hair) solid var(--color-rule-strong); }
+  .section__head h2 { font-size: var(--text-2xl); line-height: 1.15; }
+
+  .avatar { display: flex; align-items: center; gap: var(--space-lg); flex-wrap: wrap; }
+  .avatar__image { display: grid; width: 5rem; height: 5rem; flex: 0 0 5rem; place-items: center; overflow: hidden; border-radius: 50%; object-fit: cover; background: var(--color-paper-2); color: var(--color-muted); }
+  .avatar__image--empty svg { width: 1.75rem; height: 1.75rem; }
+  .avatar__control { display: grid; gap: var(--space-xs); }
+  .avatar__buttons { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
+  .avatar__remove { display: inline-flex; align-items: center; gap: var(--space-2xs); min-height: 2.5rem; color: var(--color-error); font-size: var(--text-sm); }
+
+  .links { display: grid; gap: var(--space-md); }
+  .links__row { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: var(--space-2xs) var(--space-md); align-items: center; }
+  .links__name { display: inline-flex; align-items: center; gap: var(--space-xs); font-size: var(--text-sm); font-weight: 500; }
+  .links__name svg { width: 1em; height: 1em; }
+  .links__help { grid-column: 2; }
+
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: var(--space-lg); padding-block-end: var(--space-sm); border-block-end: var(--rule-hair) solid var(--color-rule); }
+  .toggle__title { font-weight: 500; }
+  .toggle__fixed { color: var(--color-muted); font-size: var(--text-sm); }
+
+  /* チェックボックスを、状態が読み取れる大きさの切り替えに見せる */
+  .switch { display: inline-flex; align-items: center; gap: var(--space-sm); flex: 0 0 auto; cursor: pointer; }
+  .switch input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .switch__track { position: relative; width: 3rem; height: 1.75rem; border: var(--rule-hair) solid var(--color-rule-strong); border-radius: 1rem; background: var(--color-paper-2); transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out); }
+  .switch__track::after { content: ""; position: absolute; inset-block-start: 50%; inset-inline-start: 0.2rem; width: 1.1rem; height: 1.1rem; translate: 0 -50%; border-radius: 50%; background: var(--color-muted); transition: translate var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out); }
+  .switch input:checked + .switch__track { border-color: var(--color-accent); background: var(--color-accent); }
+  .switch input:checked + .switch__track::after { translate: 1.25rem -50%; background: var(--color-accent-ink); }
+  .switch input:focus-visible + .switch__track { outline: var(--rule-medium) solid var(--color-focus); outline-offset: var(--space-3xs); }
+  .switch__text { min-width: 3.5rem; font-size: var(--text-sm); }
+
+  /* --- プレビュー --- */
+  .profile__layout { display: grid; gap: var(--space-xl); align-items: start; }
+  .profile__form { display: grid; gap: var(--space-2xl); }
+  .preview { border: var(--rule-hair) solid var(--color-rule-strong); background: var(--color-paper); }
+  .preview__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); padding: var(--space-md) var(--space-lg); border-block-end: var(--rule-hair) solid var(--color-rule); }
+  .preview__head h2 { font-size: var(--text-lg); line-height: 1.2; }
+  .preview__body { display: grid; gap: var(--space-md); padding: var(--space-lg); }
+  .preview__identity { display: flex; align-items: center; gap: var(--space-md); }
+  .preview__identity img, .preview__avatar { display: grid; width: 3.5rem; height: 3.5rem; flex: 0 0 3.5rem; place-items: center; overflow: hidden; border-radius: 50%; object-fit: cover; background: var(--color-paper-2); color: var(--color-muted); }
+  .preview__avatar svg { width: 1.25rem; height: 1.25rem; }
+  .preview__name { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+  .preview__meta { color: var(--color-muted); font-family: var(--font-mono); font-size: var(--text-xs); overflow-wrap: anywhere; }
+  .preview__bio { color: var(--color-ink-2); font-size: var(--text-sm); line-height: 1.7; overflow-wrap: anywhere; }
+  .preview__bio:empty { display: none; }
+  .preview__note { padding-block-start: var(--space-sm); border-block-start: var(--rule-hair) solid var(--color-rule); color: var(--color-muted); font-size: var(--text-xs); line-height: 1.6; }
+
+  /* --- 削除 --- */
+  .danger { border: var(--rule-hair) solid var(--color-error); padding: var(--space-lg); }
+  .danger > h2 { border-block-end-color: var(--color-error); color: var(--color-error); }
+  .danger__lead { max-width: 60ch; color: var(--color-ink-2); font-size: var(--text-sm); }
+  .danger__details > summary { display: flex; align-items: center; gap: var(--space-xs); min-height: 2.75rem; color: var(--color-error); font-size: var(--text-sm); font-weight: 700; cursor: pointer; }
+  .danger__details > summary svg { width: 1em; height: 1em; }
+  .danger__form { display: grid; gap: var(--space-sm); padding-block-start: var(--space-md); }
+
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  @media (hover: hover) and (pointer: fine) {
+    .button:hover { border-color: var(--color-ink); background: var(--color-paper-2); }
+    .button--primary:hover { border-color: var(--color-ink); background: var(--color-ink); }
+    .button--danger:hover { background: var(--color-error); color: var(--color-accent-ink); }
+    .profile__back:hover { color: var(--color-accent); }
+  }
+
+  /* プレビューは横に置けるだけの幅があるときだけ添える */
+  @media (min-width: 64rem) {
+    .profile__layout { grid-template-columns: minmax(0, 1fr) 22rem; }
+    .preview { position: sticky; inset-block-start: 6rem; }
+  }
+
+  @media (max-width: 47.99rem) {
+    .grid-2 { grid-template-columns: minmax(0, 1fr); }
+    .links__row { grid-template-columns: minmax(0, 1fr); }
+    .links__help { grid-column: 1; }
+    .toggle { align-items: start; gap: var(--space-md); }
+  }
+</style>
+
+<script>
+  import { onEachPage } from "../../scripts/on-page";
+
+  onEachPage(() => {
+    const form = document.querySelector<HTMLFormElement>("#profile-form");
+    if (!form) return;
+
+    const preview = (name: string) =>
+      document.querySelector<HTMLElement>(`[data-preview-target="${name}"]`);
+
+    const nameInput = form.querySelector<HTMLInputElement>("[data-preview-name]");
+    const usernameInput = form.querySelector<HTMLInputElement>("[data-preview-username]");
+    const bioInput = form.querySelector<HTMLTextAreaElement>("[data-preview-bio]");
+    const locationInput = form.querySelector<HTMLInputElement>("[data-preview-location]");
+    const bioCount = document.querySelector<HTMLElement>("[data-bio-count]");
+    const locationToggle = form.querySelector<HTMLInputElement>("[data-toggle='location_public']");
+    const gamesToggle = form.querySelector<HTMLInputElement>("[data-toggle='games_public']");
+
+    const sync = () => {
+      const username = usernameInput?.value.trim() ?? "";
+      const location = locationInput?.value.trim() ?? "";
+      const bio = bioInput?.value ?? "";
+
+      const nameTarget = preview("name");
+      if (nameTarget) nameTarget.textContent = nameInput?.value.trim() || username;
+
+      const usernameTarget = preview("username");
+      if (usernameTarget) usernameTarget.textContent = username ? `@${username}` : "";
+
+      // 非公開にしているものはプレビューにも出さない
+      const locationTarget = preview("location");
+      if (locationTarget) {
+        locationTarget.textContent =
+          locationToggle?.checked && location ? ` · ${location}` : "";
+      }
+
+      const bioTarget = preview("bio");
+      if (bioTarget) bioTarget.textContent = bio;
+      if (bioCount) bioCount.textContent = `${bio.length} / 160`;
+
+      const note = preview("note");
+      if (note) {
+        note.textContent = gamesToggle?.checked
+          ? "ゲーム棚と記事は公開されています。"
+          : "ゲーム棚は非公開です。記事だけが表示されます。";
+      }
+
+      for (const label of form.querySelectorAll<HTMLLabelElement>(".switch")) {
+        const input = label.querySelector<HTMLInputElement>("input");
+        const text = label.querySelector<HTMLElement>("[data-switch-text]");
+        if (input && text) text.textContent = input.checked ? "公開" : "非公開";
+      }
+    };
+
+    form.addEventListener("input", sync);
+    form.addEventListener("change", sync);
+    sync();
+
+    // 選んだ画像をその場で見せる。保存するまでは差し替わらないので、
+    // 何を選んだのか分かるようにしておく
+    const avatarInput = form.querySelector<HTMLInputElement>("[data-avatar-input]");
+    avatarInput?.addEventListener("change", () => {
+      const file = avatarInput.files?.[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      for (const slot of document.querySelectorAll<HTMLElement>("[data-avatar-preview]")) {
+        if (slot instanceof HTMLImageElement) {
+          slot.src = url;
+          continue;
+        }
+        // まだ画像が無いアカウントは、枠ごと img に置き換える
+        const image = document.createElement("img");
+        image.src = url;
+        image.alt = "";
+        image.className = slot.className.replace("--empty", "");
+        image.dataset.avatarPreview = "";
+        slot.replaceWith(image);
+      }
+    });
+  });
+</script>

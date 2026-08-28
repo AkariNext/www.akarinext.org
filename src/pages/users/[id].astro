@@ -61,8 +61,11 @@ try {
 					});
 			});
 		};
-		appendGames(user.playing_games, "playing");
-		appendGames(user.finished_games, "finished");
+		// 非公開にしている人のゲーム棚は集めない
+		if (user.games_public) {
+			appendGames(user.playing_games, "playing");
+			appendGames(user.finished_games, "finished");
+		}
 
 		const allPosts = await cmsClient
 			.items<CmsPost>("posts")
@@ -149,7 +152,7 @@ const recruitmentLabel = (value?: string) =>
         {avatar ? <img src={avatar} alt={name} /> : <span>{name.charAt(0).toUpperCase()}</span>}
       </div>
       <div class="member-identity">
-        <p>AkariNext Member{user.is_staff && <span class="member-role"> · 運営メンバー</span>}</p>
+        <p>AkariNext Member{user.is_staff && <span class="member-role"> · 運営メンバー</span>}{user.location_public && user.location && <span class="member-role"> · {user.location}</span>}</p>
         <div class="member-title">
           <h1>{name}</h1>
         </div>
@@ -194,7 +197,7 @@ const recruitmentLabel = (value?: string) =>
           <div><p>Games</p><h2>ゲーム</h2></div>
           <span>{games.length} タイトル</span>
         </header>
-        {games.length > 0 ? <div class="member-game-grid">
+        {!user.games_public ? <p class="section-empty">ゲーム棚は非公開です。</p> : games.length > 0 ? <div class="member-game-grid">
           {games.map((entry) => {
             const cover = getMediaUrl(entry.game.cover_image);
             const details = [skillLabel(entry.skill_level), impressionLabel(entry.impression), recruitmentLabel(entry.recruitment)].filter(Boolean);

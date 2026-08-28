@@ -47,6 +47,11 @@ export interface CmsMember {
 	is_staff?: boolean;
 	staff_title?: string | null;
 	bio?: string | null;
+	location?: string | null;
+	/** 所在地を公開ページに出すか */
+	location_public?: boolean;
+	/** ゲーム棚を公開ページに出すか */
+	games_public?: boolean;
 	social_links?: { platform?: string; id?: string; url?: string }[];
 	playing_games?: CmsGameEntry[];
 	finished_games?: CmsGameEntry[];
