@@ -1,6 +1,7 @@
 {
 	"name": "www.akarinext.org",
 	"type": "module",
+	"packageManager": "pnpm@11.22.0",
 	"version": "0.0.1",
 	"engines": {
 		"node": ">=22.12.0"

@@ -1,0 +1,46 @@
+name: CI
+
+# Renovate の自動マージは、このワークフローが通ったかどうかで判断される。
+# 名前（ci）を変えるときはブランチ保護の必須チェックも直すこと。
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# 既定では書き込みまで許してしまう。読むだけで足りる。
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      # third-party のアクションはタグではなくコミットで固定する。
+      # タグは後から差し替えられるので、乗っ取られると気づけない。
+      # 更新は Renovate の helpers:pinGitHubActionDigests に任せる。
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          # 本番の Dockerfile と同じ系統に揃える
+          node-version: 24
+          cache: pnpm
+
+      # --frozen-lockfile は lockfile どおりに入れるだけでなく、
+      # pnpm-workspace.yaml のサプライチェーン設定に照らして中身も検証する。
+      # ここが落ちたら、身に覚えのない lockfile の変更を疑う。
+      - run: pnpm install --frozen-lockfile
+
+      # lint は既存コードに未対応の指摘が残っているため、今は回していない。
+      # 片付いたら "pnpm lint" をここに足す。
+      - run: pnpm check
+      - run: pnpm build

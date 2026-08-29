@@ -1,4 +1,35 @@
+# ビルドスクリプト（postinstall 等）を走らせてよい依存。
+# pnpm 10 以降は既定で全部止まるので、必要なものだけをここに挙げる。
 allowBuilds:
   "@swc/core": true
   esbuild: true
   sharp: true
+
+# --- サプライチェーン対策（https://pnpm.io/supply-chain-security）---
+
+# 出たてのバージョンを掴まないための待ち時間（分）。pnpm 11 の既定は 1 日。
+#
+# ここをもっと延ばしたくなるが、lockfile の検証にも同じ物差しが使われる。
+# 長くすると、更新した直後だけ CI が落ちるという噛み合わせの悪さが出る。
+# 寝かせる役目は Renovate 側（renovate.json の minimumReleaseAge = 7 日）に
+# 持たせ、こちらは手で入れたときの保険として既定のまま明示しておく。
+minimumReleaseAge: 1440
+
+# 公開時刻を持たないパッケージは、既定では上の待ち時間を素通りする。
+# 素通りさせず、時刻が分からないものは弾く。
+minimumReleaseAgeIgnoreMissingTime: false
+
+# 推移的な依存が git やパッケージ以外の URL を指すのを許さない。
+# 既定でも true だが、外れると気づきにくいので明示しておく。
+blockExoticSubdeps: true
+
+# 来歴（provenance）が前のリリースより弱くなったパッケージで失敗させる。
+# publish 用の認証情報を盗まれて出された版を掴みにくくする。
+trustPolicy: no-downgrade
+
+# chokidar は 4.0.2 と 4.0.3 で provenance が抜けており、no-downgrade に
+# 引っかかる。作者が v5 で付け直しているので乗っ取りではない。
+# うちには @astrojs/check の推移的依存として入っている。
+# https://github.com/unjs/c12/issues/287
+trustPolicyExclude:
+  - "chokidar@4.0.3"
