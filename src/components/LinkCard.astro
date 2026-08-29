@@ -1,9 +1,9 @@
 ---
-import { fetchOgp } from '../lib/ogp';
-import { getYouTubeEmbedUrl } from '../lib/youtube';
+import { fetchOgp } from "../lib/ogp";
+import { getYouTubeEmbedUrl } from "../lib/youtube";
 
 interface Props {
-  url: string;
+	url: string;
 }
 
 const { url } = Astro.props;
@@ -11,16 +11,16 @@ const youtubeEmbedUrl = getYouTubeEmbedUrl(url);
 
 let data = null;
 if (!youtubeEmbedUrl) {
-  try {
-    data = await fetchOgp(url);
-  } catch (e) {
-    // Silent fail
-  }
+	try {
+		data = await fetchOgp(url);
+	} catch (e) {
+		// Silent fail
+	}
 }
 
 const title = data?.ogTitle || data?.twitterTitle || url;
-const desc = data?.ogDescription || data?.twitterDescription || '';
-const image = data?.ogImage?.[0]?.url || data?.twitterImage?.[0]?.url || '';
+const desc = data?.ogDescription || data?.twitterDescription || "";
+const image = data?.ogImage?.[0]?.url || data?.twitterImage?.[0]?.url || "";
 const siteName = data?.ogSiteName || new URL(url).hostname;
 
 const hasData = !!(data && (data.ogTitle || data.ogDescription));

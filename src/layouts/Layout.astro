@@ -1,8 +1,8 @@
 ---
 import "../styles/global.css";
-import { LogOut, UserRound } from "lucide-astro";
 import { ClientRouter } from "astro:transitions";
-import { cmsClient, getMediaUrl, type CmsSettings } from "../lib/cms";
+import { LogOut, UserRound } from "lucide-astro";
+import { type CmsSettings, cmsClient, getMediaUrl } from "../lib/cms";
 
 interface Props {
 	title: string;
@@ -26,7 +26,15 @@ try {
 } catch (error) {
 	console.error("Failed to load global settings", error);
 }
-const { title, description: propDesc, image = "/og-image.png", canonical, noindex = false, ogType = "website", structuredData } = Astro.props;
+const {
+	title,
+	description: propDesc,
+	image = "/og-image.png",
+	canonical,
+	noindex = false,
+	ogType = "website",
+	structuredData,
+} = Astro.props;
 const currentUser = Astro.locals.user;
 const currentUserAvatar = getMediaUrl(currentUser?.avatar);
 const siteTitle =
@@ -47,7 +55,9 @@ const navItems = [
 	{ label: "お知らせ", path: "/announcements" },
 ];
 const isActive = (path: string) =>
-	currentPath === path || currentPath.startsWith(`${path}/`) || (path === "/posts" && currentPath.startsWith("/tags/"));
+	currentPath === path ||
+	currentPath.startsWith(`${path}/`) ||
+	(path === "/posts" && currentPath.startsWith("/tags/"));
 ---
 <!doctype html>
 <html lang="ja">

@@ -310,8 +310,7 @@ a {
 /* 外部リンクカード (Premium Glass) */
 .link-card-rich {
 	display: flex;
-	text-decoration: none !important;
-	/* override prose a underline */
+	text-decoration: none;
 	background: var(--bg-surface);
 	backdrop-filter: blur(16px);
 	-webkit-backdrop-filter: blur(16px);
@@ -324,8 +323,8 @@ a {
 		border-color var(--dur-long) var(--ease-out);
 	margin: 2.5rem 0;
 	box-shadow: var(--shadow-glass);
-	color: var(--text-main) !important;
-	border-bottom: 1px solid var(--border-glass) !important;
+	color: var(--text-main);
+	border-bottom: 1px solid var(--border-glass);
 	position: relative;
 	min-height: 140px;
 	max-width: 100%;
@@ -337,7 +336,7 @@ a {
 	box-shadow:
 		var(--shadow-hover),
 		0 0 20px rgba(14, 165, 233, 0.15);
-	border-color: var(--accent-primary) !important;
+	border-color: var(--accent-primary);
 	background: var(--bg-surface-hover);
 }
 
@@ -382,17 +381,17 @@ a {
 	min-width: 0;
 }
 
-.link-card-favicon {
-	width: 14px !important;
-	height: 14px !important;
+/* .prose img が付ける余白と影を受けないよう、要素まで書いて詳細度で上回る */
+.link-card-favicon,
+.prose img.link-card-favicon {
+	width: 14px;
+	height: 14px;
 	border-radius: 3px;
 	object-fit: contain;
 	display: block;
 	flex-shrink: 0;
-	margin: 0 !important;
-	/* Override .prose img margin */
-	box-shadow: none !important;
-	/* Override .prose img shadow */
+	margin: 0;
+	box-shadow: none;
 }
 
 .link-card-title {
@@ -534,6 +533,7 @@ a {
 
 /* shiki は背景色をインラインで持つため、既存のコードブロックと同じ色に揃える */
 .prose pre.shiki {
+	/* biome-ignore lint/complexity/noImportantStyles: インライン style は詳細度では覆せない */
 	background: #0f172a !important;
 }
 
@@ -708,10 +708,26 @@ button {
 	object-fit: cover;
 	object-position: center;
 	clip-path: polygon(
-		50% 12%, 58% 18%, 65% 18%, 67% 24%, 73% 29%,
-		70% 35%, 73% 42%, 67% 47%, 65% 54%, 58% 53%,
-		50% 58%, 42% 54%, 35% 54%, 33% 47%, 27% 42%,
-		30% 36%, 27% 29%, 33% 24%, 35% 18%, 43% 18%
+		50% 12%,
+		58% 18%,
+		65% 18%,
+		67% 24%,
+		73% 29%,
+		70% 35%,
+		73% 42%,
+		67% 47%,
+		65% 54%,
+		58% 53%,
+		50% 58%,
+		42% 54%,
+		35% 54%,
+		33% 47%,
+		27% 42%,
+		30% 36%,
+		27% 29%,
+		33% 24%,
+		35% 18%,
+		43% 18%
 	);
 	transform: translateY(var(--space-xs)) scale(1.55);
 	transform-origin: 50% 35%;
@@ -797,7 +813,6 @@ button {
 .account {
 	position: relative;
 }
-
 
 .account__trigger {
 	padding: 0;
@@ -973,10 +988,18 @@ button {
 }
 
 @media (max-width: 39.99rem) {
-	.edge-header-inner { min-height: 4rem; }
-	.edge-brand { font-size: var(--text-md); }
-	.edge-actions { gap: var(--space-sm); }
-	.edge-nav { gap: var(--space-lg); }
+	.edge-header-inner {
+		min-height: 4rem;
+	}
+	.edge-brand {
+		font-size: var(--text-md);
+	}
+	.edge-actions {
+		gap: var(--space-sm);
+	}
+	.edge-nav {
+		gap: var(--space-lg);
+	}
 }
 
 @media (max-width: 29.99rem) {
@@ -987,8 +1010,13 @@ button {
 		padding-block: var(--space-xs);
 	}
 
-	.edge-brand { grid-column: 1; grid-row: 1; }
-	.edge-actions { display: contents; }
+	.edge-brand {
+		grid-column: 1;
+		grid-row: 1;
+	}
+	.edge-actions {
+		display: contents;
+	}
 	.edge-nav {
 		grid-column: 1 / -1;
 		grid-row: 2;
@@ -997,15 +1025,22 @@ button {
 		gap: var(--space-sm);
 	}
 
-	.account { grid-column: 2; grid-row: 1; }
+	.account {
+		grid-column: 2;
+		grid-row: 1;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {
+	/* 動きを減らす設定は、個々のスタイルより優先させる必要がある */
 	*,
 	*::before,
 	*::after {
+		/* biome-ignore lint/complexity/noImportantStyles: 全ての animation を確実に抑えるため */
 		animation-duration: 150ms !important;
+		/* biome-ignore lint/complexity/noImportantStyles: 同上 */
 		animation-iteration-count: 1 !important;
+		/* biome-ignore lint/complexity/noImportantStyles: 全ての transition を確実に抑えるため */
 		transition-duration: 150ms !important;
 	}
 
@@ -1037,9 +1072,15 @@ button {
 	overflow-wrap: anywhere;
 }
 
-.prose h2 { font-size: var(--text-2xl); }
-.prose h3 { font-size: var(--text-xl); }
-.prose h4 { font-size: var(--text-lg); }
+.prose h2 {
+	font-size: var(--text-2xl);
+}
+.prose h3 {
+	font-size: var(--text-xl);
+}
+.prose h4 {
+	font-size: var(--text-lg);
+}
 
 .prose p {
 	margin-block-end: var(--space-xl);
@@ -1109,17 +1150,18 @@ button {
 	border-block-start: var(--rule-hair) solid var(--color-rule-strong);
 }
 
-.link-card-rich {
+:where(.prose) a.link-card-rich,
+a.link-card-rich {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
 	min-height: 0;
 	margin-block: var(--space-2xl);
 	padding: 0;
-	border: var(--rule-hair) solid var(--color-rule-strong) !important;
+	border: var(--rule-hair) solid var(--color-rule-strong);
 	border-radius: 0;
-	background: var(--color-paper) !important;
+	background: var(--color-paper);
 	box-shadow: none;
-	color: var(--color-ink) !important;
+	color: var(--color-ink);
 	backdrop-filter: none;
 }
 
@@ -1160,10 +1202,11 @@ button {
 }
 
 @media (hover: hover) and (pointer: fine) {
-	.link-card-rich:hover {
+	:where(.prose) a.link-card-rich:hover,
+	a.link-card-rich:hover {
 		transform: none;
-		border-color: var(--color-accent) !important;
-		background: var(--color-paper) !important;
+		border-color: var(--color-accent);
+		background: var(--color-paper);
 		box-shadow: none;
 	}
 

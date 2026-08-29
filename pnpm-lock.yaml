@@ -93,9 +93,9 @@ importers:
       '@types/hast':
         specifier: ^3.0.4
         version: 3.0.4
-      '@types/ping':
-        specifier: ^0.4.4
-        version: 0.4.4
+      '@types/mdast':
+        specifier: ^4.0.4
+        version: 4.0.4
       '@types/tcp-ping':
         specifier: ^0.1.6
         version: 0.1.6
@@ -1235,9 +1235,6 @@ packages:
 
   '@types/node@25.2.3':
     resolution: {integrity: sha512-m0jEgYlYz+mDJZ2+F4v8D1AyQb+QzsNqRuI7xg1VQX/KlKS0qT9r1Mo16yo5F/MtifXFgaofIFsdFMox2SxIbQ==}
-
-  '@types/ping@0.4.4':
-    resolution: {integrity: sha512-ifvo6w2f5eJYlXm+HiVx67iJe8WZp87sfa683nlqED5Vnt9Z93onkokNoWqOG21EaE8fMxyKPobE+mkPEyxsdw==}
 
   '@types/tcp-ping@0.1.6':
     resolution: {integrity: sha512-1TTOm3cK+0NrZ6uTlY51YERzo5tEW3RybX1594vy9oiZOc1vsVL4LmdiIklDJXYLlzmve5lBkM5GjvwBG1Bc4A==}
@@ -3973,8 +3970,6 @@ snapshots:
   '@types/node@25.2.3':
     dependencies:
       undici-types: 7.16.0
-
-  '@types/ping@0.4.4': {}
 
   '@types/tcp-ping@0.1.6': {}
 

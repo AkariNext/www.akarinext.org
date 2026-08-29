@@ -40,7 +40,6 @@ jobs:
       # ここが落ちたら、身に覚えのない lockfile の変更を疑う。
       - run: pnpm install --frozen-lockfile
 
-      # lint は既存コードに未対応の指摘が残っているため、今は回していない。
-      # 片付いたら "pnpm lint" をここに足す。
+      - run: pnpm lint
       - run: pnpm check
       - run: pnpm build

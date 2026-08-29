@@ -1,4 +1,4 @@
-import { InfluxDB, Point } from "@influxdata/influxdb-client";
+import { InfluxDB, Point, type WriteApi } from "@influxdata/influxdb-client";
 import dotenv from "dotenv";
 import ping from "ping";
 import tcpp from "tcp-ping";
@@ -16,7 +16,7 @@ const POCKETBASE_URL = (
 	"http://localhost:8090"
 ).replace(/\/$/, "");
 
-let writeApi: any;
+let writeApi: WriteApi | null = null;
 
 if (!INFLUX_TOKEN) {
 	console.error(
@@ -68,8 +68,8 @@ async function monitorServers() {
 			`${POCKETBASE_URL}/api/collections/game_servers/records?perPage=100&skipTotal=1`,
 		);
 		if (!res.ok) throw new Error(`CMS Error: ${res.status}`);
-		const data = (await res.json()) as any;
-		const servers = data.items as MonitoredServer[];
+		const data = (await res.json()) as { items?: MonitoredServer[] };
+		const servers = data.items ?? [];
 
 		if (!servers || servers.length === 0) {
 			console.log(`[${new Date().toISOString()}] No servers found to monitor.`);
@@ -98,20 +98,18 @@ async function monitorServers() {
 				try {
 					const res = await ping.promise.probe(host, { timeout: 2 });
 					alive = res.alive;
-					avg =
-						(res.avg as any) === "unknown" ? 0 : parseFloat(String(res.avg));
-					loss =
-						(res.packetLoss as any) === "unknown"
-							? 100
-							: parseFloat(String(res.packetLoss));
+					// 届かなかったとき、avg は数値ではなく "unknown" になる。
+					// packetLoss は数値で返るので、そのまま受ける
+					avg = res.avg === "unknown" ? 0 : Number.parseFloat(res.avg);
+					loss = Number.isNaN(res.packetLoss) ? 100 : res.packetLoss;
 				} catch (e) {
 					console.error(`ICMP failed for ${host}:`, e);
 				}
 			}
 
 			// Ensure no NaNs
-			if (isNaN(avg)) avg = 0;
-			if (isNaN(loss)) loss = 0;
+			if (Number.isNaN(avg)) avg = 0;
+			if (Number.isNaN(loss)) loss = 0;
 
 			const point = new Point("ping")
 				.tag("url", host)

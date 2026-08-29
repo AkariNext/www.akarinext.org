@@ -1,25 +1,38 @@
 ---
 import { BellRing } from "lucide-astro";
 import Layout from "../../layouts/Layout.astro";
-import { cmsClient, type CmsAnnouncement } from "../../lib/cms";
+import { type CmsAnnouncement, cmsClient } from "../../lib/cms";
 import { markdownToHtml } from "../../lib/richtext";
 
 export const prerender = false;
 
-let processedAnnouncements: (CmsAnnouncement & { processedContent: string })[] = [];
+let processedAnnouncements: (CmsAnnouncement & { processedContent: string })[] =
+	[];
 
 try {
-  const announcements = await cmsClient.items<CmsAnnouncement>("announcements").readByQuery({ sort: ["-published_date", "-createdAt"], limit: 50 });
-  processedAnnouncements = await Promise.all(announcements.map(async (announcement) => ({
-    ...announcement,
-    processedContent: announcement.content ? await markdownToHtml(announcement.content) : "",
-  })));
+	const announcements = await cmsClient
+		.items<CmsAnnouncement>("announcements")
+		.readByQuery({ sort: ["-published_date", "-createdAt"], limit: 50 });
+	processedAnnouncements = await Promise.all(
+		announcements.map(async (announcement) => ({
+			...announcement,
+			processedContent: announcement.content
+				? await markdownToHtml(announcement.content)
+				: "",
+		})),
+	);
 } catch (error) {
-  console.error("Error fetching announcements:", error);
+	console.error("Error fetching announcements:", error);
 }
 
-const announcementDate = (announcement: CmsAnnouncement) => announcement.published_date || announcement.createdAt;
-const formatDate = (value: string) => new Date(value).toLocaleDateString("ja-JP", { year: "numeric", month: "short", day: "numeric" });
+const announcementDate = (announcement: CmsAnnouncement) =>
+	announcement.published_date || announcement.createdAt;
+const formatDate = (value: string) =>
+	new Date(value).toLocaleDateString("ja-JP", {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+	});
 ---
 
 <Layout title="お知らせ" description="AkariNextからのお知らせと更新情報">

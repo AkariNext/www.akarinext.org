@@ -23,8 +23,7 @@ export const POST: APIRoute = async ({
 		return new Response("Forbidden", { status: 403 });
 
 	const fail = (error: unknown, fallback: string) => {
-		const message =
-			error instanceof DashboardError ? error.message : fallback;
+		const message = error instanceof DashboardError ? error.message : fallback;
 		return redirect(
 			`/dashboard/profile?error=${encodeURIComponent(message)}`,
 			303,

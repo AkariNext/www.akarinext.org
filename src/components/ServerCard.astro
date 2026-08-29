@@ -2,15 +2,14 @@
 import type { CmsGameServer } from "../lib/cms";
 
 interface Props {
-    server: CmsGameServer;
+	server: CmsGameServer;
 }
 
 const { server } = Astro.props;
 const isWeb = server.type === "web";
 const isBedrock =
-    server.type === "minecraft" &&
-    (server.protocol?.toLowerCase().includes("bedrock") ||
-        server.port === 19132);
+	server.type === "minecraft" &&
+	(server.protocol?.toLowerCase().includes("bedrock") || server.port === 19132);
 
 // Initial placeholder values
 ---

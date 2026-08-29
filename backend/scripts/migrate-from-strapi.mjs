@@ -338,6 +338,7 @@ console.log("[6/7] game-servers を移行中...");
 
 // --- settings ---
 console.log("[7/7] settings を移行中...");
+// biome-ignore lint/complexity/noUselessLoneBlockStatements: 他のステップと同じく、移行の単位をブロックで区切っている
 {
 	try {
 		const data = await strapiGet("/api/settings", "populate=*");

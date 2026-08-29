@@ -1,5 +1,7 @@
 import rehypeShiki from "@shikijs/rehype";
+import type { Element, Root as HastRoot, Parent } from "hast";
 import { h } from "hastscript";
+import type { Root as MdastRoot } from "mdast";
 import rehypeExternalLinks from "rehype-external-links";
 import rehypeRaw from "rehype-raw";
 import rehypeStringify from "rehype-stringify";
@@ -24,23 +26,27 @@ const CJK =
 const BETWEEN_CJK = new RegExp(`([${CJK}])[ \\t\\n]+(?=[${CJK}])`, "g");
 
 function remarkTightenJapaneseSpacing() {
-	return (tree: any): void => {
-		visit(tree, "text", (node: any) => {
+	return (tree: MdastRoot): void => {
+		visit(tree, "text", (node) => {
 			node.value = node.value.replace(BETWEEN_CJK, "$1");
 		});
 	};
 }
 
 function rehypeOgpLinkCards() {
-	return async (tree: any): Promise<void> => {
-		const nodesToProcess: Array<{ node: any; parent: any; href: string }> = [];
+	return async (tree: HastRoot): Promise<void> => {
+		const nodesToProcess: Array<{
+			node: Element;
+			parent: Parent;
+			href: string;
+		}> = [];
 
-		visit(tree, "element", (node: any, _index: any, parent: any) => {
+		visit(tree, "element", (node, _index, parent) => {
 			if (node.tagName !== "p" || !parent) return;
 
 			// 空白テキストノードを除いた実質的な子要素を取得
 			const meaningfulChildren = node.children.filter(
-				(c: any) => !(c.type === "text" && c.value.trim() === ""),
+				(c) => !(c.type === "text" && c.value.trim() === ""),
 			);
 			if (
 				meaningfulChildren.length === 1 &&

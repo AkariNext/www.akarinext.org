@@ -1,14 +1,30 @@
 ---
 import { BookOpen, Shield } from "lucide-astro";
-import { getMediaUrl, type CmsPost } from "../lib/cms";
-interface Props { post: CmsPost; }
+import { type CmsPost, getMediaUrl } from "../lib/cms";
+
+interface Props {
+	post: CmsPost;
+}
 const { post } = Astro.props;
 const image = getMediaUrl(post.image);
 const url = `/posts/${post.slug || post.id}`;
 const published = post.published_date || post.createdAt;
-const formatted = new Date(published).toLocaleDateString("ja-JP", { year: "numeric", month: "short", day: "numeric" });
-const author = typeof post.author === "object" && post.author ? post.author.name || post.author.username : "AkariNext";
-const excerpt = post.is_spoiler ? "この記事にはネタバレが含まれています。" : post.content?.replace(/[#*_`>\[\]!]/g, "").replace(/\s+/g, " ").trim().slice(0, 110);
+const formatted = new Date(published).toLocaleDateString("ja-JP", {
+	year: "numeric",
+	month: "short",
+	day: "numeric",
+});
+const author =
+	typeof post.author === "object" && post.author
+		? post.author.name || post.author.username
+		: "AkariNext";
+const excerpt = post.is_spoiler
+	? "この記事にはネタバレが含まれています。"
+	: post.content
+			?.replace(/[#*_`>[\]!]/g, "")
+			.replace(/\s+/g, " ")
+			.trim()
+			.slice(0, 110);
 ---
 <article class="journal-card">
   <a href={url} class="journal-card__media" aria-label={`${post.title}を読む`}>

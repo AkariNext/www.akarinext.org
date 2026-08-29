@@ -8,17 +8,17 @@ import {
 	Radio,
 	Users,
 } from "lucide-astro";
-import Layout from "../layouts/Layout.astro";
 import ServerCard from "../components/ServerCard.astro";
+import Layout from "../layouts/Layout.astro";
 import {
-	cmsClient,
-	getMediaUrl,
 	type CmsAnnouncement,
 	type CmsGame,
 	type CmsGameServer,
 	type CmsMember,
 	type CmsPost,
 	type CmsSettings,
+	cmsClient,
+	getMediaUrl,
 } from "../lib/cms";
 
 let settings: CmsSettings = {
@@ -80,7 +80,7 @@ const date = (value?: string | null) =>
 		: "";
 const excerpt = (post: CmsPost) =>
 	post.content
-		?.replace(/[#*_`>\[\]!]/g, "")
+		?.replace(/[#*_`>[\]!]/g, "")
 		.replace(/\s+/g, " ")
 		.trim()
 		.slice(0, 150) || "本文を読んで、この記録の続きをたどる。";

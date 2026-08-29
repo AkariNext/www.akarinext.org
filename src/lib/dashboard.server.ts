@@ -238,7 +238,10 @@ function profileRecordBody(input: FormData, existing: SocialLink[]): FormData {
 }
 
 /** 入力された ID を検証して、保存する形に整える */
-function socialLinksFrom(input: FormData, existing: SocialLink[]): SocialLink[] {
+function socialLinksFrom(
+	input: FormData,
+	existing: SocialLink[],
+): SocialLink[] {
 	// 画面で扱えないサービスのぶんは、触らずそのまま残す
 	const links: SocialLink[] = existing.filter(
 		(link) => socialPlatformOf(link.platform) === null,
@@ -276,7 +279,12 @@ export async function updateOwnProfile(
 	input: FormData,
 	existing: SocialLink[] = [],
 ): Promise<"profile-saved"> {
-	await updateRecord(token, "users", userId, profileRecordBody(input, existing));
+	await updateRecord(
+		token,
+		"users",
+		userId,
+		profileRecordBody(input, existing),
+	);
 	return "profile-saved";
 }
 

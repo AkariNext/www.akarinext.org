@@ -1,98 +1,67 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    ":semanticCommits",
-    "helpers:pinGitHubActionDigests"
-  ],
-  "timezone": "Asia/Tokyo",
-  "dependencyDashboard": true,
-  "minimumReleaseAge": "7 days",
-  "platformAutomerge": false,
-  "internalChecksFilter": "strict",
-  "prConcurrentLimit": 5,
-  "lockFileMaintenance": {
-    "enabled": true,
-    "schedule": [
-      "before 5am on monday"
-    ],
-    "automerge": true
-  },
-  "packageRules": [
-    {
-      "description": "開発用の道具は壊れても本番に出ないので、minor まで自動で入れる",
-      "matchDepTypes": [
-        "devDependencies"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "pin",
-        "digest"
-      ],
-      "automerge": true
-    },
-    {
-      "description": "本番に載るものは patch だけ自動で入れる",
-      "matchDepTypes": [
-        "dependencies"
-      ],
-      "matchUpdateTypes": [
-        "patch",
-        "pin",
-        "digest"
-      ],
-      "automerge": true
-    },
-    {
-      "description": "GitHub Actions はコミットで固定してあるので、その差し替えは自動で入れる",
-      "matchManagers": [
-        "github-actions"
-      ],
-      "matchUpdateTypes": [
-        "patch",
-        "minor",
-        "pin",
-        "digest"
-      ],
-      "automerge": true
-    },
-    {
-      "description": "Astro は本体もアダプターも足並みを揃えないと壊れる。まとめて上げる",
-      "matchPackageNames": [
-        "astro",
-        "@astrojs/**"
-      ],
-      "groupName": "astro"
-    },
-    {
-      "description": "CodeMirror は同じ土台を共有していて、ばらばらに上げると噛み合わない",
-      "matchPackageNames": [
-        "codemirror",
-        "@codemirror/**",
-        "@lezer/**"
-      ],
-      "groupName": "codemirror"
-    },
-    {
-      "description": "unified 一式も同様",
-      "matchPackageNames": [
-        "unified",
-        "remark-**",
-        "rehype-**",
-        "hastscript",
-        "unist-util-**",
-        "shiki",
-        "@shikijs/**"
-      ],
-      "groupName": "unified"
-    },
-    {
-      "description": "メジャーは変更点を読んでから入れる",
-      "matchUpdateTypes": [
-        "major"
-      ],
-      "automerge": false
-    }
-  ]
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": [
+		"config:recommended",
+		":semanticCommits",
+		"helpers:pinGitHubActionDigests"
+	],
+	"timezone": "Asia/Tokyo",
+	"dependencyDashboard": true,
+	"minimumReleaseAge": "7 days",
+	"platformAutomerge": false,
+	"internalChecksFilter": "strict",
+	"prConcurrentLimit": 5,
+	"lockFileMaintenance": {
+		"enabled": true,
+		"schedule": ["before 5am on monday"],
+		"automerge": true
+	},
+	"packageRules": [
+		{
+			"description": "開発用の道具は壊れても本番に出ないので、minor まで自動で入れる",
+			"matchDepTypes": ["devDependencies"],
+			"matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+			"automerge": true
+		},
+		{
+			"description": "本番に載るものは patch だけ自動で入れる",
+			"matchDepTypes": ["dependencies"],
+			"matchUpdateTypes": ["patch", "pin", "digest"],
+			"automerge": true
+		},
+		{
+			"description": "GitHub Actions はコミットで固定してあるので、その差し替えは自動で入れる",
+			"matchManagers": ["github-actions"],
+			"matchUpdateTypes": ["patch", "minor", "pin", "digest"],
+			"automerge": true
+		},
+		{
+			"description": "Astro は本体もアダプターも足並みを揃えないと壊れる。まとめて上げる",
+			"matchPackageNames": ["astro", "@astrojs/**"],
+			"groupName": "astro"
+		},
+		{
+			"description": "CodeMirror は同じ土台を共有していて、ばらばらに上げると噛み合わない",
+			"matchPackageNames": ["codemirror", "@codemirror/**", "@lezer/**"],
+			"groupName": "codemirror"
+		},
+		{
+			"description": "unified 一式も同様",
+			"matchPackageNames": [
+				"unified",
+				"remark-**",
+				"rehype-**",
+				"hastscript",
+				"unist-util-**",
+				"shiki",
+				"@shikijs/**"
+			],
+			"groupName": "unified"
+		},
+		{
+			"description": "メジャーは変更点を読んでから入れる",
+			"matchUpdateTypes": ["major"],
+			"automerge": false
+		}
+	]
 }
