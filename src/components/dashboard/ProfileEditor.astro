@@ -236,7 +236,7 @@ const toggles = [
 
   /* grid の子は既定で内容の最小幅までしか縮まない。
      input は size 属性ぶんの幅を持つので、指定しないと列からはみ出す */
-  .field { display: grid; gap: var(--space-xs); min-width: 0; }
+  .field { display: grid; align-content: start; gap: var(--space-xs); min-width: 0; }
   .field--narrow { max-width: 24rem; }
   .field__label { color: var(--color-muted); font-size: var(--text-xs); font-weight: 700; }
   .field__label--split { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md); }
@@ -255,9 +255,11 @@ const toggles = [
   /* 記号と入力欄をひとつの枠に見せる */
   .field__prefixed { display: flex; align-items: center; min-width: 0; min-height: 2.75rem; border: var(--rule-hair) solid var(--color-rule-strong); border-radius: var(--radius-sm); background: var(--color-paper); }
   .field__prefixed > span { padding-inline: var(--space-sm); color: var(--color-muted); font-family: var(--font-mono); font-size: var(--text-sm); }
-  .field__prefixed input { flex: 1; min-width: 0; border: 0; background: none; }
+  /* 高さは外の枠が決める。中の input にも最低の高さがあると、
+     枠が線のぶんだけ膨らんで隣の欄と揃わない */
+  .field__prefixed input { flex: 1; min-width: 0; min-height: auto; padding-inline-start: 0; border: 0; background: none; }
 
-  .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-lg); }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-lg); align-items: start; }
 
   /* --- 各セクション --- */
   .section { display: grid; gap: var(--space-lg); }
