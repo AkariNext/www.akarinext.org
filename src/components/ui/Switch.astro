@@ -1,0 +1,122 @@
+---
+/**
+ * 公開・非公開のような二択。
+ *
+ * 中身はただのチェックボックスで、見た目だけを切り替えに寄せている。
+ * 状態を色だけで示すと分かりにくいので、隣に言葉でも出す。
+ */
+interface Props {
+	name: string;
+	checked?: boolean;
+	value?: string;
+	/** 入り・切りをそれぞれ何と呼ぶか */
+	onLabel?: string;
+	offLabel?: string;
+	class?: string;
+}
+
+const {
+	name,
+	checked = false,
+	value = "1",
+	onLabel = "公開",
+	offLabel = "非公開",
+	class: className,
+} = Astro.props;
+---
+
+<label class:list={["switch", className]}>
+  <input
+    type="checkbox"
+    name={name}
+    value={value}
+    checked={checked}
+    data-on-label={onLabel}
+    data-off-label={offLabel}
+  />
+  <span class="switch__track" aria-hidden="true"></span>
+  <span class="switch__text">{checked ? onLabel : offLabel}</span>
+</label>
+
+<script>
+  import { onEachPage } from "../../scripts/on-page";
+
+  // 押したときに、隣の言葉も一緒に切り替える
+  onEachPage(() => {
+    for (const input of document.querySelectorAll<HTMLInputElement>(
+      ".switch input[data-on-label]",
+    )) {
+      if (input.dataset.bound === "true") continue;
+      input.dataset.bound = "true";
+      const text = input.parentElement?.querySelector(".switch__text");
+      input.addEventListener("change", () => {
+        if (!text) return;
+        text.textContent = input.checked
+          ? (input.dataset.onLabel ?? "")
+          : (input.dataset.offLabel ?? "");
+      });
+    }
+  });
+</script>
+
+<style>
+  .switch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex: 0 0 auto;
+    cursor: pointer;
+  }
+
+  .switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .switch__track {
+    position: relative;
+    width: 3rem;
+    height: 1.75rem;
+    border: var(--rule-hair) solid var(--color-rule-strong);
+    border-radius: 1rem;
+    background: var(--color-paper-2);
+    transition:
+      background-color var(--dur-micro) var(--ease-out),
+      border-color var(--dur-micro) var(--ease-out);
+  }
+
+  .switch__track::after {
+    content: "";
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 0.2rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    translate: 0 -50%;
+    border-radius: 50%;
+    background: var(--color-muted);
+    transition:
+      translate var(--dur-micro) var(--ease-out),
+      background-color var(--dur-micro) var(--ease-out);
+  }
+
+  .switch input:checked + .switch__track {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+  }
+
+  .switch input:checked + .switch__track::after {
+    translate: 1.25rem -50%;
+    background: var(--color-accent-ink);
+  }
+
+  .switch input:focus-visible + .switch__track {
+    outline: var(--rule-medium) solid var(--color-focus);
+    outline-offset: var(--space-3xs);
+  }
+
+  .switch__text { min-width: 3.5rem; font-size: var(--text-sm); }
+</style>

@@ -1,0 +1,107 @@
+---
+/**
+ * ボタン。
+ *
+ * 同じ見た目のものがダッシュボードと各エディタに何度も書かれていて、
+ * 余白や太さが少しずつずれていた。ここに一つ置いて、そちらを消した。
+ *
+ * href を渡すと <a>、それ以外は <button> になる。
+ * ファイル選択のように、見た目はボタンで中身がラベルという場所もあるので
+ * as で明示もできる。
+ */
+import type { HTMLAttributes } from "astro/types";
+
+type Variant = "default" | "primary" | "danger" | "bare";
+type Size = "md" | "sm";
+
+// <button> と <a> は type の意味が違うので、その分だけ外して自分で持つ
+type Props = Omit<HTMLAttributes<"button">, "type"> &
+	Omit<HTMLAttributes<"a">, "type"> & {
+		/** 見た目。primary は主たる操作、danger は元に戻せない操作 */
+		variant?: Variant;
+		/** md は 2.75rem、sm は 2.5rem。並びの詰まった場所では sm */
+		size?: Size;
+		/** 渡すと <a> になる */
+		href?: string;
+		/** <label> にしたいときだけ指定する */
+		as?: "button" | "a" | "label";
+		type?: "button" | "submit" | "reset";
+	};
+
+const {
+	variant = "default",
+	size = "md",
+	href,
+	as,
+	type: typeProp,
+	class: className,
+	...rest
+} = Astro.props;
+
+const Tag = as ?? (href ? "a" : "button");
+// <button> は既定で submit になる。押しても何も起きないつもりのボタンが
+// フォームを送ってしまうので、指定がなければ button にしておく
+const type = Tag === "button" ? (typeProp ?? "button") : undefined;
+---
+
+<Tag
+  class:list={["button", `button--${variant}`, `button--${size}`, className]}
+  href={href}
+  {...rest}
+  type={type}
+>
+  <slot />
+</Tag>
+
+<style>
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    border: var(--rule-hair) solid var(--color-rule-strong);
+    border-radius: var(--radius-sm);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font: inherit;
+    font-size: var(--text-sm);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  /* 大きい方は余白も広く取る */
+  .button--md { min-height: 2.75rem; padding-inline: var(--space-lg); }
+  .button--sm { min-height: 2.5rem; padding-inline: var(--space-md); }
+
+  /* アイコンは slot から渡されるので、親のスコープにも届くようにする */
+  .button :global(svg) { width: 1em; height: 1em; }
+
+  .button--primary {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+
+  /* 元に戻せない操作。色で他と区別する */
+  .button--danger {
+    border-color: var(--color-error);
+    background: var(--color-paper);
+    color: var(--color-error);
+    font-weight: 700;
+  }
+
+  .button--bare {
+    border: 0;
+    background: transparent;
+    color: var(--color-muted);
+  }
+
+  .button:disabled { cursor: not-allowed; opacity: 0.55; }
+
+  @media (hover: hover) and (pointer: fine) {
+    .button:hover { border-color: var(--color-ink); background: var(--color-paper-2); }
+    .button--primary:hover { border-color: var(--color-ink); background: var(--color-ink); }
+    .button--danger:hover { background: var(--color-error); color: var(--color-accent-ink); }
+    .button--bare:hover { border-color: transparent; background: var(--color-paper-2); }
+  }
+</style>

@@ -43,3 +43,6 @@ jobs:
       - run: pnpm lint
       - run: pnpm check
       - run: pnpm build
+      # Storybook は全 story をサーバー側で描画してから書き出す。
+      # 壊れた story はここで落ちる
+      - run: pnpm build:storybook

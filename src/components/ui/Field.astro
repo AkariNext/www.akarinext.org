@@ -1,0 +1,73 @@
+---
+/**
+ * 入力欄ひとまとまり。ラベル、入力、補足を縦に並べる。
+ *
+ * 入力そのものは slot で受ける。input でも textarea でも select でも
+ * 同じ見た目にしたいので、ここでは器だけを持つ。
+ */
+interface Props {
+	label: string;
+	/** 入力の下に出す補足 */
+	help?: string;
+	/** ラベルの右に出す文字数など */
+	meta?: string;
+	/** 横幅を抑えたいとき */
+	narrow?: boolean;
+	class?: string;
+}
+
+const { label, help, meta, narrow = false, class: className } = Astro.props;
+---
+
+<label class:list={["field", { "field--narrow": narrow }, className]}>
+  <span class:list={["field__label", { "field__label--split": meta }]}>
+    {label}{meta && <span class="field__meta">{meta}</span>}
+  </span>
+  <slot />
+  {help && <span class="field__help">{help}</span>}
+</label>
+
+<style>
+  .field { display: grid; gap: var(--space-xs); }
+  .field--narrow { max-width: 24rem; }
+
+  .field__label {
+    color: var(--color-muted);
+    font-size: var(--text-xs);
+    font-weight: 700;
+  }
+
+  .field__label--split {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-md);
+  }
+
+  .field__meta {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 400;
+  }
+
+  .field__help { color: var(--color-muted); font-size: var(--text-xs); }
+
+  /* 入力は slot から渡されるので、親のスコープにも届くようにする */
+  .field :global(input:not([type="checkbox"]):not([type="radio"])),
+  .field :global(textarea),
+  .field :global(select) {
+    min-height: 2.75rem;
+    padding: var(--space-xs) var(--space-sm);
+    border: var(--rule-hair) solid var(--color-rule-strong);
+    border-radius: var(--radius-sm);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font: inherit;
+  }
+
+  .field :global(textarea) {
+    min-height: auto;
+    line-height: 1.7;
+    resize: vertical;
+  }
+</style>

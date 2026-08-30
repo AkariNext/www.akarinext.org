@@ -27,9 +27,14 @@ blockExoticSubdeps: true
 # publish 用の認証情報を盗まれて出された版を掴みにくくする。
 trustPolicy: no-downgrade
 
-# chokidar は 4.0.2 と 4.0.3 で provenance が抜けており、no-downgrade に
-# 引っかかる。作者が v5 で付け直しているので乗っ取りではない。
-# うちには @astrojs/check の推移的依存として入っている。
-# https://github.com/unjs/c12/issues/287
-trustPolicyExclude:
-  - "chokidar@4.0.3"
+# 1 年（525600 分）より前に公開された版は、上の判定から外す。
+#
+# provenance が広まる前のパッケージには、そもそも来歴が付いていない。
+# それを「弱くなった」と読むと、chokidar や undici-types のように
+# 古くて広く使われているものが軒並み引っかかり、そのたびに個別の
+# 除外を足すことになる。
+#
+# 乗っ取りは新しく公開された版で起きるので、出たての版に対する
+# 判定は残る。そこが本来の狙いで、古い版は既に広く使われて
+# 目にさらされている。
+trustPolicyIgnoreAfter: 525600
