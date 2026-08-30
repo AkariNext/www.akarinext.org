@@ -64,6 +64,6 @@
 		"storybook": "^10.5.10",
 		"tcp-ping": "^0.1.1",
 		"ts-node": "^10.9.2",
-		"typescript": "^5.9.3"
+		"typescript": "^7.0.0"
 	}
 }
