@@ -28,7 +28,9 @@ const { label, help, meta, narrow = false, class: className } = Astro.props;
 </label>
 
 <style>
-  .field { display: grid; gap: var(--space-xs); }
+  /* grid の子は既定で内容の最小幅までしか縮まない。
+     input は size 属性ぶんの幅を持つので、指定しないと親からはみ出す */
+  .field { display: grid; gap: var(--space-xs); min-width: 0; }
   .field--narrow { max-width: 24rem; }
 
   .field__label {
@@ -56,6 +58,8 @@ const { label, help, meta, narrow = false, class: className } = Astro.props;
   .field :global(input:not([type="checkbox"]):not([type="radio"])),
   .field :global(textarea),
   .field :global(select) {
+    width: 100%;
+    min-width: 0;
     min-height: 2.75rem;
     padding: var(--space-xs) var(--space-sm);
     border: var(--rule-hair) solid var(--color-rule-strong);
