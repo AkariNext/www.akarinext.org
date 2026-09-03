@@ -1,5 +1,5 @@
 # PocketBase backend（Dokploy などでそのままデプロイ可能）
-FROM alpine:3.22
+FROM alpine:3.24
 
 ARG PB_VERSION=0.39.7
 
